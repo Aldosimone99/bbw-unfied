@@ -9,11 +9,13 @@ Il backend Express espone già il percorso identity/onboarding usato dal fronten
 | Endpoint | Scopo | Nota autorizzativa |
 | --- | --- | --- |
 | `POST /auth/register` | crea account Auth e dati iniziali | non accetta tipo di account o ruolo dal client |
-| `POST /auth/login` | verifica le credenziali del backend | la sessione browser viene stabilita da Supabase Auth |
+| `POST /auth/login` | verifica le credenziali e restituisce la sessione Supabase | il frontend salva access/refresh token nel client SSR; non esegue una seconda password sign-in |
 | `POST /auth/onboarding/profile` | salva nome, cognome e telefono | richiede Bearer verificato e agisce sull'account corrente |
-| `POST /auth/onboarding/complete` | salva il tipo richiesto e, se previsto, il contesto | il tipo richiesto non concede da solo privilegi |
+| `POST /auth/onboarding/complete` | completa onboarding tramite RPC transazionale | il tipo richiesto non concede da solo privilegi; organization crea anche membership owner |
+| `GET /auth/me` | restituisce il profilo applicativo verificato | richiede Bearer token verificato |
+| `GET /auth/context` | restituisce profilo, membership e permission | è la fonte backend del contesto autorizzativo |
 
-Il frontend invoca queste route tramite `/api/backend/*`; i contratti condivisi vivono in `packages/interfaces`.
+Le chiamate browser-facing passano tramite `/api/backend/*`; le Server Actions auth/onboarding possono usare direttamente il backend configurato perché eseguono solo sul server. I contratti condivisi vivono in `packages/interfaces`.
 
 ## Convenzioni
 

@@ -12,7 +12,7 @@ Direzione delle dipendenze:
 
 `UI/Page → server action o route handler → service di caso d’uso → repository/data access → Supabase/PostgreSQL/Storage`.
 
-Le dipendenze devono fluire verso contratti e dominio. Repository e adapter non devono essere importati direttamente da componenti UI. Un service può coordinare più repository, validare invarianti e aprire una transazione dove necessario. Il frontend comunica con l'Express backend tramite il bridge Next `/api/backend/*`, senza importare direttamente il codice del backend.
+Le dipendenze devono fluire verso contratti e dominio. Repository e adapter non devono essere importati direttamente da componenti UI. Un service può coordinare più repository, validare invarianti e aprire una transazione dove necessario. Le chiamate browser-facing passano dal bridge Next `/api/backend/*`; le Server Actions di auth/onboarding possono chiamare direttamente l'URL backend configurato perché restano server-side. Il frontend non importa mai codice del backend.
 
 Composizione attuale:
 
@@ -20,6 +20,11 @@ Composizione attuale:
 apps/next → /api/backend/* → apps/backend → Supabase/PostgreSQL/Redis
       └──────── packages/interfaces (contratti Zod e tipi condivisi)
 ```
+
+Per login e registrazione il backend verifica le credenziali e restituisce la
+sessione Supabase; il frontend la salva con `supabase.auth.setSession(...)` nel
+client SSR. Per le richieste protette successive, il backend ricostruisce il
+contesto da Bearer token, profilo, membership e stato organizzazione.
 
 ## Responsabilità dei livelli
 

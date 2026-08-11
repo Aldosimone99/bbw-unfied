@@ -18,8 +18,10 @@ anything, read the root instructions and all steering files from
 
 ## Integration rules
 
-- The frontend reaches the backend through `/api/backend/*`, which forwards the
-  Supabase server session as a Bearer token when one exists.
+- Browser-facing frontend calls reach the backend through `/api/backend/*`,
+  which forwards the Supabase server session as a Bearer token when one exists.
+  Auth/onboarding Server Actions may call the configured backend URL directly
+  because they execute only on the server.
 - The backend remains the authority for operational domain rules.
 - Account/Profile/Organization/Membership/Role/Permission/Subject are distinct
   concepts; visible labels such as “cliente” or “clinica” never authorize an

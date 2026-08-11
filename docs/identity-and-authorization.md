@@ -1,212 +1,190 @@
-# Identity & Authorization — Registro delle modifiche
+# Identity & Authorization — Change Log
 
-Questo documento tiene traccia delle modifiche importanti al perimetro di identità, onboarding e autorizzazione di Beauty Broker World. Va aggiornato quando cambiano registrazione, login, onboarding, sessioni, ruoli, permessi, RLS o migration collegate.
+This document records important changes to identity, registration, sessions,
+onboarding and authorization. Update it whenever one of these boundaries or
+the related Supabase migrations changes.
 
-## Stato attuale
+## Current source of truth
 
-Ultimo aggiornamento: 2026-08-11
+Last reviewed: 2026-08-11
 
-Per il monorepo unificato la fonte di verità operativa per registrazione,
-profilo e autorizzazione è `apps/backend` con lo schema Supabase di
-`apps/backend/supabase`. Il frontend `apps/next` raccoglie input e presenta lo
-stato restituito dal backend; non usa più il vecchio schema identity di
-`bbwlanding` per creare profili, ruoli o membership.
+For the unified monorepo, `apps/backend` and its Supabase migrations are the
+authoritative source for registration, application profiles, onboarding,
+memberships and permissions. `apps/next` collects input, establishes the SSR
+session and renders the context returned by the backend. The old identity model
+from `bbwlanding` is not maintained as a second source of truth.
 
-La terminologia da mantenere nel codice è quella del modello di dominio:
-`Account` identifica l’identità autenticata, `Profile` i dati personali,
-`Organization` il contesto collettivo, `OrganizationMembership` l’appartenenza,
-`Role` e `Permission` l’autorizzazione, `Subject` la persona o entità cui si
-riferiscono i dati. `User` non va usato come nome universale per tutti questi
-concetti.
+Use these terms consistently:
 
-Il flusso implementato è:
+- `Account` — authenticated Supabase Auth identity;
+- `Profile` — application data attached to the account;
+- `Organization` — collective operational context;
+- `OrganizationMembership` — account-to-organization relationship;
+- `Role` and `Permission` — authorization concepts;
+- `Subject` — person or entity to which a domain record refers.
+
+Do not use `User` as a universal domain model, and do not infer authorization
+from labels such as “client”, “professional” or “clinic”.
+
+## Implemented flow
 
 ```text
-registrazione minima (email/password/consensi)
-  → account autenticato
-  → profilo incompleto
-  → /onboarding
-  → dati personali
-  → tipo di esperienza richiesto
-  → eventuale organizzazione e membership owner
-  → una o più membership organizzative
-  → risoluzione server-side dell’organizzazione attiva
+minimal registration
+  → backend-created Auth account + neutral application profile
+  → backend login returns Supabase session
+  → Next stores the session server-side
+  → /onboarding profile step
+  → /onboarding requested-experience step
+  → protected transactional completion
   → /dashboard
 ```
 
-La dashboard applicativa resta una superficie temporanea. Mostra ora, a scopo tecnico, organizzazione attiva, membership, ruoli, permission e organizzazioni disponibili; il server resta la fonte autorevole e il client non concede accesso.
+Initial registration requires only email, password, password confirmation and
+terms/privacy consent. It does not ask for account type, organization, name or
+tax data. The password policy is eight or more characters with uppercase,
+lowercase, number and special character.
 
-## Modifiche implementate
+Email confirmation is disabled only in the local Supabase configuration for
+bootstrap. It must be restored before staging or production.
 
-### Onboarding
+## Session handoff
 
-- Primo step con `first_name`, `last_name` e `phone` opzionale.
-- Validazione Zod con trim, limiti di lunghezza e controllo del formato telefonico.
-- Dopo il primo step `profiles.onboarding_status` diventa `account_type_required`.
-- Secondo step con i tipi richiesti:
-  - `personal`
-  - `healthcare_professional`
-  - `beauty_professional`
-  - `organization`
-  - `commercial`
-- Il tipo richiesto non è un ruolo di autorizzazione.
-- Per professionisti e commerciale il profilo viene completato, ma `account_type_status` resta `pending`; l’abilitazione operativa è un workflow separato.
+`POST /auth/login` is the backend authentication authority. It verifies the
+application account and Supabase credentials, then returns an access token and
+refresh token. The Next auth service calls `supabase.auth.setSession(...)` with
+those tokens through the server-side client. It no longer performs a second
+independent `signInWithPassword` request.
 
-### Organizzazioni
+Registration creates the account first, then uses the same backend login path
+to establish the session. If the session cannot be established, the account
+may already exist and the user can retry from `/accedi`; the backend never
+stores a plaintext password after the Auth provider call.
 
-Per `organization`, la funzione PostgreSQL `complete_account_onboarding` esegue in una singola transazione:
+## Onboarding
 
-```text
-organization
-  → organization_member active
-  → member_role organization_owner
-  → profile completed
-```
+The first step saves name, surname and optional phone and changes
+`users.onboarding_status` to `account_type_required`.
 
-Il tipo di organizzazione e il ruolo vengono risolti tramite `code`, mai tramite UUID hardcoded. Per rispettare il perimetro minimo attuale, `legal_name` viene valorizzato con lo stesso valore di `display_name`; non vengono richiesti P.IVA, documenti, ASL, IBAN o contratto.
+The second step accepts one of:
 
-### Database e RPC
+- `personal` (shown as “Cliente”);
+- `healthcare_professional` (shown as “Medico”);
+- `beauty_professional` (shown as “Estetista”);
+- `organization` (shown as “Clinica”);
+- `commercial` (shown as “Commerciale”).
 
-Le migration operative rilevanti sono:
+The requested experience is stored as `requested_account_type`. It is
+descriptive intent, not a role, permission or proof of professional status.
+For `organization`, the protected RPC creates the organization and owner
+membership atomically and then marks onboarding complete. For personal and
+other requested experiences, completion grants only the baseline dashboard
+access represented by the backend context; operational enablement remains a
+separate workflow.
 
-`apps/backend/supabase/migrations/20260811000100_account_first_onboarding.sql`
+## Backend authorization context
 
-`apps/backend/supabase/migrations/20260811000200_onboarding_request_context.sql`
+`GET /auth/context` requires a verified Bearer token. It returns:
 
-`apps/backend/supabase/migrations/20260811000300_backend_identity_grants.sql`
+- the verified application account;
+- the normalized profile and onboarding status;
+- active organization memberships;
+- active organization;
+- global permissions;
+- organization-scoped permissions;
+- the combined permission list.
 
-`apps/backend/supabase/migrations/20260811000400_backend_identity_profile_reads.sql`
+The backend calculates this context from the verified identity and database
+state. The browser cannot submit an actor ID, role, permission or organization
+ID to obtain access. Protected routes repeat authentication and ownership
+checks rather than trusting UI state.
 
-Nel loro insieme introducono o aggiornano:
+## Database migrations
 
-- `profiles.account_type_status`;
-- lo stato `account_type_required`;
-- il tipo richiesto `commercial`;
-- `save_onboarding_profile(...)`;
-- `complete_account_onboarding(...)`;
-- privilegi di aggiornamento del profilo limitati ai dati personali;
-- grant/revoke per le funzioni autenticato-only.
+Relevant account-first and authorization migrations are:
 
-La fonte operativa del database è il backend unificato. Verificare sempre lo
-stato del progetto locale dalla directory backend con:
+- `20260811000100_account_first_onboarding.sql` — neutral account state and
+  onboarding columns on `public.users`;
+- `20260811000200_onboarding_request_context.sql` — requested organization
+  context and server-only profile read grants;
+- `20260811000300_backend_identity_grants.sql` — minimal backend grants for
+  account/profile registration operations;
+- `20260811000400_backend_identity_profile_reads.sql` — read grants for the
+  profile graph used by `/auth/me`;
+- `20260811000500_authoritative_onboarding_context.sql` — transactional
+  onboarding completion RPC;
+- `20260811000600_backend_authorization_read_grants.sql` — read-only
+  `service_role` access to `companies` and `company_members`, required to
+  calculate memberships and permissions.
+
+Apply them only from the backend project directory:
 
 ```bash
 cd apps/backend
-npx supabase migration list
-```
-
-Applicazione locale senza reset:
-
-```bash
 npx supabase migration up --local
 ```
 
-Applicazione al progetto collegato:
+To recreate local data intentionally:
 
 ```bash
-npx supabase migration up --linked
+npx supabase db reset --local
 ```
 
-### Guard e autorizzazione
+This is destructive for local data and must never be used as an implicit
+remote deployment procedure.
 
-- account non autenticato → `/login`;
-- onboarding non completato → `/onboarding`;
-- account completato che apre `/onboarding` → `/dashboard`;
-- dashboard e superfici platform richiedono `dashboard.access` tramite guard server-side;
-- non esistono controlli applicativi basati su confronti diretti del nome del ruolo.
+## Main files
 
-### Membership e contesto attivo
+- `apps/next/src/features/auth/actions.ts` — login, registration and onboarding
+  Server Actions;
+- `apps/next/src/server/services/auth-service.ts` — backend auth call and SSR
+  session handoff;
+- `apps/next/src/server/auth/transition-session.ts` — access token, profile and
+  authorization-context reads;
+- `apps/next/src/app/(auth)/onboarding/page.tsx` — onboarding guard;
+- `apps/next/src/features/auth/OnboardingForm.tsx` — two-step form;
+- `apps/backend/src/routes/auth/` — auth, profile, context and onboarding routes;
+- `apps/backend/src/services/authorization-context-service.ts` — authoritative
+  permission context;
+- `apps/backend/src/services/account-onboarding-service.ts` — onboarding use
+  cases;
+- `apps/backend/supabase/migrations/` — schema, grants and RPCs;
+- `apps/backend/src/__tests__/services/` — backend auth/onboarding/context tests;
+- `apps/next/src/server/services/auth-service.test.ts` — session handoff tests.
 
-- `getUserMemberships(userId)` carica organizzazione, tipo, membership, stato e ruoli contestuali;
-- `getAccessibleOrganizations(userId)` restituisce solo membership attive in organizzazioni attive;
-- `getMembershipForOrganization({ userId, organizationId })` e `requireOrganizationMembership(...)` verificano l’appartenenza lato server;
-- `getActiveOrganization()` legge il contesto risolto dal server;
-- `setActiveOrganization()` valida UUID, sessione, membership attiva e stato dell’organizzazione prima di salvare il cookie HttpOnly `bbw-active-organization`;
-- cookie assente, invalido o non più autorizzato → prima organizzazione attiva secondo ordinamento deterministico, oppure `null`;
-- permessi platform/global e permessi dell’organizzazione attiva sono calcolati separatamente;
-- il Context Switcher usa `setActiveOrganizationAction`, revalidation e redirect a `/dashboard`.
+## Verification record
 
-Gli helper di autorizzazione da mantenere sono:
+The latest verification included:
 
-- `getCurrentUser()`;
-- `getCurrentProfile()`;
-- `getUserMemberships()`;
-- `getUserPermissions()`;
-- `can()`;
-- `requirePermission()`.
+- backend typecheck and 74 test files / 353 tests;
+- frontend typecheck and 11 test files / 53 tests;
+- targeted migration grant regression;
+- local browser smoke: registration → onboarding → personal/“Cliente” →
+  dashboard;
+- local database reset with all migrations, ending with zero local users.
 
-### Dashboard
+## Change log
 
-La dashboard mostra la superficie operativa temporanea: saluto, azioni rapide, profilo, calendario, prenotazioni, riepilogo account e riepilogo tecnico del contesto attivo. Il Context Switcher è presente nella shell platform; non sono ancora implementate dashboard operative separate per clinica, professionista o cliente.
+### 2026-08-11 — Backend-authoritative auth context and session handoff
 
-## File principali
+- Removed the frontend's second independent password sign-in after backend
+  authentication.
+- Stored the backend-returned Supabase session through the Next SSR client.
+- Added the authoritative `/auth/context` backend response for profile,
+  memberships and permissions.
+- Protected onboarding completion with a service-role-only transactional RPC.
+- Added the minimal read-only grants required for `companies` and
+  `company_members`.
+- Added regressions for successful/failed session handoff and migration grants.
+- Verified the complete local personal-account flow in a browser.
 
-- `apps/next/src/app/(auth)/onboarding/page.tsx` — guard e composizione onboarding;
-- `apps/next/src/features/auth/OnboardingForm.tsx` — form a due step;
-- `apps/next/src/features/auth/actions.ts` — Server Actions;
-- `apps/next/src/server/services/auth-service.ts` — casi d’uso auth/onboarding;
-- `apps/next/src/server/services/membership-service.ts` — membership e organizzazioni accessibili;
-- `apps/next/src/server/services/active-organization-service.ts` — contesto attivo;
-- `apps/backend/src/routes/auth/` — route Express per auth/onboarding;
-- `apps/backend/src/services/` — servizi backend di dominio;
-- `apps/backend/supabase/migrations/` — schema e funzioni PostgreSQL;
-- `apps/backend/supabase/tests/authorization.sql` — regressioni RLS.
+### 2026-08-11 — Account-first registration
 
-## Verifiche eseguite
+- Initial registration returned to the `bbwlanding` shape: email, password,
+  confirmation and consents only.
+- Removed account-type selection from the initial registration page.
+- Moved personal data and requested experience to post-login onboarding.
+- Disabled email-code confirmation only for local bootstrap.
 
-- `npm run typecheck`;
-- `npm test` — suite workspace passata: 71 file backend / 347 test, 11 file frontend / 51 test, 11 file interfaces / 61 test;
-- `npm run lint` — 0 errori, 7 warning `@next/next/no-img-element`;
-- `npm run build`;
-- `git diff --check`;
-- regressione SQL RLS locale — 9 assertion pgTAP passate;
-- E2E browser non eseguito: il backend Browser in-app non risultava disponibile nella sessione.
-
-## Registro modifiche
-
-### 2026-08-08 — Onboarding minimo e autorizzazione
-
-- Implementati onboarding dati personali e tipo di esperienza.
-- Aggiunti stato intermedio `account_type_required` e stato richiesta `pending`.
-- Aggiunta creazione atomica organizzazione, membership e owner role.
-- Aggiornate guard server-side e dashboard temporanea.
-- Applicata la migration locale e al progetto Supabase collegato.
-- La dashboard diagnostica è stata successivamente estesa con il riepilogo tecnico del contesto attivo.
-
-### 2026-08-10 — Membership multi-organizzazione e active context
-
-- Centralizzato il membership service con organizzazione, tipo, stato e ruoli contestuali.
-- Implementata l’organizzazione attiva con cookie HttpOnly server-managed e fallback deterministico.
-- Aggiunti Context Switcher, Server Action, validazione membership e revalidation.
-- Separati permessi global/platform da permessi dell’organizzazione attiva.
-- Aggiunti helper `getActiveOrganization`, `requireOrganizationMembership` e `requireOrganizationPermission`.
-- Aggiornata la regressione SQL RLS per isolamento membership e assenza di scritture dirette.
-- Aggiunti test per cookie invalido, selezione non autorizzata, membership rimossa e isolamento dei permessi tra organizzazioni.
-- Verificati typecheck, lint, test workspace, build e regressione SQL RLS locale; E2E browser ancora da eseguire quando sarà disponibile un backend Browser.
-
-### 2026-08-11 — Registrazione account-first nel backend di transizione
-
-- La registrazione iniziale richiede soltanto email, password, conferma password e consensi; non chiede più cliente, professionista, clinica o altro tipo operativo.
-- La password usa una soglia minima di 8 caratteri, con maiuscola, minuscola, numero e carattere speciale.
-- Dopo il primo login il frontend porta l’account a `/onboarding`, dove raccoglie prima i dati personali e poi il caso d’uso richiesto.
-- Le migration `apps/backend/supabase/migrations/20260811000100_account_first_onboarding.sql` e `20260811000200_onboarding_request_context.sql` rendono nome e codice fiscale inizialmente opzionali e aggiungono stato onboarding, tipo richiesto, nome contesto richiesto e timestamp di completamento.
-- Le migration `20260811000300_backend_identity_grants.sql` e `20260811000400_backend_identity_profile_reads.sql` concedono al solo `service_role` del backend i privilegi minimi per registrazione, onboarding e lettura del profilo; anon e authenticated non ricevono accesso aggiuntivo.
-- `requested_account_type` è una richiesta/intenzione e non assegna `tipo_utente`, ruolo, permission o membership. Un nuovo account resta con il valore neutro `privato` finché un workflow autorizzato non assegna un ruolo operativo.
-- La verifica email via codice è temporaneamente disattivata per il bootstrap locale e deve essere riattivata prima della produzione.
-- Il backend crea l'account confermato solo per il bootstrap locale; non replicare questa configurazione in staging/production.
-- Le route `/auth/onboarding/profile` e `/auth/onboarding/complete` passano dal service backend; i campi controllati dai form restano disponibili dopo gli errori di validazione.
-- Verifiche previste: typecheck, test, build, diff check e applicazione non distruttiva della migration locale con `supabase migration up --local`.
-
-## Regola per le prossime modifiche importanti
-
-Quando cambiano registrazione, login o altri flussi sensibili, aggiungere una nuova voce al registro indicando:
-
-1. data e obiettivo;
-2. file e migration modificati;
-3. comportamento osservabile e redirect;
-4. impatto su Auth, profili, ruoli, permessi o RLS;
-5. test e comandi di verifica;
-6. eventuali migration da applicare in locale e online;
-7. decisioni ancora da confermare.
-
-Non modificare migration già applicate: creare sempre una nuova migration numerata.
+For future sensitive changes, record date, files, migration, observable
+redirects, Auth/profile/role/permission impact, tests and any open decisions.
+Never edit an applied migration; create a new numbered migration.

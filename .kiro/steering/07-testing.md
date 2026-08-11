@@ -1,6 +1,6 @@
 # 07 — Strategia di test
 
-Il repository usa Vitest 4.1.10 tramite `npm test` e contiene test unitari per validazione, password policy, mapping errori auth, auth service, redirect sicuri, contesto autorizzativo, permission, risoluzione active organization, cambio contesto e decisioni di accesso dashboard. Sono presenti anche migration/seed e una regressione SQL RLS. L’ultima esecuzione workspace registrata ha 71 file backend/347 test, 11 file frontend/51 test e 11 file interfaces/61 test, oltre a 9 assertion pgTAP RLS passate. ESLint è configurato tramite `npm run lint`; Playwright e React Testing Library non sono ancora installati.
+Il repository usa Vitest 4.1.10 tramite `npm test` e contiene test unitari per validazione, password policy, mapping errori auth, auth service, session handoff, redirect sicuri, contesto autorizzativo, onboarding, permission e decisioni di accesso dashboard. Sono presenti migration/seed e regressioni SQL. L’ultima verifica registrata ha passato 74 file backend/353 test e 11 file frontend/53 test, oltre al test mirato dei grant della migration. ESLint è configurato tramite `npm run lint`; Playwright e React Testing Library non sono ancora installati nel repository.
 
 ## Livelli
 
@@ -22,7 +22,7 @@ Vitest è lo strumento attuale per unit e service test; Supabase CLI/PostgreSQL 
 ## Primi flussi E2E
 
 1. registrazione valida e gestione input invalido;
-2. verifica account;
+2. login e session handoff;
 3. onboarding e completamento profilo;
 4. assegnazione o selezione del contesto organizzativo;
 5. accesso alla dashboard autorizzata;
@@ -30,7 +30,7 @@ Vitest è lo strumento attuale per unit e service test; Supabase CLI/PostgreSQL 
 7. logout e invalidazione della sessione;
 8. recupero password e ritorno sicuro al flusso di accesso.
 
-I flussi login, registrazione account-first senza codice email in locale, onboarding, redirect, accesso/negazione dashboard e selezione server-side del contesto hanno una prima implementazione e test server/unitari. Restano da coprire end-to-end in browser il ripristino della verifica email, il cambio contesto, recupero password, inviti e gestione operativa delle organizzazioni. La regressione SQL RLS è stata eseguita su Supabase locale con esito positivo.
+I flussi login, registrazione account-first senza codice email in locale, session handoff, onboarding, redirect, accesso/negazione dashboard e selezione server-side del contesto hanno una prima implementazione e test server/unitari. Il percorso personale registrazione → onboarding → scelta “Cliente” → dashboard è stato verificato manualmente nel browser locale. Restano da coprire end-to-end automatizzati il ripristino della verifica email, il cambio contesto, recupero password, inviti e gestione operativa delle organizzazioni.
 
 ## Regole di regressione
 

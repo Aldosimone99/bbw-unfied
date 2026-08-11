@@ -1,6 +1,6 @@
 # 09 — Definition of Done
 
-Una feature è completata solo quando il comportamento approvato, il confine di sicurezza, l’esperienza e la manutenzione sono verificati insieme. “Funziona nel browser” non è sufficiente. I comandi di verifica disponibili sono `npm run typecheck`, `npm run lint`, `npm run test` e `npm run build`.
+Una feature è completata solo quando il comportamento approvato, il confine di sicurezza, l’esperienza e la manutenzione sono verificati insieme. “Funziona nel browser” non è sufficiente. I comandi di verifica disponibili sono `npm run typecheck`, `npm run lint`, `npm test` e `npm run build`.
 
 ## Documentazione
 
@@ -17,6 +17,7 @@ Una feature è completata solo quando il comportamento approvato, il confine di 
 - [ ] Vincoli, foreign key, indici, cascades e ownership sono motivati.
 - [ ] RLS è attiva e copre positivi/negativi nei tenant rilevanti.
 - [ ] Seed è sintetico/idempotente e il reset da zero funziona.
+- [ ] Le migration locali sono state applicate dalla directory `apps/backend` e ogni reset distruttivo usa esplicitamente `--local`.
 - [ ] Retention, cancellazione, dati sensibili e audit sono considerati.
 
 ## Backend/server

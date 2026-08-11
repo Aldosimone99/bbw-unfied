@@ -25,13 +25,16 @@ BBW non deve essere descritto come un semplice marketplace: il valore previsto �
 - registrazione iniziale ridotta a email, password, conferma password e consensi; il tipo di account non viene richiesto prima del primo login;
 - in locale la conferma email è temporaneamente disabilitata per il bootstrap; la verifica email resta un requisito da reinserire prima di staging/production;
 - callback Auth, refresh della sessione tramite `src/proxy.ts` e redirect post-login con allowlist;
+- backend-authoritative login: il frontend salva la sessione Supabase restituita dal backend tramite il client SSR, senza una seconda autenticazione indipendente;
 - profilo minimo creato al nuovo account, onboarding con tipi richiesti `personal`, `healthcare_professional`, `beauty_professional`, `organization` e `commercial`;
+- endpoint `/auth/context` backend che restituisce profilo, membership e permission dopo verifica Bearer;
 - schema iniziale per profili, organizzazioni, membership, ruoli e permission, con RLS, seed e test SQL;
 - membership service con organizzazioni accessibili, ruoli contestuali e tipo organizzazione;
 - calcolo server-side del contesto attivo tramite cookie HttpOnly validato contro membership e stato dell’organizzazione;
 - Context Switcher con Server Action, revalidation e redirect dopo il cambio;
 - calcolo separato di permessi globali/platform e permessi della sola organizzazione attiva;
 - guardia server-side della dashboard e helper per membership/permission scoped;
+- migration account-first, RPC transazionale di onboarding e grant read-only `service_role` per il calcolo del contesto autorizzativo;
 - test unitari Vitest per validazione, auth service, redirect, contesto, permission e selezione organizzazione.
 
 La dashboard attuale dimostra il controllo di accesso e mostra profilo, organizzazione attiva, membership, ruoli e permission; non è ancora una dashboard operativa per appuntamenti, consensi o trattamenti. `/admin` non è ancora una route applicativa completa; `/select-context` non è più usata perché il contesto viene risolto server-side e cambiato dal Context Switcher.

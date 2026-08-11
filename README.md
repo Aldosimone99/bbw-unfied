@@ -1,35 +1,51 @@
 # BBW Unified
 
-Monorepo di Beauty Broker World: frontend derivato da `bbwlanding`, backend
-operativo derivato da `bbw-transition` e contratti condivisi.
+Beauty Broker World is a monorepo that combines the `bbwlanding` frontend with
+the operational backend from `bbw-transition`.
 
-## Struttura
+The current foundation is intentionally account-first: a person creates a
+minimal account, signs in, completes onboarding, and only then selects the
+context in which they want to use BBW. The selected context is descriptive
+intent; it is not itself a role or permission.
 
-- `apps/next`: landing, autenticazione, onboarding e dashboard Next.js.
-- `apps/backend`: API Express/TypeScript, servizi di dominio e schema Supabase
-  operativo.
-- `packages/interfaces`: schemi Zod e contratti condivisi tra frontend e
-  backend.
-- `.kiro/steering`: unica fonte di verità per prodotto, architettura, dominio,
-  sicurezza e workflow AI.
+## Repository layout
 
-Il modello distingue `Account`, `Profile`, `Organization`, `OrganizationMembership`,
-`Role`, `Permission` e `Subject`. “Utente”, “cliente” o “clinica” sono etichette
-di prodotto e non devono essere usate come prova di autorizzazione.
+- `apps/next` — Next.js frontend, marketing landing, auth, onboarding and platform UI.
+- `apps/backend` — Express/TypeScript API, domain services and Supabase migrations.
+- `packages/interfaces` — shared Zod schemas and TypeScript contracts.
+- `apps/backend/supabase` — local Supabase configuration, migrations, seed and SQL regressions.
+- `.kiro/steering` — the single source of truth for product, architecture, domain, security and AI contribution rules.
 
-## Avvio locale
+The domain vocabulary is deliberate: `Account`, `Profile`, `Organization`,
+`OrganizationMembership`, `Role`, `Permission` and `Subject` are different
+concepts. Labels such as “client”, “clinic” or “professional” must never be
+used as authorization evidence.
 
-Prerequisiti: Node.js, Docker, Supabase CLI e Redis.
+## Prerequisites
 
-Dal root:
+- Node.js and npm
+- Docker Desktop
+- Supabase CLI
+- Redis, either locally or through the included Docker command
+
+Install dependencies from the repository root:
 
 ```bash
 npm install
+```
+
+## Local configuration
+
+Create the local environment files from their examples:
+
+```bash
 cp apps/next/.env.example apps/next/.env.local
 cp apps/backend/.env.example apps/backend/.env.local
 ```
 
-Avvia Supabase locale dal backend:
+Start Supabase from the backend project directory. The directory matters:
+running Supabase commands from the repository root can inspect the wrong
+project configuration.
 
 ```bash
 cd apps/backend
@@ -37,67 +53,122 @@ npx supabase start
 npx supabase status
 ```
 
-Usa l'URL locale e la chiave publishable mostrati da `supabase status` in:
-`apps/next/.env.local` (`NEXT_PUBLIC_SUPABASE_URL` e
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). Usa la service-role key mostrata dallo
-stesso comando solo in `apps/backend/.env.local` come
-`SUPABASE_SERVICE_ROLE_KEY`. Non copiare chiavi reali nel repository o nel
-frontend.
+Use the local `API_URL` and `PUBLISHABLE_KEY` from `supabase status` in
+`apps/next/.env.local`:
 
-Avvia Redis, se non è già attivo:
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local-publishable-key>
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+BBW_BACKEND_URL=http://localhost:3001
+```
+
+Use the server-only service-role key from the same local project only as
+`SUPABASE_SERVICE_ROLE_KEY` in `apps/backend/.env.local`. Never expose it to
+the browser or commit it.
+
+Start Redis once, if it is not already running:
 
 ```bash
 docker run --name bbw-redis -p 6379:6379 -d redis:7-alpine
 ```
 
-Poi, dal root, avvia i due processi:
+If the container already exists, use `docker start bbw-redis` instead of
+creating it again.
+
+## Run the application
+
+From the repository root:
 
 ```bash
 npm run dev
 ```
 
-URL locali:
+The expected local ports are:
 
 - frontend: <http://localhost:3000>
 - backend: <http://localhost:3001>
 
-Per avviarli separatamente: `npm run dev:frontend` e
-`npm run dev:backend`.
+Run only one root dev process at a time. If Next reports that port `3000` is
+already in use, or the backend reports `EADDRINUSE` on `3001`, stop the old
+process before starting another one:
 
-Se Redis esiste già, non rilanciare il comando Docker: usare il container
-esistente o `docker start bbw-redis`.
+```bash
+lsof -nP -iTCP:3000 -sTCP:LISTEN
+lsof -nP -iTCP:3001 -sTCP:LISTEN
+kill <old-process-id>
+```
 
-## Flusso account-first
+For isolated development:
 
-La registrazione iniziale segue il comportamento di `bbwlanding`: email,
-password, conferma password e consensi. Non viene richiesto il tipo di account
-durante la registrazione. Dopo il primo login, l'account incompleto passa
-all'onboarding per profilo e tipo richiesto; il tipo richiesto non assegna da
-solo un ruolo privilegiato.
+```bash
+npm run dev:frontend
+npm run dev:backend
+```
 
-In locale la conferma email è temporaneamente disabilitata per il bootstrap. Va
-riattivata e testata prima di staging o produzione. La password richiede almeno
-8 caratteri, una maiuscola, una minuscola, un numero e un carattere speciale.
+The complete auth/onboarding flow requires both processes, Supabase and Redis
+where the backend feature needs it.
 
-## Confine frontend/backend
+## Account-first authentication
 
-Il frontend raggiunge il backend tramite `/api/backend/*`. Il bridge Next legge
-la sessione Supabase server-side e inoltra il Bearer token al backend Express.
-Il browser non riceve la service-role key e non decide ruoli, permission,
-ownership o tenant.
+`/registrati` and `/register` collect only:
 
-Le migration operative sono in `apps/backend/supabase/migrations`. Il vecchio
-schema identity del frontend non viene mantenuto come seconda fonte di verità.
-I reset locali sono distruttivi per i dati locali:
+- email;
+- password;
+- password confirmation;
+- terms and privacy consent.
+
+Email confirmation is disabled only in the local Supabase configuration so the
+bootstrap flow does not depend on an email provider. Re-enable and verify it
+before staging or production.
+
+The password policy requires at least eight characters, one uppercase letter,
+one lowercase letter, one number and one special character.
+
+The backend owns registration and login. After a successful backend login, the
+frontend stores the returned Supabase session through the server-side client.
+An incomplete account is sent to `/onboarding`, where the user enters personal
+data and selects `personal`, `healthcare_professional`,
+`beauty_professional`, `organization` or `commercial`. The selection does not
+grant a role by itself. Completion is performed by the backend onboarding RPC;
+an organization selection creates the organization and owner membership
+atomically.
+
+## Frontend/backend boundary
+
+Server-side auth and onboarding services call the backend with the configured
+`BBW_BACKEND_URL`. Browser-facing backend calls use the Next bridge at
+`/api/backend/*`; the bridge reads the server-side Supabase session and forwards
+only a verified Bearer token. The browser never receives the service-role key.
+
+Authorization is calculated by the backend context endpoint and enforced again
+by protected backend routes and database policies. The frontend can render the
+state it receives, but it cannot grant permissions, choose an actor, or bypass
+ownership checks.
+
+## Database workflow
+
+Migrations live under `apps/backend/supabase/migrations` and are the database
+source of truth. Apply a new local migration from that project directory:
 
 ```bash
 cd apps/backend
-npx supabase db reset
+npx supabase migration up --local
 ```
 
-## Verifiche
+To recreate the local database from zero, intentionally and destructively:
 
-Dal root:
+```bash
+npx supabase db reset --local
+```
+
+This affects only the local Supabase project and removes local users and data.
+Do not use a reset command when you intend to preserve local data, and never
+use it as a substitute for a reviewed remote migration.
+
+## Verification
+
+From the repository root:
 
 ```bash
 npm run typecheck
@@ -106,15 +177,20 @@ npm test
 npm run build
 ```
 
-## Documentazione e contributi
+The current auth/authorization regression coverage includes backend context,
+onboarding, session handoff, protected routes and migration grants.
 
-Prima di modificare codice, leggere il `AGENTS.md` root e tutti i file da
-`.kiro/steering/00-product.md` a `.kiro/steering/14-monorepo-integration.md`.
-Gli `AGENTS.md` dentro le app aggiungono vincoli locali e rimandano sempre allo
-steering root; non creare una seconda cartella di steering.
+## Documentation and contribution rules
 
-- architettura e dipendenze: `.kiro/steering/01-architecture.md`;
-- dominio e terminologia: `.kiro/steering/02-domain-model.md`;
-- database e migration: `.kiro/steering/03-database.md`;
-- autenticazione e autorizzazione: `.kiro/steering/04-auth-and-permissions.md`;
-- integrazione monorepo: `.kiro/steering/14-monorepo-integration.md`.
+Before changing code, read [`AGENTS.md`](./AGENTS.md) and every steering file
+from `.kiro/steering/00-product.md` through
+`.kiro/steering/14-monorepo-integration.md`. App-level `AGENTS.md` files add
+local boundaries; they do not create a second steering tree.
+
+Useful references:
+
+- [Architecture steering](./.kiro/steering/01-architecture.md)
+- [Domain model steering](./.kiro/steering/02-domain-model.md)
+- [Database steering](./.kiro/steering/03-database.md)
+- [Auth and permissions steering](./.kiro/steering/04-auth-and-permissions.md)
+- [Identity and authorization change log](./docs/identity-and-authorization.md)

@@ -20,14 +20,18 @@ La chiave `SUPABASE_SERVICE_ROLE_KEY` resta esclusivamente nel backend e deve
 essere la service-role/secret key del progetto locale corretto, mai la chiave
 publishable/anon usata dal browser.
 
-`npm run dev` avvia entrambi i processi. Per debug isolato usare
-`npm run dev:frontend` o `npm run dev:backend`.
+`npm run dev` avvia entrambi i processi sulle porte `3000` (frontend) e `3001`
+(backend). Va eseguita una sola istanza root alla volta: se una porta è già
+occupata, fermare il vecchio processo con `lsof`/`kill` prima di riavviare.
+Per debug isolato usare `npm run dev:frontend` o `npm run dev:backend`.
 
 ## Confine frontend/backend
 
-Il frontend raggiunge l'API attraverso `/api/backend/[...path]`. Il proxy legge
-la sessione Supabase server-side e inoltra un Bearer token al backend; il
-browser non deve conservare il service role key né un token backend persistente.
+Le chiamate browser-facing raggiungono l'API attraverso `/api/backend/[...path]`.
+Il proxy legge la sessione Supabase server-side e inoltra un Bearer token al
+backend; le Server Actions di auth/onboarding chiamano direttamente il backend
+configurato ma restano server-only. Il browser non deve conservare la
+service-role key né un token backend persistente.
 
 Le schermate ancora basate sulle Server Actions Supabase possono restare
 funzionanti durante la migrazione. Una feature va portata alle API Express solo
@@ -48,7 +52,7 @@ schema identity/organization del frontend non va duplicato automaticamente:
 prima di produzione va definita una migration di convergenza e verificata la
 compatibilità tra account Supabase, profili, organizzazioni e membership.
 
-Per un reset locale intenzionale usare `cd apps/backend && npx supabase db reset`;
+Per un reset locale intenzionale usare `cd apps/backend && npx supabase db reset --local`;
 il comando elimina e ricrea i dati locali applicando tutte le migration, quindi
 non va usato contro un progetto remoto o per conservare account di sviluppo.
 

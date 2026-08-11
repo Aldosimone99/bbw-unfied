@@ -33,7 +33,7 @@ src/
     errors/ validation/ utils/
   server/
     auth/ authorization/ security/ audit/
-    services/ repositories/ # membership e active organization service
+    services/                 # auth, profilo, post-login e active organization
   types/                  # contratti condivisi minimizzati
 apps/backend/supabase/
   config.toml
@@ -53,4 +53,4 @@ Regole:
 - `types` non è un contenitore per qualsiasi tipo: preferire ownership locale quando possibile.
 - migrations e seed sono la fonte riproducibile del database.
 
-Le cartelle ancora presenti con `.gitkeep` sono predisposizione; auth, dashboard, organizations, profile, security e validation contengono già codice. Non aggiungere `hooks`, `config`, `constants` o un nuovo design system come categorie automatiche: crearle solo quando esiste un uso coerente.
+Le cartelle ancora presenti con `.gitkeep` sono predisposizione; auth, dashboard, organizations, profile, security e validation contengono già codice. Il vecchio repository frontend per authorization e il membership service duplicato non sono più fonti di verità: il contesto arriva dal backend. Non aggiungere `hooks`, `config`, `constants` o un nuovo design system come categorie automatiche: crearle solo quando esiste un uso coerente.
