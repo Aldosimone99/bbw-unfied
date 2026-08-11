@@ -20,11 +20,11 @@ type Options = {
 };
 
 function actorId(req: Request): string {
-  return String((req as any).user?.id ?? req.body?.userId ?? '');
+  return String(req.user?.id ?? '');
 }
 
 function actorRole(req: Request): string {
-  return String((req as any).companyRole ?? (req as any).user?.tipo_utente ?? req.query.actorRole ?? 'paciente');
+  return String(req.companyRole ?? req.user?.tipo_utente ?? 'paciente');
 }
 
 function handleBookingError(res: Response, error: unknown) {

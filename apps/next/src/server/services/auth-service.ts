@@ -11,6 +11,11 @@ import { requestTransitionBackend } from "../auth/transition-session";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
+type BackendLoginResponse = {
+  token?: string;
+  refreshToken?: string;
+};
+
 function backendError(data: unknown, status: number): AuthApplicationError {
   const code = typeof data === "object" && data !== null && "error" in data
     ? String((data as { error?: unknown }).error ?? "")
@@ -45,7 +50,7 @@ export async function registerAccount(input: RegisterInput): Promise<RegisterRes
     return { status: "error", error: backendError(response.data, response.status) };
   }
 
-  const signInResult = await signInWithSupabase(input.email, input.password);
+  const signInResult = await authenticateWithBackend(input.email, input.password);
   return signInResult.status === "success" ? { status: "redirect" } : signInResult;
 }
 
@@ -54,19 +59,28 @@ export type LoginResult =
   | { status: "error"; error: AuthApplicationError };
 
 export async function loginAccount(input: LoginInput): Promise<LoginResult> {
+  return authenticateWithBackend(input.email, input.password);
+}
+
+async function authenticateWithBackend(email: string, password: string): Promise<LoginResult> {
   const response = await requestBackend("/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email: input.email, password: input.password })
+    body: JSON.stringify({ email, password })
   });
 
   if (!response.ok) {
     return { status: "error", error: backendError(response.data, response.status) };
   }
 
-  return signInWithSupabase(input.email, input.password);
+  const data = response.data as BackendLoginResponse;
+  if (!data.token || !data.refreshToken) {
+    return { status: "error", error: { kind: "generic", message: "La sessione non è stata creata. Riprova." } };
+  }
+
+  return setSupabaseSession(data.token, data.refreshToken);
 }
 
-async function signInWithSupabase(email: string, password: string): Promise<LoginResult> {
+async function setSupabaseSession(accessToken: string, refreshToken: string): Promise<LoginResult> {
   let supabase: SupabaseClient;
   try {
     supabase = await createClient();
@@ -76,7 +90,10 @@ async function signInWithSupabase(email: string, password: string): Promise<Logi
     throw error;
   }
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken
+  });
   if (error) {
     return { status: "error", error: mapAuthError(error, "login") };
   }

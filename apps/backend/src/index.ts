@@ -1,5 +1,5 @@
 import cors from 'cors';
-import express from 'express';
+import express, { type Request } from 'express';
 import { createSupabaseServerClient } from './db/supabase';
 import { createAuthRouter } from './routes/auth';
 import { createInvitesRouter } from './routes/invites-routes';
@@ -22,6 +22,11 @@ import { createConsentTemplatesRouter } from './routes/consent-templates-routes'
 import { createConsentDocumentsRouter } from './routes/consent-documents-routes';
 import { createUsersRouter } from './routes/users-routes';
 import { resolveCompanyContext } from './middleware/resolve-company-context-middleware';
+import { resolveUser } from './middleware/resolve-user-middleware';
+
+function resolveVerifiedRouteUser(req: Request) {
+  return req.user ?? null;
+}
 
 export function createApp(db = createSupabaseServerClient()) {
   const app = express();
@@ -32,10 +37,10 @@ export function createApp(db = createSupabaseServerClient()) {
   app.use('/invites', createInvitesRouter(db));
   app.use('/company/invites', createCompanyInvitesRouter(db));
   app.use('/referrals', createReferralsRouter(db));
-  app.use('/commerciale-contract', createCommercialeContractRouter(db, () => null));
-  app.use('/professional-contract', createProfessionalContractRouter(db, () => null));
-  app.use('/professional-documents', createProfessionalDocumentsRouter(db, () => null));
-  app.use('/onboarding', createOnboardingRouter(db, () => null));
+  app.use('/commerciale-contract', resolveUser(db), createCommercialeContractRouter(db, resolveVerifiedRouteUser));
+  app.use('/professional-contract', resolveUser(db), createProfessionalContractRouter(db, resolveVerifiedRouteUser));
+  app.use('/professional-documents', resolveUser(db), createProfessionalDocumentsRouter(db, resolveVerifiedRouteUser));
+  app.use('/onboarding', resolveUser(db), createOnboardingRouter(db, resolveVerifiedRouteUser));
   app.use('/admin', createAdminRouter(db));
   app.use('/notifications', createNotificationsRouter(db));
   app.use('/messages', createMessagesRouter(db));

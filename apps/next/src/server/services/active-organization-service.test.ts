@@ -3,21 +3,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cookies } from "next/headers";
 
 import { AuthorizationError, InvalidInputError } from "../../lib/errors/app-error";
-import { getCurrentUser } from "../auth/current-user";
 import type { MembershipSummary } from "../../types/authorization";
-import { requireOrganizationMembership } from "./membership-service";
+import { getPostLoginContext } from "./post-login-service";
 import {
   resolveActiveOrganization,
   setActiveOrganization
 } from "./active-organization-service";
 
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
-vi.mock("../auth/current-user", () => ({ getCurrentUser: vi.fn() }));
-vi.mock("./membership-service", () => ({ requireOrganizationMembership: vi.fn() }));
+vi.mock("./post-login-service", () => ({ getPostLoginContext: vi.fn() }));
 
 const mockedCookies = vi.mocked(cookies);
-const mockedGetCurrentUser = vi.mocked(getCurrentUser);
-const mockedRequireOrganizationMembership = vi.mocked(requireOrganizationMembership);
+const mockedGetPostLoginContext = vi.mocked(getPostLoginContext);
 
 const organizationId = "00000000-0000-4000-8000-000000000001";
 const membership: MembershipSummary = {
@@ -34,8 +31,15 @@ const membership: MembershipSummary = {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mockedGetCurrentUser.mockResolvedValue({ id: "user-1", email: "user@example.com" });
-  mockedRequireOrganizationMembership.mockResolvedValue(membership);
+  mockedGetPostLoginContext.mockResolvedValue({
+    user: { id: "user-1", email: "user@example.com" },
+    profile: null,
+    memberships: [membership],
+    globalPermissions: [],
+    organizationPermissions: [],
+    permissions: [],
+    activeOrganization: membership
+  });
   mockedCookies.mockResolvedValue({
     get: vi.fn(),
     set: vi.fn()
@@ -55,7 +59,6 @@ describe("active organization selection", () => {
   it("validates the client value and persists only a verified membership", async () => {
     await setActiveOrganization(organizationId);
 
-    expect(mockedRequireOrganizationMembership).toHaveBeenCalledWith({ userId: "user-1", organizationId });
     expect((await mockedCookies.mock.results[0]?.value).set).toHaveBeenCalledWith(
       "bbw-active-organization",
       organizationId,
@@ -65,7 +68,15 @@ describe("active organization selection", () => {
 
   it("rejects a manipulated or unauthorized organization id", async () => {
     await expect(setActiveOrganization("not-a-uuid")).rejects.toBeInstanceOf(InvalidInputError);
-    mockedRequireOrganizationMembership.mockRejectedValueOnce(new AuthorizationError("organization.membership"));
+    mockedGetPostLoginContext.mockResolvedValueOnce({
+      user: { id: "user-1", email: "user@example.com" },
+      profile: null,
+      memberships: [],
+      globalPermissions: [],
+      organizationPermissions: [],
+      permissions: [],
+      activeOrganization: null
+    });
     await expect(setActiveOrganization(organizationId)).rejects.toBeInstanceOf(AuthorizationError);
   });
 });

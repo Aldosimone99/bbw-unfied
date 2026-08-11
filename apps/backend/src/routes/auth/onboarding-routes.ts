@@ -36,8 +36,8 @@ export function createOnboardingAuthRouter(db: SupabaseLike): Router {
     if (!parsed.success) return res.status(422).json({ error: 'VALIDATION_FAILED', issues: parsed.error.issues });
 
     try {
-      await completeAccountOnboarding(db, req.user!.id, parsed.data);
-      return res.json({ success: true });
+      const result = await completeAccountOnboarding(db, req.user!.id, parsed.data);
+      return res.json({ success: true, data: result });
     } catch (error) {
       return handleOnboardingError(res, error);
     }

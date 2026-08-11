@@ -1,10 +1,9 @@
 import { cookies } from "next/headers";
 
-import { InvalidInputError, UnauthenticatedError } from "../../lib/errors/app-error";
+import { AuthorizationError, InvalidInputError, UnauthenticatedError } from "../../lib/errors/app-error";
 import { activeOrganizationInputSchema } from "../../lib/validation/organization";
 import type { MembershipSummary } from "../../types/authorization";
-import { getCurrentUser } from "../auth/current-user";
-import { requireOrganizationMembership } from "./membership-service";
+import { getPostLoginContext } from "./post-login-service";
 
 export const activeOrganizationCookieName = "bbw-active-organization";
 
@@ -38,15 +37,17 @@ export async function setActiveOrganization(organizationId: string): Promise<Mem
     throw new InvalidInputError("Seleziona un’organizzazione valida.");
   }
 
-  const user = await getCurrentUser();
-  if (!user) {
+  const context = await getPostLoginContext();
+  if (!context.user) {
     throw new UnauthenticatedError();
   }
 
-  const membership = await requireOrganizationMembership({
-    userId: user.id,
-    organizationId: parsed.data.organizationId
-  });
+  const membership = context.memberships.find(
+    (candidate) => candidate.organizationId === parsed.data.organizationId
+  );
+  if (!membership) {
+    throw new AuthorizationError("organization.context");
+  }
 
   (await cookies()).set(activeOrganizationCookieName, membership.organizationId, {
     httpOnly: true,

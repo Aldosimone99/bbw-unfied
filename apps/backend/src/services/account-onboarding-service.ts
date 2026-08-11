@@ -36,18 +36,23 @@ export async function completeAccountOnboarding(
   db: SupabaseLike,
   userId: string,
   payload: OnboardingCompletionRequest,
-): Promise<void> {
-  if ((await readOnboardingState(db, userId)) === 'completed') {
-    throw new AccountOnboardingError('ONBOARDING_ALREADY_COMPLETED');
+): Promise<{ companyId: string | null }> {
+  try {
+    const { data, error } = await db.rpc('complete_account_onboarding', {
+      p_user_id: userId,
+      p_account_type: payload.account_type,
+      p_organization_display_name: payload.organization_display_name ?? null,
+    });
+
+    if (error) {
+      if (error.message?.includes('ONBOARDING_NOT_FOUND')) throw new AccountOnboardingError('ONBOARDING_NOT_FOUND');
+      if (error.message?.includes('ONBOARDING_ALREADY_COMPLETED')) throw new AccountOnboardingError('ONBOARDING_ALREADY_COMPLETED');
+      throw new AccountOnboardingError('ONBOARDING_UPDATE_FAILED');
+    }
+
+    return { companyId: typeof data?.company_id === 'string' ? data.company_id : null };
+  } catch (error) {
+    if (error instanceof AccountOnboardingError) throw error;
+    throw new AccountOnboardingError('ONBOARDING_UPDATE_FAILED');
   }
-
-  // This is an intent/request, never an authorization role assignment.
-  const { error } = await db.from('users').update({
-    requested_account_type: payload.account_type,
-    requested_organization_name: payload.organization_display_name ?? null,
-    onboarding_status: 'completed',
-    onboarding_completed_at: new Date().toISOString(),
-  }).eq('id', userId);
-
-  if (error) throw new AccountOnboardingError('ONBOARDING_UPDATE_FAILED');
 }

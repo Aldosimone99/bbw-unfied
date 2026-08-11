@@ -3,6 +3,7 @@ import { profileUpdateSchema } from '@bbw/interfaces';
 import type { SupabaseLike } from '../../db/supabase';
 import { resolveUser } from '../../middleware/resolve-user-middleware';
 import { getCurrentUserProfile, ProfileAccessError, updateCurrentUserProfile } from '../../services/profile-service';
+import { getAuthorizationContext } from '../../services/authorization-context-service';
 
 export function createMeRouter(db: SupabaseLike): Router {
   const router = Router();
@@ -10,6 +11,14 @@ export function createMeRouter(db: SupabaseLike): Router {
   router.get('/me', resolveUser(db), async (req, res) => {
     const profile = await getCurrentUserProfile(db, req.user!.id);
     return res.json(profile);
+  });
+
+  router.get('/context', resolveUser(db), async (req, res) => {
+    try {
+      return res.json(await getAuthorizationContext(db, req.user!));
+    } catch {
+      return res.status(500).json({ error: 'AUTHORIZATION_CONTEXT_FAILED' });
+    }
   });
 
   router.put('/me', resolveUser(db), async (req, res) => {

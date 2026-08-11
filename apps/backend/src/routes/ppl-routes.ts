@@ -20,7 +20,7 @@ type Options = {
 };
 
 function userId(req: Request): string {
-  return String((req as any).user?.id ?? req.body?.userId ?? '');
+  return String(req.user?.id ?? '');
 }
 
 function handlePPLError(res: Response, error: unknown) {

@@ -1,22 +1,22 @@
-import { getTransitionOrganizationContext, getTransitionUser, profileFromTransitionUser } from "../auth/transition-session";
-import type { PermissionCode } from "../../types/authorization";
+import { getTransitionAuthorizationContext } from "../auth/transition-session";
+import type { OrganizationContextSummary, PermissionCode, ProfileSummary } from "../../types/authorization";
 import { resolveSafePostLoginRedirect, type PostLoginRedirectPath } from "../security/redirects";
 
 export type PostLoginDestination = PostLoginRedirectPath;
 
 export type PostLoginContext = {
   user: { id: string; email: string | null } | null;
-  profile: ReturnType<typeof profileFromTransitionUser> | null;
-  memberships: Awaited<ReturnType<typeof getTransitionOrganizationContext>>["memberships"];
+  profile: ProfileSummary | null;
+  memberships: OrganizationContextSummary["memberships"];
   globalPermissions: PermissionCode[];
   organizationPermissions: PermissionCode[];
   permissions: PermissionCode[];
-  activeOrganization: Awaited<ReturnType<typeof getTransitionOrganizationContext>>["activeOrganization"];
+  activeOrganization: OrganizationContextSummary["activeOrganization"];
 };
 
 export async function getPostLoginContext(): Promise<PostLoginContext> {
-  const transitionUser = await getTransitionUser();
-  if (!transitionUser) {
+  const authorizationContext = await getTransitionAuthorizationContext();
+  if (!authorizationContext) {
     return {
       user: null,
       profile: null,
@@ -28,19 +28,14 @@ export async function getPostLoginContext(): Promise<PostLoginContext> {
     };
   }
 
-  const organizationContext = await getTransitionOrganizationContext(transitionUser.id);
-  const profile = profileFromTransitionUser(transitionUser);
-  const permissions: PermissionCode[] = ["profile.read_own", "profile.update_own"];
-  if (profile.onboardingStatus === "completed") permissions.push("dashboard.access");
-  if (transitionUser.tipo_utente === "admin") permissions.push("platform.admin.access");
-
   return {
-    user: { id: transitionUser.id, email: transitionUser.email ?? null },
-    profile,
-    ...organizationContext,
-    globalPermissions: permissions,
-    organizationPermissions: [],
-    permissions
+    user: { id: authorizationContext.user.id, email: authorizationContext.user.email ?? null },
+    profile: authorizationContext.profile,
+    memberships: authorizationContext.memberships,
+    activeOrganization: authorizationContext.activeOrganization,
+    globalPermissions: authorizationContext.globalPermissions,
+    organizationPermissions: authorizationContext.organizationPermissions,
+    permissions: authorizationContext.permissions
   };
 }
 

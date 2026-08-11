@@ -1,5 +1,5 @@
 import { createClient } from "../../lib/supabase/server";
-import type { OrganizationContextSummary, ProfileSummary } from "../../types/authorization";
+import type { OrganizationContextSummary, PermissionCode, ProfileSummary } from "../../types/authorization";
 
 const backendUrl = (process.env.BBW_BACKEND_URL ?? "http://localhost:3001").replace(/\/$/, "");
 
@@ -12,6 +12,16 @@ export type TransitionUser = {
   telefono?: string | null;
   requested_account_type?: ProfileSummary["requestedAccountType"];
   onboarding_status?: ProfileSummary["onboardingStatus"];
+};
+
+export type TransitionAuthorizationContext = {
+  user: TransitionUser;
+  profile: ProfileSummary;
+  memberships: OrganizationContextSummary['memberships'];
+  activeOrganization: OrganizationContextSummary['activeOrganization'];
+  globalPermissions: PermissionCode[];
+  organizationPermissions: PermissionCode[];
+  permissions: PermissionCode[];
 };
 
 export async function getTransitionAccessToken(): Promise<string | null> {
@@ -34,6 +44,21 @@ export async function getTransitionUser(): Promise<TransitionUser | null> {
   return data && typeof data === "object" && typeof data.id === "string" && typeof data.tipo_utente === "string"
     ? data as TransitionUser
     : null;
+}
+
+export async function getTransitionAuthorizationContext(): Promise<TransitionAuthorizationContext | null> {
+  const accessToken = await getTransitionAccessToken();
+  if (!accessToken) return null;
+
+  const response = await fetch(`${backendUrl}/auth/context`, {
+    headers: { authorization: `Bearer ${accessToken}` },
+    cache: "no-store"
+  });
+  if (!response.ok) return null;
+
+  const data = await response.json().catch(() => null) as Partial<TransitionAuthorizationContext> | null;
+  if (!data?.user || !data.profile || !Array.isArray(data.permissions)) return null;
+  return data as TransitionAuthorizationContext;
 }
 
 export async function requestTransitionBackend<T>(path: string, init?: RequestInit): Promise<{ ok: boolean; status: number; data: T | null }> {
