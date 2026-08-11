@@ -1,8 +1,7 @@
-import { createClient } from "../../lib/supabase/server";
 import { AuthorizationError, UnauthenticatedError } from "../../lib/errors/app-error";
 import type { MembershipSummary, PermissionCode } from "../../types/authorization";
-import { getCurrentUser } from "../auth/current-user";
-import { loadAuthorizationContext, type LoadedAuthorizationContext } from "./context";
+import { getPostLoginContext } from "../services/post-login-service";
+import type { LoadedAuthorizationContext } from "./context";
 
 export function hasPermission(permissions: ReadonlySet<PermissionCode>, permission: PermissionCode): boolean {
   return permissions.has(permission);
@@ -15,12 +14,8 @@ export function assertPermission(permissions: ReadonlySet<PermissionCode>, permi
 }
 
 export async function getCurrentAuthorizationContext(): Promise<LoadedAuthorizationContext | null> {
-  const user = await getCurrentUser();
-  if (!user) {
-    return null;
-  }
-
-  return loadAuthorizationContext(await createClient(), user.id);
+  const context = await getPostLoginContext();
+  return context.user ? context : null;
 }
 
 export async function getUserMemberships(): Promise<MembershipSummary[]> {

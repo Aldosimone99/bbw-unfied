@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const migrationPath = resolve(__dirname, '../../../supabase/migrations/20260625_messaging.sql');
+const migrationPath = resolve(__dirname, '../../../supabase/migrations/20260625000000_messaging.sql');
 
 describe('messaging schema', () => {
   const migration = readFileSync(migrationPath, 'utf8');

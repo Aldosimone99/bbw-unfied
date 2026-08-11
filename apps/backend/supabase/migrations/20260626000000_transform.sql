@@ -74,7 +74,7 @@ $$;
 
 -- ── Split tables from old users God Table ─────────────────────────────────────
 
-CREATE TABLE public.user_business_profiles (
+CREATE TABLE IF NOT EXISTS public.user_business_profiles (
   user_id         UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
   ragione_sociale TEXT,
   partita_iva     TEXT,
@@ -90,7 +90,7 @@ CREATE TABLE public.user_business_profiles (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE public.user_addresses (
+CREATE TABLE IF NOT EXISTS public.user_addresses (
   user_id   UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
   via       TEXT,
   citta     TEXT,
@@ -102,7 +102,7 @@ CREATE TABLE public.user_addresses (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE public.professional_credentials (
+CREATE TABLE IF NOT EXISTS public.professional_credentials (
   user_id                                    UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
   numero_albo                                TEXT,
   numero_autorizzazione_asl                  TEXT,
@@ -121,10 +121,10 @@ CREATE TABLE public.professional_credentials (
   updated_at                                 TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_prof_cred_codice_medico ON public.professional_credentials (codice_medico)
+CREATE INDEX IF NOT EXISTS idx_prof_cred_codice_medico ON public.professional_credentials (codice_medico)
   WHERE codice_medico IS NOT NULL;
 
-CREATE TABLE public.professional_studios (
+CREATE TABLE IF NOT EXISTS public.professional_studios (
   user_id    UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
   nome       TEXT,
   via        TEXT,
@@ -137,7 +137,7 @@ CREATE TABLE public.professional_studios (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE public.user_consents (
+CREATE TABLE IF NOT EXISTS public.user_consents (
   user_id     UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
   accepted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   ip_address  TEXT,
@@ -148,7 +148,7 @@ CREATE TABLE public.user_consents (
 
 -- ── Catalog tables ────────────────────────────────────────────────────────────
 
-CREATE TABLE public.company_treatment_catalog (
+CREATE TABLE IF NOT EXISTS public.company_treatment_catalog (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id            UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
   platform_treatment_id UUID NOT NULL REFERENCES public.platform_treatments(id),
@@ -162,9 +162,9 @@ CREATE TABLE public.company_treatment_catalog (
   UNIQUE (company_id, platform_treatment_id)
 );
 
-CREATE INDEX idx_ctc_company ON public.company_treatment_catalog (company_id);
+CREATE INDEX IF NOT EXISTS idx_ctc_company ON public.company_treatment_catalog (company_id);
 
-CREATE TABLE public.professional_catalog_assignments (
+CREATE TABLE IF NOT EXISTS public.professional_catalog_assignments (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   professional_id       UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   company_catalog_id    UUID REFERENCES public.company_treatment_catalog(id) ON DELETE CASCADE,
@@ -186,11 +186,11 @@ CREATE TABLE public.professional_catalog_assignments (
   )
 );
 
-CREATE INDEX idx_pca_professional ON public.professional_catalog_assignments (professional_id);
+CREATE INDEX IF NOT EXISTS idx_pca_professional ON public.professional_catalog_assignments (professional_id);
 
 -- ── Loyalty tables ────────────────────────────────────────────────────────────
 
-CREATE TABLE public.loyalty_ledger (
+CREATE TABLE IF NOT EXISTS public.loyalty_ledger (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id        UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   points_delta   INTEGER NOT NULL,
@@ -202,9 +202,9 @@ CREATE TABLE public.loyalty_ledger (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_loyalty_ledger_user ON public.loyalty_ledger (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_loyalty_ledger_user ON public.loyalty_ledger (user_id, created_at DESC);
 
-CREATE TABLE public.user_loyalty_balances (
+CREATE TABLE IF NOT EXISTS public.user_loyalty_balances (
   user_id    UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
   points     INTEGER NOT NULL DEFAULT 0,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -217,7 +217,7 @@ CREATE TRIGGER trg_sync_loyalty_balance
 
 -- ── Consent / Auth tables ─────────────────────────────────────────────────────
 
-CREATE TABLE public.secure_otps (
+CREATE TABLE IF NOT EXISTS public.secure_otps (
   id                         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   reference                  TEXT UNIQUE NOT NULL,
   consent_id                 UUID NOT NULL REFERENCES public.consent_documents(id),
@@ -241,11 +241,11 @@ CREATE TABLE public.secure_otps (
   created_at                 TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_secure_otps_consent ON public.secure_otps (consent_id);
+CREATE INDEX IF NOT EXISTS idx_secure_otps_consent ON public.secure_otps (consent_id);
 
 -- ── Registration / Contract tables ───────────────────────────────────────────
 
-CREATE TABLE public.contract_signatures (
+CREATE TABLE IF NOT EXISTS public.contract_signatures (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id               UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   contract_type         TEXT NOT NULL,
@@ -264,9 +264,9 @@ CREATE TABLE public.contract_signatures (
   created_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_contract_signatures_user ON public.contract_signatures (user_id);
+CREATE INDEX IF NOT EXISTS idx_contract_signatures_user ON public.contract_signatures (user_id);
 
-CREATE TABLE public.contract_reminders (
+CREATE TABLE IF NOT EXISTS public.contract_reminders (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   contract_type TEXT NOT NULL,
@@ -276,9 +276,9 @@ CREATE TABLE public.contract_reminders (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_contract_reminders_user ON public.contract_reminders (user_id, contract_type);
+CREATE INDEX IF NOT EXISTS idx_contract_reminders_user ON public.contract_reminders (user_id, contract_type);
 
-CREATE TABLE public.deferred_document_uploads (
+CREATE TABLE IF NOT EXISTS public.deferred_document_uploads (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   document_type   TEXT NOT NULL,
@@ -291,7 +291,7 @@ CREATE TABLE public.deferred_document_uploads (
   completed_at    TIMESTAMPTZ
 );
 
-CREATE INDEX idx_deferred_uploads_user ON public.deferred_document_uploads (user_id, status);
+CREATE INDEX IF NOT EXISTS idx_deferred_uploads_user ON public.deferred_document_uploads (user_id, status);
 
 
 -- ══════════════════════════════════════════════════════════════════════════════
@@ -519,10 +519,12 @@ CREATE POLICY "ctc_member_select" ON public.company_treatment_catalog
   );
 
 ALTER TABLE public.message_threads ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS threads_participant ON public.message_threads;
 CREATE POLICY "threads_participant" ON public.message_threads
   FOR SELECT USING (auth.uid() = ANY(participant_ids));
 
 ALTER TABLE public.message_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS messages_participant ON public.message_messages;
 CREATE POLICY "messages_participant" ON public.message_messages
   FOR SELECT USING (
     EXISTS (

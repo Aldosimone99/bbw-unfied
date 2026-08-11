@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const migration = readFileSync(
-  resolve(__dirname, '../../../supabase/migrations/20260623_auth_otps.sql'),
+  resolve(__dirname, '../../../supabase/migrations/20260623000000_auth_otps.sql'),
   'utf8',
 );
 

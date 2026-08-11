@@ -1,8 +1,8 @@
--- 20260629_bookings.sql
+-- 20260629010000_bookings.sql
 -- Bookings core schema: PPL, invites, appointments, availability
 
 -- Patient-Professional Links (PPL)
-CREATE TABLE public.patient_professional_links (
+CREATE TABLE IF NOT EXISTS public.patient_professional_links (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id      UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   professional_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -17,12 +17,15 @@ CREATE TABLE public.patient_professional_links (
   UNIQUE (patient_id, professional_id, company_id)
 );
 
-CREATE INDEX idx_ppl_patient ON public.patient_professional_links(patient_id);
-CREATE INDEX idx_ppl_professional ON public.patient_professional_links(professional_id);
-CREATE INDEX idx_ppl_approved ON public.patient_professional_links(professional_id, status);
+CREATE INDEX IF NOT EXISTS idx_ppl_patient ON public.patient_professional_links(patient_id);
+CREATE INDEX IF NOT EXISTS idx_ppl_professional ON public.patient_professional_links(professional_id);
+CREATE INDEX IF NOT EXISTS idx_ppl_approved ON public.patient_professional_links(professional_id, status);
+
+ALTER TABLE public.patient_professional_links
+  ADD COLUMN IF NOT EXISTS clinic_access BOOLEAN NOT NULL DEFAULT false;
 
 -- PPL Invites
-CREATE TABLE public.ppl_invites (
+CREATE TABLE IF NOT EXISTS public.ppl_invites (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   professional_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   company_id      UUID REFERENCES public.companies(id) ON DELETE SET NULL,
@@ -39,11 +42,11 @@ CREATE TABLE public.ppl_invites (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_ppl_invites_token ON public.ppl_invites(accept_token);
-CREATE INDEX idx_ppl_invites_professional ON public.ppl_invites(professional_id);
+CREATE INDEX IF NOT EXISTS idx_ppl_invites_token ON public.ppl_invites(accept_token);
+CREATE INDEX IF NOT EXISTS idx_ppl_invites_professional ON public.ppl_invites(professional_id);
 
 -- Bookings
-CREATE TABLE public.bookings (
+CREATE TABLE IF NOT EXISTS public.bookings (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   professional_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
   patient_id      UUID REFERENCES public.users(id) ON DELETE SET NULL,
@@ -64,13 +67,24 @@ CREATE TABLE public.bookings (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_bookings_professional ON public.bookings(professional_id, date);
-CREATE INDEX idx_bookings_patient ON public.bookings(patient_id);
-CREATE INDEX idx_bookings_date ON public.bookings(date);
-CREATE INDEX idx_bookings_status ON public.bookings(status);
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS professional_id UUID,
+  ADD COLUMN IF NOT EXISTS patient_id UUID,
+  ADD COLUMN IF NOT EXISTS price_cents INTEGER;
+
+UPDATE public.bookings
+SET professional_id = COALESCE(professional_id, medico_id),
+    patient_id = COALESCE(patient_id, cliente_id),
+    price_cents = COALESCE(price_cents, ROUND(price * 100)::INTEGER)
+WHERE professional_id IS NULL OR patient_id IS NULL OR price_cents IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_bookings_professional ON public.bookings(professional_id, date);
+CREATE INDEX IF NOT EXISTS idx_bookings_patient ON public.bookings(patient_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_date ON public.bookings(date);
+CREATE INDEX IF NOT EXISTS idx_bookings_status ON public.bookings(status);
 
 -- Booking availability
-CREATE TABLE public.booking_availability (
+CREATE TABLE IF NOT EXISTS public.booking_availability (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   professional_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   company_id      UUID REFERENCES public.companies(id) ON DELETE CASCADE,
@@ -82,10 +96,17 @@ CREATE TABLE public.booking_availability (
   UNIQUE (professional_id, company_id, day_of_week, start_time)
 );
 
-CREATE INDEX idx_availability_professional ON public.booking_availability(professional_id);
+ALTER TABLE public.booking_availability
+  ADD COLUMN IF NOT EXISTS professional_id UUID;
+
+UPDATE public.booking_availability
+SET professional_id = COALESCE(professional_id, medico_id)
+WHERE professional_id IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_availability_professional ON public.booking_availability(professional_id);
 
 -- Blocked slots
-CREATE TABLE public.booking_blocked_slots (
+CREATE TABLE IF NOT EXISTS public.booking_blocked_slots (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   professional_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   company_id      UUID REFERENCES public.companies(id) ON DELETE CASCADE,
@@ -96,10 +117,17 @@ CREATE TABLE public.booking_blocked_slots (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_blocked_slots_professional ON public.booking_blocked_slots(professional_id, date);
+ALTER TABLE public.booking_blocked_slots
+  ADD COLUMN IF NOT EXISTS professional_id UUID;
+
+UPDATE public.booking_blocked_slots
+SET professional_id = COALESCE(professional_id, medico_id)
+WHERE professional_id IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_blocked_slots_professional ON public.booking_blocked_slots(professional_id, date);
 
 -- Booking settings
-CREATE TABLE public.booking_settings (
+CREATE TABLE IF NOT EXISTS public.booking_settings (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   professional_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   company_id      UUID REFERENCES public.companies(id) ON DELETE CASCADE,
@@ -112,8 +140,15 @@ CREATE TABLE public.booking_settings (
   UNIQUE (professional_id, company_id)
 );
 
+ALTER TABLE public.booking_settings
+  ADD COLUMN IF NOT EXISTS professional_id UUID;
+
+UPDATE public.booking_settings
+SET professional_id = COALESCE(professional_id, medico_id)
+WHERE professional_id IS NULL;
+
 -- Notification deliveries
-CREATE TABLE public.booking_notification_deliveries (
+CREATE TABLE IF NOT EXISTS public.booking_notification_deliveries (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id      UUID REFERENCES public.bookings(id) ON DELETE CASCADE,
   professional_id UUID,
@@ -122,8 +157,12 @@ CREATE TABLE public.booking_notification_deliveries (
   sent_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.booking_notification_deliveries
+  ADD COLUMN IF NOT EXISTS professional_id UUID,
+  ADD COLUMN IF NOT EXISTS patient_id UUID;
+
 -- Company rooms
-CREATE TABLE public.company_rooms (
+CREATE TABLE IF NOT EXISTS public.company_rooms (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id      UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
   name            TEXT NOT NULL,
@@ -132,7 +171,7 @@ CREATE TABLE public.company_rooms (
 );
 
 -- Treatments
-CREATE TABLE public.treatments (
+CREATE TABLE IF NOT EXISTS public.treatments (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id      UUID REFERENCES public.companies(id) ON DELETE SET NULL,
   professional_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
@@ -143,7 +182,19 @@ CREATE TABLE public.treatments (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.treatments
+  ADD COLUMN IF NOT EXISTS professional_id UUID,
+  ADD COLUMN IF NOT EXISTS company_id UUID,
+  ADD COLUMN IF NOT EXISTS name TEXT,
+  ADD COLUMN IF NOT EXISTS price_cents INTEGER;
+
+UPDATE public.treatments
+SET professional_id = COALESCE(professional_id, medico_id),
+    name = COALESCE(name, treatment_name),
+    price_cents = COALESCE(price_cents, ROUND(price * 100)::INTEGER)
+WHERE professional_id IS NULL OR name IS NULL OR price_cents IS NULL;
+
 -- Binding requests (compatibility table - existing references only)
-CREATE TABLE public.binding_requests (
+CREATE TABLE IF NOT EXISTS public.binding_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid()
 );

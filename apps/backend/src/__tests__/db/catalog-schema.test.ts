@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const migration = readFileSync(
-  resolve(__dirname, '../../../supabase/migrations/20260628_catalog.sql'),
+  resolve(__dirname, '../../../supabase/migrations/20260628000000_catalog.sql'),
   'utf8',
 );
 const seed = readFileSync(
@@ -24,7 +24,8 @@ describe('catalog schema', () => {
   it('defines public flags, source constraint, and effective view', () => {
     expect(migration).toContain('is_public BOOLEAN NOT NULL DEFAULT false');
     expect(migration).toContain('CONSTRAINT pca_exactly_one_source');
-    expect(migration).toContain('CREATE OR REPLACE VIEW public.professional_catalog_effective');
+    expect(migration).toContain('DROP VIEW IF EXISTS public.professional_catalog_effective');
+    expect(migration).toContain('CREATE VIEW public.professional_catalog_effective');
     expect(migration).toContain('COALESCE(pca.price_override_cents');
   });
 

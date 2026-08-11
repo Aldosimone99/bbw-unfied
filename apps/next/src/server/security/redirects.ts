@@ -1,8 +1,6 @@
 export const postLoginRedirectPaths = [
   "/login",
-  "/onboarding",
   "/dashboard",
-  "/select-context",
   "/admin"
 ] as const;
 

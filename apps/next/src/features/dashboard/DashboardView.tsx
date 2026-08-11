@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
 import type { CurrentUser, OrganizationContextSummary, PermissionCode, ProfileSummary } from "../../types/authorization";
 import PlatformShell from "./PlatformShell";
 import PlatformIcon, { type PlatformIconName } from "./PlatformIcon";
+import { getDashboardNavItems } from "./transitionNavigation";
 import { getRequestedAccountTypeLabel } from "./profileLabels";
 import styles from "./Dashboard.module.css";
 
@@ -35,12 +36,9 @@ export default function DashboardView({ user, profile, organizationContext, perm
   const greeting = getGreeting();
   const accountTypeLabel = getRequestedAccountTypeLabel(profile.requestedAccountType);
 
-  const quickActions: Array<{ href: string; label: string; icon: PlatformIconName }> = [
-    { href: "/prenotazioni", label: "Prenota trattamento", icon: "bookings" },
-    { href: "/calendario", label: "Calendario", icon: "calendar" },
-    { href: "/profilo", label: "Profilo", icon: "profile" },
-    { href: "/impostazioni", label: "Impostazioni", icon: "settings" }
-  ];
+  const quickActions: Array<{ href: string; label: string; icon: PlatformIconName }> = getDashboardNavItems(profile)
+    .filter((item) => !["/dashboard", "/profilo", "/impostazioni"].includes(item.href))
+    .slice(0, 4);
 
   return (
     <PlatformShell user={user} profile={profile} activePath="/dashboard" organizationContext={organizationContext}>

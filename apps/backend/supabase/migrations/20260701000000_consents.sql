@@ -1,5 +1,5 @@
 -- Consent Templates
-CREATE TABLE public.consent_templates (
+CREATE TABLE IF NOT EXISTS public.consent_templates (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id                  UUID NOT NULL REFERENCES public.users(id),
   owner_type                TEXT NOT NULL CHECK (owner_type IN ('medico', 'estetista')),
@@ -36,7 +36,7 @@ CREATE POLICY "templates_company_members" ON public.consent_templates
   );
 
 -- Consent Documents
-CREATE TABLE public.consent_documents (
+CREATE TABLE IF NOT EXISTS public.consent_documents (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   template_id               UUID REFERENCES public.consent_templates(id),
   treatment_id              UUID NOT NULL,
@@ -69,6 +69,9 @@ CREATE TABLE public.consent_documents (
   UNIQUE (treatment_id)
 );
 
+ALTER TABLE public.consent_documents
+  ADD COLUMN IF NOT EXISTS company_id UUID;
+
 ALTER TABLE public.consent_documents ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "docs_participant" ON public.consent_documents
@@ -83,13 +86,13 @@ CREATE POLICY "docs_participant" ON public.consent_documents
     )
   );
 
-CREATE INDEX idx_consent_documents_professional ON public.consent_documents(professional_id);
-CREATE INDEX idx_consent_documents_client ON public.consent_documents(client_id);
-CREATE INDEX idx_consent_documents_status ON public.consent_documents(status);
-CREATE INDEX idx_consent_documents_company ON public.consent_documents(company_id);
+CREATE INDEX IF NOT EXISTS idx_consent_documents_professional ON public.consent_documents(professional_id);
+CREATE INDEX IF NOT EXISTS idx_consent_documents_client ON public.consent_documents(client_id);
+CREATE INDEX IF NOT EXISTS idx_consent_documents_status ON public.consent_documents(status);
+CREATE INDEX IF NOT EXISTS idx_consent_documents_company ON public.consent_documents(company_id);
 
 -- Consent Document Versions (append-only)
-CREATE TABLE public.consent_document_versions (
+CREATE TABLE IF NOT EXISTS public.consent_document_versions (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   consent_id      UUID NOT NULL REFERENCES public.consent_documents(id),
   version_number  INTEGER NOT NULL,
@@ -120,7 +123,7 @@ CREATE POLICY "versions_participant" ON public.consent_document_versions
   );
 
 -- Consent Signatures (append-only)
-CREATE TABLE public.consent_signatures (
+CREATE TABLE IF NOT EXISTS public.consent_signatures (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   consent_id            UUID NOT NULL REFERENCES public.consent_documents(id),
   version_id            UUID NOT NULL REFERENCES public.consent_document_versions(id),
@@ -161,7 +164,7 @@ CREATE POLICY "signatures_participant" ON public.consent_signatures
   );
 
 -- Consent Audit Logs (append-only)
-CREATE TABLE public.consent_audit_logs (
+CREATE TABLE IF NOT EXISTS public.consent_audit_logs (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   consent_id      UUID NOT NULL REFERENCES public.consent_documents(id),
   version_id      UUID REFERENCES public.consent_document_versions(id),
@@ -195,7 +198,7 @@ CREATE POLICY "audit_participant_read" ON public.consent_audit_logs
   );
 
 -- Consent Share Tokens
-CREATE TABLE public.consent_share_tokens (
+CREATE TABLE IF NOT EXISTS public.consent_share_tokens (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   consent_id  UUID NOT NULL REFERENCES public.consent_documents(id),
   token       TEXT NOT NULL UNIQUE,
@@ -210,7 +213,7 @@ CREATE POLICY "share_tokens_select" ON public.consent_share_tokens
   FOR SELECT USING (true);
 
 -- Secure OTPs
-CREATE TABLE public.secure_otps (
+CREATE TABLE IF NOT EXISTS public.secure_otps (
   id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   reference                 TEXT NOT NULL UNIQUE,
   consent_id                UUID NOT NULL REFERENCES public.consent_documents(id),

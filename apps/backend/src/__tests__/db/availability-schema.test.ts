@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const migrationPath = resolve(process.cwd(), 'supabase/migrations/20260630_availability.sql');
+const migrationPath = resolve(process.cwd(), 'supabase/migrations/20260630000000_availability.sql');
 const sql = readFileSync(migrationPath, 'utf8');
 
 describe('availability schema migration', () => {

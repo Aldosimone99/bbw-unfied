@@ -36,6 +36,19 @@ CREATE TABLE IF NOT EXISTS public.company_member_invites (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- The production baseline calls this field `token`; the backend contract uses
+-- `accept_token`. Keep both names compatible during the local transition.
+ALTER TABLE public.company_member_invites
+  ADD COLUMN IF NOT EXISTS accept_token TEXT;
+
+UPDATE public.company_member_invites
+SET accept_token = token
+WHERE accept_token IS NULL AND token IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_company_member_invites_accept_token
+  ON public.company_member_invites (accept_token)
+  WHERE accept_token IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_company_members_company_user_active
   ON public.company_members (company_id, user_id)
   WHERE is_active = true;

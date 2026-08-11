@@ -23,9 +23,19 @@ export default function PlatformPlaceholder({
   organizationContext
 }: PlatformPlaceholderProps) {
   const iconByPath: Record<string, PlatformIconName> = {
+    "/catalogo": "catalog",
     "/calendario": "calendar",
+    "/clienti": "clients",
+    "/consensi": "consents",
+    "/disponibilita": "availability",
+    "/inviti": "invites",
+    "/membri": "members",
+    "/messaggi": "messages",
     "/prenotazioni": "bookings",
     "/profilo": "profile",
+    "/report": "reports",
+    "/staff": "staff",
+    "/storico": "history",
     "/impostazioni": "settings"
   };
 
@@ -42,9 +52,9 @@ export default function PlatformPlaceholder({
             <PlatformIcon name={iconByPath[activePath] ?? "home"} size={20} />
           </span>
           <div>
-            <p className={styles.cardLabel}>In preparazione</p>
-            <h2>Questa sezione sarà configurata prossimamente.</h2>
-            <p>La struttura è pronta per accogliere i tuoi dati e le funzioni del gestionale.</p>
+            <p className={styles.cardLabel}>Backend di transizione collegato</p>
+            <h2>Sezione pronta per i dati operativi BBW.</h2>
+            <p>Il menu e il contesto autorizzativo sono già integrati; qui verranno visualizzate le funzioni operative del backend.</p>
           </div>
         </div>
       </section>

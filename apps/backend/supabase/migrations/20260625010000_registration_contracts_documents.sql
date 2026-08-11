@@ -1,4 +1,4 @@
-CREATE TABLE public.contract_signatures (
+CREATE TABLE IF NOT EXISTS public.contract_signatures (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   contract_type TEXT NOT NULL,
@@ -17,10 +17,10 @@ CREATE TABLE public.contract_signatures (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_contract_signatures_user ON public.contract_signatures (user_id);
-CREATE INDEX idx_contract_signatures_type ON public.contract_signatures (contract_type, contract_role);
+CREATE INDEX IF NOT EXISTS idx_contract_signatures_user ON public.contract_signatures (user_id);
+CREATE INDEX IF NOT EXISTS idx_contract_signatures_type ON public.contract_signatures (contract_type, contract_role);
 
-CREATE TABLE public.contract_reminders (
+CREATE TABLE IF NOT EXISTS public.contract_reminders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   contract_type TEXT NOT NULL,
@@ -30,9 +30,9 @@ CREATE TABLE public.contract_reminders (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_contract_reminders_user ON public.contract_reminders (user_id, contract_type);
+CREATE INDEX IF NOT EXISTS idx_contract_reminders_user ON public.contract_reminders (user_id, contract_type);
 
-CREATE TABLE public.professional_verifications (
+CREATE TABLE IF NOT EXISTS public.professional_verifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   professional_type TEXT NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE public.professional_verifications (
   UNIQUE (user_id, professional_type)
 );
 
-CREATE TABLE public.verification_documents (
+CREATE TABLE IF NOT EXISTS public.verification_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   verification_id UUID NOT NULL REFERENCES public.professional_verifications(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -62,10 +62,10 @@ CREATE TABLE public.verification_documents (
   deleted_at TIMESTAMPTZ
 );
 
-CREATE INDEX idx_verification_documents_verification ON public.verification_documents (verification_id);
-CREATE INDEX idx_verification_documents_type ON public.verification_documents (type);
+CREATE INDEX IF NOT EXISTS idx_verification_documents_verification ON public.verification_documents (verification_id);
+CREATE INDEX IF NOT EXISTS idx_verification_documents_type ON public.verification_documents (type);
 
-CREATE TABLE public.deferred_document_uploads (
+CREATE TABLE IF NOT EXISTS public.deferred_document_uploads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   document_type TEXT NOT NULL,
@@ -78,4 +78,4 @@ CREATE TABLE public.deferred_document_uploads (
   completed_at TIMESTAMPTZ
 );
 
-CREATE INDEX idx_deferred_uploads_user ON public.deferred_document_uploads (user_id, status);
+CREATE INDEX IF NOT EXISTS idx_deferred_uploads_user ON public.deferred_document_uploads (user_id, status);

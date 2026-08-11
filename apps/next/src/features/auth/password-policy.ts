@@ -3,9 +3,9 @@ import { z } from "zod";
 export const passwordRequirements = [
   {
     id: "minLength",
-    label: "Almeno 8 caratteri",
-    message: "La password deve contenere almeno 8 caratteri.",
-    test: (password: string) => password.length >= 8
+    label: "Almeno 12 caratteri",
+    message: "La password deve contenere almeno 12 caratteri.",
+    test: (password: string) => password.length >= 12
   },
   {
     id: "uppercase",

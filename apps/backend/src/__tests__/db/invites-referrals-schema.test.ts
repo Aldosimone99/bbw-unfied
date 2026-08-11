@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const migration = readFileSync(
-  resolve(__dirname, '../../../supabase/migrations/20260624_invites_referrals.sql'),
+  resolve(__dirname, '../../../supabase/migrations/20260624000000_invites_referrals.sql'),
   'utf8',
 );
 const fixture = readFileSync(

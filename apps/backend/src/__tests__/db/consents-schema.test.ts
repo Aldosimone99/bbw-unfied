@@ -2,17 +2,17 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const sql = readFileSync(resolve(process.cwd(), 'supabase/migrations/20260701_consents.sql'), 'utf8');
+const sql = readFileSync(resolve(process.cwd(), 'supabase/migrations/20260701000000_consents.sql'), 'utf8');
 
 describe('consents schema migration', () => {
   it('creates all consent tables', () => {
-    expect(sql).toContain('CREATE TABLE public.consent_templates');
-    expect(sql).toContain('CREATE TABLE public.consent_documents');
-    expect(sql).toContain('CREATE TABLE public.consent_document_versions');
-    expect(sql).toContain('CREATE TABLE public.consent_signatures');
-    expect(sql).toContain('CREATE TABLE public.consent_audit_logs');
-    expect(sql).toContain('CREATE TABLE public.consent_share_tokens');
-    expect(sql).toContain('CREATE TABLE public.secure_otps');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.consent_templates');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.consent_documents');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.consent_document_versions');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.consent_signatures');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.consent_audit_logs');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.consent_share_tokens');
+    expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.secure_otps');
   });
 
   it('enforces source, signature method, and FSM status checks', () => {

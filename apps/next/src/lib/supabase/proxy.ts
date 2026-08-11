@@ -1,6 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+function isInvalidRefreshToken(error: { code?: string; message?: string } | null): boolean {
+  return error?.code === "refresh_token_not_found" || error?.message?.includes("Invalid Refresh Token") === true;
+}
+
+function clearSupabaseCookies(request: NextRequest, response: NextResponse): void {
+  for (const { name } of request.cookies.getAll()) {
+    if (name.startsWith("sb-")) {
+      response.cookies.delete(name);
+    }
+  }
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,6 +39,10 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const { error } = await supabase.auth.getUser();
+  if (isInvalidRefreshToken(error)) {
+    clearSupabaseCookies(request, response);
+  }
+
   return response;
 }

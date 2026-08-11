@@ -1,8 +1,8 @@
 import { forbidden, redirect } from "next/navigation";
 
 import { hasPermission } from "../../server/authorization/permissions";
-import { resolveDashboardAccess } from "../../server/authorization/dashboard-access";
 import { getPostLoginContext, type PostLoginContext } from "../../server/services/post-login-service";
+import { getTransitionRole, type TransitionRole } from "./transitionNavigation";
 
 export type AuthorizedPlatformContext = PostLoginContext & {
   user: NonNullable<PostLoginContext["user"]>;
@@ -22,21 +22,14 @@ export async function requireActiveOrganization() {
   return context.activeOrganization;
 }
 
-export async function requirePlatformContext(): Promise<AuthorizedPlatformContext> {
+export async function requirePlatformContext(allowedRoles?: readonly TransitionRole[]): Promise<AuthorizedPlatformContext> {
   const context = await getPostLoginContext();
-  const decision = resolveDashboardAccess({
-    authenticated: context.user !== null,
-    onboardingStatus: context.profile?.onboardingStatus ?? null,
-    hasDashboardPermission: hasPermission(new Set(context.permissions), "dashboard.access")
-  });
-
-  if (decision === "login") redirect("/login");
-  if (decision === "onboarding") redirect("/onboarding");
-  if (decision === "forbidden") forbidden();
-
-  if (!context.user || !context.profile) {
+  if (!context.user) {
     redirect("/login");
   }
+  if (!hasPermission(new Set(context.permissions), "dashboard.access")) forbidden();
+  if (allowedRoles && context.profile && !allowedRoles.includes(getTransitionRole(context.profile))) forbidden();
+  if (!context.profile) redirect("/login");
 
   return context as AuthorizedPlatformContext;
 }

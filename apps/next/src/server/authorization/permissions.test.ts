@@ -2,28 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthorizationError } from "../../lib/errors/app-error";
 import { UnauthenticatedError } from "../../lib/errors/app-error";
-import { createClient } from "../../lib/supabase/server";
-import { getCurrentUser } from "../auth/current-user";
-import { loadAuthorizationContext, type LoadedAuthorizationContext } from "./context";
+import { getPostLoginContext, type PostLoginContext } from "../services/post-login-service";
 import { assertPermission, can, hasPermission, requirePermission } from "./permissions";
 
-vi.mock("../../lib/supabase/server", () => ({
-  createClient: vi.fn()
+vi.mock("../services/post-login-service", () => ({
+  getPostLoginContext: vi.fn()
 }));
 
-vi.mock("../auth/current-user", () => ({
-  getCurrentUser: vi.fn()
-}));
+const mockedGetPostLoginContext = vi.mocked(getPostLoginContext);
 
-vi.mock("./context", () => ({
-  loadAuthorizationContext: vi.fn()
-}));
-
-const mockedCreateClient = vi.mocked(createClient);
-const mockedGetCurrentUser = vi.mocked(getCurrentUser);
-const mockedLoadAuthorizationContext = vi.mocked(loadAuthorizationContext);
-
-const authorizationContext: LoadedAuthorizationContext = {
+const authorizationContext: PostLoginContext = {
+  user: { id: "user-1", email: "user@example.com" },
+  profile: null,
   memberships: [],
   globalPermissions: ["dashboard.access"],
   organizationPermissions: [],
@@ -33,9 +23,7 @@ const authorizationContext: LoadedAuthorizationContext = {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mockedCreateClient.mockResolvedValue({} as Awaited<ReturnType<typeof createClient>>);
-  mockedGetCurrentUser.mockResolvedValue({ id: "user-1", email: "user@example.com" });
-  mockedLoadAuthorizationContext.mockResolvedValue(authorizationContext);
+  mockedGetPostLoginContext.mockResolvedValue(authorizationContext);
 });
 
 describe("permission guards", () => {
@@ -53,7 +41,7 @@ describe("permission guards", () => {
   });
 
   it("returns false when the user is not authenticated", async () => {
-    mockedGetCurrentUser.mockResolvedValue(null);
+    mockedGetPostLoginContext.mockResolvedValue({ ...authorizationContext, user: null, permissions: [] });
 
     await expect(can("dashboard.access")).resolves.toBe(false);
     await expect(requirePermission("dashboard.access")).rejects.toBeInstanceOf(UnauthenticatedError);

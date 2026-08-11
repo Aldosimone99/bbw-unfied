@@ -7,6 +7,7 @@ import type { CurrentUser, OrganizationContextSummary, ProfileSummary } from "..
 import ContextSwitcher from "../organizations/ContextSwitcher";
 import { getRequestedAccountTypeLabel } from "./profileLabels";
 import PlatformIcon, { type PlatformIconName } from "./PlatformIcon";
+import { getDashboardNavItems } from "./transitionNavigation";
 import styles from "./Dashboard.module.css";
 
 type PlatformShellProps = {
@@ -17,24 +18,7 @@ type PlatformShellProps = {
   children: ReactNode;
 };
 
-type NavItem = {
-  href: string;
-  label: string;
-  icon: PlatformIconName;
-};
-
-const experienceItems: NavItem[] = [
-  { href: "/dashboard", label: "Home", icon: "home" },
-  { href: "/calendario", label: "Calendario", icon: "calendar" },
-  { href: "/prenotazioni", label: "Prenotazioni", icon: "bookings" }
-];
-
-const accountItems: NavItem[] = [
-  { href: "/profilo", label: "Profilo", icon: "profile" },
-  { href: "/impostazioni", label: "Impostazioni", icon: "settings" }
-];
-
-function NavigationGroup({ label, items, activePath }: { label: string; items: NavItem[]; activePath: string }) {
+function NavigationGroup({ label, items, activePath }: { label: string; items: Array<{ href: string; label: string; icon: PlatformIconName }>; activePath: string }) {
   return (
     <div className={styles.navGroup}>
       <p className={styles.navLabel}>{label}</p>
@@ -58,6 +42,9 @@ function NavigationGroup({ label, items, activePath }: { label: string; items: N
 export default function PlatformShell({ user, profile, activePath, organizationContext, children }: PlatformShellProps) {
   const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Profilo BBW";
   const accountTypeLabel = getRequestedAccountTypeLabel(profile.requestedAccountType);
+  const navItems = getDashboardNavItems(profile);
+  const accountItems = navItems.filter((item) => item.href === "/profilo" || item.href === "/impostazioni");
+  const experienceItems = navItems.filter((item) => !accountItems.includes(item));
   const initials = fullName
     .split(" ")
     .filter(Boolean)
@@ -100,7 +87,7 @@ export default function PlatformShell({ user, profile, activePath, organizationC
 
       <div className={styles.mainColumn}>
         <div className={styles.mobileNav}>
-          {[...experienceItems, ...accountItems].map((item) => (
+          {navItems.map((item) => (
             <a
               className={`${styles.mobileNavItem} ${activePath === item.href ? styles.mobileNavItemActive : ""}`}
               href={item.href}

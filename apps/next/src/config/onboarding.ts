@@ -1,27 +1,27 @@
 export const onboardingIntentOptions = [
   {
     code: "personal",
-    label: "Cliente / Profilo personale",
-    description: "Segui il tuo percorso e gestisci le tue informazioni."
+    label: "Cliente",
+    description: "Gestisci il tuo profilo, appuntamenti e consensi."
   },
   {
     code: "healthcare_professional",
-    label: "Professionista sanitario",
-    description: "Accedi agli strumenti per la tua attività professionale."
+    label: "Medico",
+    description: "Gestisci catalogo, agenda, clienti e consensi."
   },
   {
     code: "beauty_professional",
-    label: "Professionista beauty",
-    description: "Presenta e organizza il tuo lavoro nel network BBW."
+    label: "Estetista",
+    description: "Organizza servizi, agenda e relazioni con i clienti."
   },
   {
     code: "organization",
-    label: "Clinica / Organizzazione",
-    description: "Avvia un contesto per la tua struttura o il tuo studio."
+    label: "Clinica",
+    description: "Gestisci struttura, membri, staff e attività cliniche."
   },
   {
     code: "commercial",
     label: "Commerciale",
-    description: "Richiedi un percorso per collaborare con BBW."
+    description: "Gestisci inviti, clienti e collaborazione commerciale."
   }
 ] as const;

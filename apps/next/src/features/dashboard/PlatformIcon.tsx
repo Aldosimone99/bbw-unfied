@@ -1,18 +1,36 @@
 import {
+  BarChart3,
+  Building2,
   CalendarDays,
+  CalendarRange,
   ClipboardList,
   House,
+  History,
+  MessageSquare,
+  Send,
   Settings2,
-  UserRound
+  ShieldCheck,
+  UserRound,
+  Users
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 const platformIcons = {
   home: House,
   calendar: CalendarDays,
+  availability: CalendarRange,
   bookings: ClipboardList,
+  catalog: ClipboardList,
+  clients: Users,
+  consents: ShieldCheck,
+  history: History,
+  invites: Send,
+  members: Users,
+  messages: MessageSquare,
   profile: UserRound,
-  settings: Settings2
+  reports: BarChart3,
+  settings: Settings2,
+  staff: Building2
 } satisfies Record<string, LucideIcon>;
 
 export type PlatformIconName = keyof typeof platformIcons;

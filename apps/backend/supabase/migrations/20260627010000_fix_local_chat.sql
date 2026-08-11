@@ -1,9 +1,9 @@
--- Fix missing columns from 20260625_messaging.sql
+-- Fix missing columns from 20260625000000_messaging.sql
 ALTER TABLE public.message_threads
   ADD COLUMN IF NOT EXISTS thread_type TEXT NOT NULL DEFAULT 'notification'
     CHECK (thread_type IN ('notification', 'chat'));
 
--- Drop and recreate get_chat_contacts with correct column name (avatar not avatar_url)
+-- Drop and recreate get_chat_contacts with the correct avatar column.
 DROP FUNCTION IF EXISTS public.get_chat_contacts(UUID);
 
 CREATE OR REPLACE FUNCTION public.get_chat_contacts(user_id UUID)
@@ -37,7 +37,6 @@ RETURNS TABLE (
     )
 $$;
 
--- Recreate the unique index (may fail if duplicate pairs exist, skip in that case)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_threads_1on1_pair
   ON public.message_threads (user_a_id, user_b_id)
   WHERE thread_type = 'chat';

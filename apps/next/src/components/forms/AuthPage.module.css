@@ -317,6 +317,26 @@
   transform: translateY(-2px);
 }
 
+.secondaryButton {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(126, 91, 35, .35);
+  border-radius: 999px;
+  padding: 0 20px;
+  background: rgba(255, 250, 241, .72);
+  color: rgba(74, 58, 47, .9);
+  cursor: pointer;
+  font: inherit;
+  font-size: .82rem;
+}
+
+.secondaryButton:hover {
+  border-color: rgba(126, 91, 35, .62);
+  background: rgba(248, 239, 229, .92);
+}
+
 .switchText {
   margin: 2px 0 0;
   color: rgba(44, 30, 16, .68);

@@ -1,4 +1,4 @@
--- Remediação: ppl_invites não foi criada durante 20260629_bookings porque
+-- Remediação: ppl_invites não foi criada durante 20260629010000_bookings porque
 -- CREATE TABLE public.bookings abortou a transação (tabela já existia na baseline).
 
 CREATE TABLE IF NOT EXISTS public.ppl_invites (

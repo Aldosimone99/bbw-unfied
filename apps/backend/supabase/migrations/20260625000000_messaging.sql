@@ -20,6 +20,12 @@ CREATE TABLE IF NOT EXISTS public.message_messages (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- The production baseline predates thread types. Add the column before the
+-- indexes below when the legacy table already exists.
+ALTER TABLE public.message_threads
+  ADD COLUMN IF NOT EXISTS thread_type TEXT NOT NULL DEFAULT 'notification'
+    CHECK (thread_type IN ('notification', 'chat'));
+
 ALTER TABLE public.message_threads
   ADD CONSTRAINT message_threads_last_message_fkey
   FOREIGN KEY (last_message_id) REFERENCES public.message_messages(id)
@@ -39,7 +45,7 @@ CREATE INDEX IF NOT EXISTS idx_messages_sender
 
 CREATE INDEX IF NOT EXISTS idx_messages_unread
   ON public.message_messages (thread_id)
-  WHERE array_length(read_by, 1) IS NULL OR array_length(read_by, 1) = 0;
+  WHERE jsonb_typeof(read_by) <> 'array' OR jsonb_array_length(read_by) = 0;
 
 ALTER TABLE public.message_threads ENABLE ROW LEVEL SECURITY;
 

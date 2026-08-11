@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { passwordSchema } from "../../features/auth/password-policy";
-import { loginInputSchema, onboardingAccountTypeInputSchema, onboardingProfileInputSchema, registerInputSchema } from "./auth";
+import { loginInputSchema, registerInputSchema } from "./auth";
 
 describe("login validation", () => {
   it("trims email and optional redirect without changing the password", () => {
@@ -49,9 +49,15 @@ describe("login validation", () => {
 describe("registration validation", () => {
   it("accepts valid credentials and consents", () => {
     const result = registerInputSchema.safeParse({
+      tipoUtente: "cliente",
       email: "person@example.test",
-      password: "CorrectHorse1!",
-      confirmPassword: "CorrectHorse1!",
+      password: "CorrectHorse12!",
+      confirmPassword: "CorrectHorse12!",
+      nome: "Arianna",
+      cognome: "Rossi",
+      codiceFiscale: "RSSRNN80A01H501Z",
+      otpReference: "otp-reference",
+      otpCode: "123456",
       acceptTerms: true,
       acceptPrivacy: true
     });
@@ -61,9 +67,15 @@ describe("registration validation", () => {
 
   it("rejects non-matching passwords", () => {
     const result = registerInputSchema.safeParse({
+      tipoUtente: "cliente",
       email: "person@example.test",
-      password: "CorrectHorse1!",
+      password: "CorrectHorse12!",
       confirmPassword: "DifferentHorse1!",
+      nome: "Arianna",
+      cognome: "Rossi",
+      codiceFiscale: "RSSRNN80A01H501Z",
+      otpReference: "otp-reference",
+      otpCode: "123456",
       acceptTerms: true,
       acceptPrivacy: true
     });
@@ -87,37 +99,6 @@ describe("password policy", () => {
   });
 
   it("accetta una password conforme a tutti i requisiti", () => {
-    expect(passwordSchema.safeParse("ValidPass1!").success).toBe(true);
-  });
-});
-
-describe("onboarding validation", () => {
-  it("requires the minimum profile and normalizes personal data", () => {
-    const result = onboardingProfileInputSchema.safeParse({
-      firstName: "Arianna",
-      lastName: "Rossi",
-      phone: "  +39 333 1234567  "
-    });
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).toEqual({ firstName: "Arianna", lastName: "Rossi", phone: "+39 333 1234567" });
-    }
-  });
-
-  it("rejects an invalid optional phone number", () => {
-    expect(onboardingProfileInputSchema.safeParse({ firstName: "Arianna", lastName: "Rossi", phone: "not-a-phone" }).success).toBe(false);
-  });
-
-  it("requires organization details only for organization onboarding", () => {
-    expect(onboardingAccountTypeInputSchema.safeParse({ accountType: "personal" }).success).toBe(true);
-    expect(onboardingAccountTypeInputSchema.safeParse({ accountType: "organization" }).success).toBe(false);
-    expect(
-      onboardingAccountTypeInputSchema.safeParse({
-        accountType: "organization",
-        organizationDisplayName: "Studio BBW",
-        organizationTypeCode: "independent_practice"
-      }).success
-    ).toBe(true);
+    expect(passwordSchema.safeParse("ValidPassword1!").success).toBe(true);
   });
 });

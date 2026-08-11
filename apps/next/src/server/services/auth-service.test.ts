@@ -1,107 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createClient } from "../../lib/supabase/server";
-import { completeOnboarding, loginAccount, registerAccount, saveOnboardingProfile } from "./auth-service";
+import { loginAccount, requestRegistrationOtp } from "./auth-service";
+import { requestBackend } from "../backend/server-request";
 
-vi.mock("../../lib/supabase/server", () => ({
-  createClient: vi.fn()
-}));
+vi.mock("../../lib/supabase/server", () => ({ createClient: vi.fn() }));
+vi.mock("../backend/server-request", () => ({ requestBackend: vi.fn() }));
 
 const mockedCreateClient = vi.mocked(createClient);
-const signUp = vi.fn();
+const mockedRequestBackend = vi.mocked(requestBackend);
 const signInWithPassword = vi.fn();
-const getUser = vi.fn();
-const rpc = vi.fn();
-const update = vi.fn();
-const eq = vi.fn();
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mockedCreateClient.mockResolvedValue({
-    auth: { signUp, signInWithPassword, getUser },
-    rpc,
-    from: vi.fn(() => ({ update }))
-  } as unknown as Awaited<ReturnType<typeof createClient>>);
-  update.mockReturnValue({ eq });
-  eq.mockResolvedValue({ error: null });
-  getUser.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+  mockedCreateClient.mockResolvedValue({ auth: { signInWithPassword } } as unknown as Awaited<ReturnType<typeof createClient>>);
 });
 
-describe("registerAccount", () => {
-  it("returns a specific message when the email is already registered", async () => {
-    signUp.mockResolvedValue({
-      data: { user: null, session: null },
-      error: { code: "user_already_exists", message: "User already registered" }
-    });
+describe("transition auth service", () => {
+  it("requests registration OTP through the transition backend", async () => {
+    mockedRequestBackend.mockResolvedValue({ ok: true, status: 200, data: { reference: "otp-ref", code: "123456" } });
 
-    const result = await registerAccount(
-      {
-        email: "person@example.test",
-        password: "CorrectHorse1!",
-        confirmPassword: "CorrectHorse1!",
-        acceptTerms: true,
-        acceptPrivacy: true
-      },
-      "http://localhost:3000/auth/callback"
-    );
+    await expect(requestRegistrationOtp("person@example.test")).resolves.toEqual({ status: "success", reference: "otp-ref", code: "123456" });
+    expect(mockedRequestBackend).toHaveBeenCalledWith("/auth/otp/send", expect.objectContaining({ method: "POST" }));
+  });
 
-    expect(result).toEqual({
+  it("does not create a Supabase session when transition login rejects credentials", async () => {
+    mockedRequestBackend.mockResolvedValue({ ok: false, status: 401, data: { error: "INVALID_CREDENTIALS" } });
+
+    await expect(loginAccount({ email: "person@example.test", password: "wrong-password" })).resolves.toMatchObject({
       status: "error",
-      error: {
-        kind: "email_already_registered",
-        message: "Esiste già un account associato a questa email"
-      }
+      error: { kind: "invalid_credentials" }
     });
-  });
-
-  it("keeps login errors generic for invalid credentials", async () => {
-    signInWithPassword.mockResolvedValue({
-      data: { user: null, session: null },
-      error: { code: "invalid_credentials", message: "Invalid login credentials", status: 400 }
-    });
-
-    const result = await loginAccount({
-      email: "person@example.test",
-      password: "wrong-password"
-    });
-
-    expect(result).toEqual({
-      status: "error",
-      error: {
-        kind: "invalid_credentials",
-        message: "Email o password non corrette."
-      }
-    });
-  });
-});
-
-describe("onboarding services", () => {
-  it("saves personal data through the onboarding RPC", async () => {
-    rpc.mockResolvedValue({ error: null });
-
-    await expect(saveOnboardingProfile({ firstName: "Arianna", lastName: "Rossi", phone: undefined })).resolves.toEqual({ status: "success" });
-    expect(rpc).toHaveBeenCalledWith("save_onboarding_profile", {
-      p_first_name: "Arianna",
-      p_last_name: "Rossi",
-      p_phone: null
-    });
-  });
-
-  it("completes organization onboarding through the atomic RPC", async () => {
-    rpc.mockResolvedValue({ error: null });
-
-    await expect(
-      completeOnboarding({
-        accountType: "organization",
-        organizationDisplayName: "Studio BBW",
-        organizationTypeCode: "independent_practice"
-      })
-    ).resolves.toEqual({ status: "success" });
-
-    expect(rpc).toHaveBeenCalledWith("complete_account_onboarding", {
-      p_account_type: "organization",
-      p_organization_display_name: "Studio BBW",
-      p_organization_type_code: "independent_practice"
-    });
+    expect(signInWithPassword).not.toHaveBeenCalled();
   });
 });

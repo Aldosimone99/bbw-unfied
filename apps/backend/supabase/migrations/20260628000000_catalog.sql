@@ -20,6 +20,14 @@ CREATE TABLE IF NOT EXISTS public.platform_treatments (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Compatibility columns for the legacy baseline schema.
+ALTER TABLE public.platform_treatments
+  ADD COLUMN IF NOT EXISTS price_cents INTEGER;
+
+UPDATE public.platform_treatments
+SET price_cents = COALESCE(price_cents, ROUND(price * 100)::INTEGER, 0)
+WHERE price_cents IS NULL;
+
 CREATE INDEX IF NOT EXISTS idx_platform_treatments_category ON public.platform_treatments (category);
 CREATE INDEX IF NOT EXISTS idx_platform_treatments_active ON public.platform_treatments (is_active) WHERE is_active = true;
 
@@ -63,6 +71,9 @@ CREATE TABLE IF NOT EXISTS public.professional_catalog_assignments (
   )
 );
 
+ALTER TABLE public.professional_catalog_assignments
+  ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT false;
+
 CREATE INDEX IF NOT EXISTS idx_pca_professional ON public.professional_catalog_assignments (professional_id);
 CREATE INDEX IF NOT EXISTS idx_pca_company_catalog ON public.professional_catalog_assignments (company_catalog_id) WHERE company_catalog_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_pca_public ON public.professional_catalog_assignments (professional_id) WHERE is_active = true AND is_public = true;
@@ -88,6 +99,15 @@ CREATE TABLE IF NOT EXISTS public.custom_services (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.custom_services
+  ADD COLUMN IF NOT EXISTS professional_id UUID,
+  ADD COLUMN IF NOT EXISTS price_cents INTEGER;
+
+UPDATE public.custom_services
+SET professional_id = COALESCE(professional_id, medico_id),
+    price_cents = COALESCE(price_cents, ROUND(price * 100)::INTEGER, 0)
+WHERE professional_id IS NULL OR price_cents IS NULL;
+
 CREATE INDEX IF NOT EXISTS idx_custom_services_professional ON public.custom_services (professional_id) WHERE professional_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_custom_services_company ON public.custom_services (company_id) WHERE company_id IS NOT NULL;
 
@@ -109,6 +129,14 @@ CREATE TABLE IF NOT EXISTS public.professional_catalog_items (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.professional_catalog_items
+  ADD COLUMN IF NOT EXISTS custom_price_cents INTEGER,
+  ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT false;
+
+UPDATE public.professional_catalog_items
+SET custom_price_cents = COALESCE(custom_price_cents, ROUND(custom_price * 100)::INTEGER)
+WHERE custom_price_cents IS NULL AND custom_price IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_pci_professional ON public.professional_catalog_items (professional_id) WHERE is_deleted = false;
 CREATE INDEX IF NOT EXISTS idx_pci_custom_service ON public.professional_catalog_items (custom_service_id) WHERE is_deleted = false;
 CREATE INDEX IF NOT EXISTS idx_pci_public ON public.professional_catalog_items (professional_id) WHERE is_active = true AND is_deleted = false AND is_public = true;
@@ -126,7 +154,9 @@ CREATE TABLE IF NOT EXISTS public.company_service_catalog (
 
 CREATE INDEX IF NOT EXISTS idx_csc_company ON public.company_service_catalog (company_id);
 
-CREATE OR REPLACE VIEW public.professional_catalog_effective AS
+DROP VIEW IF EXISTS public.professional_catalog_effective;
+
+CREATE VIEW public.professional_catalog_effective AS
 SELECT
   pca.id AS assignment_id,
   pca.professional_id,
@@ -137,7 +167,7 @@ SELECT
   pt.allowed_roles,
   pt.insurance_included,
   COALESCE(pca.price_override_cents, ctc.price_override_cents, pt.price_cents) AS effective_price_cents,
-  COALESCE(pca.duration_override_min, ctc.duration_override_min, pt.duration) AS effective_duration_min,
+  COALESCE(pca.duration_override_min::TEXT, ctc.duration_override_min::TEXT, pt.duration::TEXT) AS effective_duration_min,
   COALESCE(pca.points_override, ctc.points_override, pt.points) AS effective_points,
   CASE WHEN pca.company_catalog_id IS NOT NULL THEN ctc.consent_template_id ELSE pca.consent_template_id END AS effective_consent_template_id,
   pca.company_catalog_id,

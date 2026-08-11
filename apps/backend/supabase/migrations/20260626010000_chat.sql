@@ -64,29 +64,30 @@ DROP POLICY IF EXISTS ppl_patient ON public.patient_professional_links;
 CREATE POLICY ppl_patient ON public.patient_professional_links
   FOR SELECT USING (patient_id = auth.uid());
 
-CREATE OR REPLACE FUNCTION public.get_chat_contacts(user_id UUID)
+CREATE OR REPLACE FUNCTION public.get_chat_contacts(p_user_id UUID)
 RETURNS TABLE (
   id UUID,
   nome TEXT,
   cognome TEXT,
   tipo_utente TEXT,
-  avatar_url TEXT
+  avatar_url TEXT,
+  company_id UUID
 ) LANGUAGE sql STABLE AS $$
-  SELECT DISTINCT u.id, u.nome, u.cognome, u.tipo_utente, u.avatar_url
+  SELECT DISTINCT u.id, u.nome, u.cognome, u.tipo_utente, u.avatar, ppl.company_id
   FROM public.patient_professional_links ppl
   JOIN public.users u ON u.id = CASE
-    WHEN ppl.professional_id = user_id THEN ppl.patient_id
+    WHEN ppl.professional_id = p_user_id THEN ppl.patient_id
     ELSE ppl.professional_id
   END
   WHERE ppl.status = 'approved'
-    AND (ppl.professional_id = user_id OR ppl.patient_id = user_id)
+    AND (ppl.professional_id = p_user_id OR ppl.patient_id = p_user_id)
   UNION
-  SELECT DISTINCT u.id, u.nome, u.cognome, u.tipo_utente, u.avatar_url
+  SELECT DISTINCT u.id, u.nome, u.cognome, u.tipo_utente, u.avatar, b.company_id
   FROM public.company_members a
   JOIN public.company_members b ON a.company_id = b.company_id
   JOIN public.users u ON u.id = b.user_id
-  WHERE a.user_id = user_id AND a.is_active = true
-    AND b.user_id != user_id AND b.is_active = true
+  WHERE a.user_id = p_user_id AND a.is_active = true
+    AND b.user_id != p_user_id AND b.is_active = true
     AND (
       (a.role != 'paciente' AND b.role != 'paciente')
       OR (a.role = 'paciente' AND b.role IN ('owner', 'admin', 'staff'))
