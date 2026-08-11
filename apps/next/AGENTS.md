@@ -6,7 +6,7 @@ The source of truth for the project architecture is:
 
 ../../.kiro/steering/
 
-Before implementing any feature you MUST read:
+Before implementing any feature you MUST read the root `AGENTS.md` and:
 
 - 00-product.md
 - 01-architecture.md
@@ -27,5 +27,10 @@ Before implementing any feature you MUST read:
 If a request conflicts with these files,
 stop and explain the conflict before writing code.
 
-Never ignore the root steering files. Frontend-specific work must also respect
-the backend boundary described in `14-monorepo-integration.md`.
+Never ignore the root steering files, and never create a second steering tree.
+Frontend-specific work must also respect the backend boundary described in
+`14-monorepo-integration.md`: the browser uses `/api/backend/*`, while
+authorization and operational rules remain server-side.
+
+Registration stays account-first: do not add account type, clinic or role
+selection to the initial form. Collect that context after login in onboarding.

@@ -99,4 +99,8 @@ describe("password policy", () => {
   it("accetta una password conforme a tutti i requisiti", () => {
     expect(passwordSchema.safeParse("ValidPassword1!").success).toBe(true);
   });
+
+  it("accetta una password di 8 caratteri conforme ai requisiti", () => {
+    expect(passwordSchema.safeParse("ValidP1!").success).toBe(true);
+  });
 });

@@ -27,9 +27,10 @@ Password e token non si cifrano per poi recuperarli: si usa hashing o il provide
 - nessuna `service_role`/secret key nel frontend, nei Client Components o in bundle;
 - chiavi pubbliche solo dove previsto dal provider e con RLS attiva;
 - environment separati per local, development, staging e production;
+- `SUPABASE_SERVICE_ROLE_KEY` solo in `apps/backend/.env.local` e nel processo Express; `SUPABASE_SECRET_KEY` solo nel server Next quando realmente necessario;
 - non stampare valori di env, cookie o token nei log.
 
-Nel repository il codice e `.env.example` usano `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. `SUPABASE_SECRET_KEY` è server-only e non deve essere letto da Client Components o incluso in bundle. Non leggere o committare i valori reali; i file `.env.local`/`env.local` devono restare ignorati.
+Nel repository il frontend usa `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, mentre il backend usa la propria chiave server-side. Non sostituire `SUPABASE_SERVICE_ROLE_KEY` con una chiave publishable/anon e non riportare i valori reali nella documentazione. I file `.env.local`/`env.local` devono restare ignorati.
 
 ## Autorizzazione, input e web
 

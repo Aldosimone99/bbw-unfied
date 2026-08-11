@@ -6,13 +6,20 @@ Il repository usa Next.js App Router con `src/app`, React, TypeScript `strict`, 
 
 ## Architettura proposta
 
-Il sistema è una web application Next.js con App Router e uno strato server esplicito davanti a Supabase. PostgreSQL è la fonte dei dati applicativi; Supabase fornisce Auth, accesso al database, Storage e strumenti locali. PostgREST è un dettaglio di accesso, non il backend completo: le operazioni che applicano regole di dominio passano da servizi server controllati.
+Il sistema è un monorepo con frontend Next.js, backend Express/TypeScript derivato da `bbw-transition` e contratti condivisi. PostgreSQL è la fonte dei dati applicativi; Supabase fornisce Auth, database, Storage e strumenti locali. L'API Express è l'autorità per le operazioni del backend di transizione; PostgREST/SDK sono dettagli di accesso e non sostituiscono i servizi che applicano regole di dominio.
 
 Direzione delle dipendenze:
 
 `UI/Page → server action o route handler → service di caso d’uso → repository/data access → Supabase/PostgreSQL/Storage`.
 
-Le dipendenze devono fluire verso contratti e dominio. Repository e adapter non devono essere importati direttamente da componenti UI. Un service può coordinare più repository, validare invarianti e aprire una transazione dove necessario.
+Le dipendenze devono fluire verso contratti e dominio. Repository e adapter non devono essere importati direttamente da componenti UI. Un service può coordinare più repository, validare invarianti e aprire una transazione dove necessario. Il frontend comunica con l'Express backend tramite il bridge Next `/api/backend/*`, senza importare direttamente il codice del backend.
+
+Composizione attuale:
+
+```text
+apps/next → /api/backend/* → apps/backend → Supabase/PostgreSQL/Redis
+      └──────── packages/interfaces (contratti Zod e tipi condivisi)
+```
 
 ## Responsabilità dei livelli
 
@@ -23,7 +30,7 @@ Le dipendenze devono fluire verso contratti e dominio. Repository e adapter non 
 - **Route Handlers**: webhook, endpoint usati da client/partner, download controllati, callback e casi che richiedono status code/headers espliciti. Attualmente è implementato il callback Auth; le API di dominio non sono ancora presenti.
 - **Service layer**: casi d’uso e invarianti applicative; non conosce dettagli di presentazione.
 - **Repository/data access**: query parametrizzate, mapping righe/DTO, filtri di tenant e chiamate a Supabase/PostgreSQL. Non decide da solo policy complesse.
-- **Supabase Auth**: identità, sessione e lifecycle credenziali. I dati applicativi dell’account restano nel dominio BBW.
+- **Supabase Auth**: identità, sessione e lifecycle credenziali. I dati applicativi dell'account restano nel dominio BBW e il backend verifica il Bearer token prima delle route protette.
 - **PostgreSQL/RLS**: vincoli, relazioni, transazioni e ultima barriera di isolamento; RLS deve essere coerente con l’autorizzazione server.
 - **Storage**: allegati in bucket privati, metadata nel database, URL firmati solo dopo controllo accessi.
 - **Integrazioni esterne**: adapter isolati, timeout, retry limitati, idempotency key e segreti solo server-side.
@@ -54,8 +61,10 @@ src/server/
   auth/ authorization/ security/ audit/
   services/ repositories/
 src/types/                   # DTO e tipi pubblici condivisi
-supabase/
-  migrations/ seed.sql tests/ # schema, dati locali e regressioni RLS già presenti
+apps/backend/supabase/
+  migrations/ seed.sql tests/ # schema operativo, dati locali e regressioni RLS
+packages/interfaces/
+  src/schemas/                # contratti condivisi frontend/backend
 ```
 
 Le cartelle `.gitkeep` ancora presenti sono scaffolding, non prova di implementazione. Oggi `features/auth`, `features/dashboard`, `features/profile` e `features/organizations` contengono codice; le directory future non vanno trattate come feature disponibili. Le directory di feature possono contenere componenti e schema di input, ma i casi d’uso sensibili devono restare sotto `src/server`.
@@ -67,7 +76,7 @@ Le cartelle `.gitkeep` ancora presenti sono scaffolding, non prova di implementa
 - **Staging**: configurazione il più possibile simile a production, dati sintetici o anonimizzati, smoke/E2E.
 - **Production**: segreti da secret manager, migrazioni approvate, backup/restore verificati, accesso operativo tracciato.
 
-La configurazione locale attuale abilita Auth, Storage, Realtime e seed `./supabase/seed.sql`; le migration e il seed iniziale esistono. I client usano `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. `SUPABASE_SECRET_KEY` è una variabile server-only di esempio e non deve mai essere passata al browser; non è usata dai client Supabase presenti.
+La configurazione locale attuale abilita Auth, Storage, Realtime e il seed `apps/backend/supabase/seed.sql`; le migration operative sono nel backend. Il frontend usa `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. `SUPABASE_SECRET_KEY` è server-only nel processo Next, mentre `SUPABASE_SERVICE_ROLE_KEY` è server-only nel processo Express: nessuna delle due deve mai arrivare al browser o essere committata.
 
 ## Cosa non va nei componenti UI
 

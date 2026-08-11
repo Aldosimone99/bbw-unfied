@@ -17,13 +17,13 @@ export default function RegisterPage() {
           <img src="/images/brand/logo-flat-dark-bronze.png" alt="" />
           <span>Beauty Broker World</span>
         </Link>
-        <a className={styles.homeLink} href="/accedi">
+        <Link className={styles.homeLink} href="/accedi">
           Torna al login
-        </a>
+        </Link>
       </header>
 
-      <section className={`${styles.hero} ${styles.registerHero}`} aria-labelledby="register-title">
-        <div className={`${styles.visual} ${styles.registerVisual}`} aria-hidden="true">
+      <section className={styles.hero} aria-labelledby="register-title">
+        <div className={styles.visual} aria-hidden="true">
           <img src="/images/brand/logo-hero-watermark-large.png" alt="" />
         </div>
         <div className={styles.intro}>
@@ -34,7 +34,7 @@ export default function RegisterPage() {
           </h1>
           <p>Inizia con un profilo personale. Potrai completare il tuo contesto in un secondo momento.</p>
         </div>
-        <div className={`${styles.formShell} ${styles.registerFormShell}`} aria-label="Registrazione">
+        <div className={styles.formShell} aria-label="Registrazione">
           <RegisterForm />
         </div>
       </section>

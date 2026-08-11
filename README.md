@@ -1,57 +1,120 @@
 # BBW Unified
 
-Unified workspace for Beauty Broker World:
+Monorepo di Beauty Broker World: frontend derivato da `bbwlanding`, backend
+operativo derivato da `bbw-transition` e contratti condivisi.
 
-- `apps/next`: the `bbwlanding` Next.js frontend.
-- `apps/backend`: the `bbw-transition` Express + TypeScript backend.
-- `packages/interfaces`: shared request/response schemas.
+## Struttura
+
+- `apps/next`: landing, autenticazione, onboarding e dashboard Next.js.
+- `apps/backend`: API Express/TypeScript, servizi di dominio e schema Supabase
+  operativo.
+- `packages/interfaces`: schemi Zod e contratti condivisi tra frontend e
+  backend.
+- `.kiro/steering`: unica fonte di verità per prodotto, architettura, dominio,
+  sicurezza e workflow AI.
+
+Il modello distingue `Account`, `Profile`, `Organization`, `OrganizationMembership`,
+`Role`, `Permission` e `Subject`. “Utente”, “cliente” o “clinica” sono etichette
+di prodotto e non devono essere usate come prova di autorizzazione.
 
 ## Avvio locale
 
 Prerequisiti: Node.js, Docker, Supabase CLI e Redis.
 
-Dal root del progetto:
+Dal root:
 
 ```bash
-cd /Users/aldosimone/Documents/GitHub/bbw-unified
 npm install
 cp apps/next/.env.example apps/next/.env.local
 cp apps/backend/.env.example apps/backend/.env.local
 ```
 
-Compila poi i valori Supabase nei due file `.env.local`. Avvia Supabase dalla
-cartella backend:
+Avvia Supabase locale dal backend:
 
 ```bash
 cd apps/backend
-supabase start
+npx supabase start
+npx supabase status
 ```
 
-In un secondo terminale, avvia Redis se non è già attivo:
+Usa l'URL locale e la chiave publishable mostrati da `supabase status` in:
+`apps/next/.env.local` (`NEXT_PUBLIC_SUPABASE_URL` e
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`). Usa la service-role key mostrata dallo
+stesso comando solo in `apps/backend/.env.local` come
+`SUPABASE_SERVICE_ROLE_KEY`. Non copiare chiavi reali nel repository o nel
+frontend.
+
+Avvia Redis, se non è già attivo:
 
 ```bash
 docker run --name bbw-redis -p 6379:6379 -d redis:7-alpine
 ```
 
-Infine, dal root, avvia frontend e backend insieme:
+Poi, dal root, avvia i due processi:
 
 ```bash
 npm run dev
 ```
 
-URL locali: frontend `http://localhost:3000`, backend `http://localhost:3001`.
-Per avviarli separatamente sono disponibili `npm run dev:frontend` e
+URL locali:
+
+- frontend: <http://localhost:3000>
+- backend: <http://localhost:3001>
+
+Per avviarli separatamente: `npm run dev:frontend` e
 `npm run dev:backend`.
 
-The frontend backend bridge is available under `/api/backend/*`. It uses the
-Supabase session cookie from the frontend and forwards an access token to the
-Express API when the user is signed in.
+Se Redis esiste già, non rilanciare il comando Docker: usare il container
+esistente o `docker start bbw-redis`.
 
-The operational schema remains under `apps/backend/supabase`. The frontend
-identity/organization schema was intentionally not copied as a second migration
-tree; the two schemas must be mapped before production use.
+## Flusso account-first
 
-The shared steering files are in `.kiro/steering/`. `AGENTS.md` at the root is
-the repository-level entry point; app-level `AGENTS.md` files point back to that
-single source of truth.
-# bbw-unfied
+La registrazione iniziale segue il comportamento di `bbwlanding`: email,
+password, conferma password e consensi. Non viene richiesto il tipo di account
+durante la registrazione. Dopo il primo login, l'account incompleto passa
+all'onboarding per profilo e tipo richiesto; il tipo richiesto non assegna da
+solo un ruolo privilegiato.
+
+In locale la conferma email è temporaneamente disabilitata per il bootstrap. Va
+riattivata e testata prima di staging o produzione. La password richiede almeno
+8 caratteri, una maiuscola, una minuscola, un numero e un carattere speciale.
+
+## Confine frontend/backend
+
+Il frontend raggiunge il backend tramite `/api/backend/*`. Il bridge Next legge
+la sessione Supabase server-side e inoltra il Bearer token al backend Express.
+Il browser non riceve la service-role key e non decide ruoli, permission,
+ownership o tenant.
+
+Le migration operative sono in `apps/backend/supabase/migrations`. Il vecchio
+schema identity del frontend non viene mantenuto come seconda fonte di verità.
+I reset locali sono distruttivi per i dati locali:
+
+```bash
+cd apps/backend
+npx supabase db reset
+```
+
+## Verifiche
+
+Dal root:
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
+
+## Documentazione e contributi
+
+Prima di modificare codice, leggere il `AGENTS.md` root e tutti i file da
+`.kiro/steering/00-product.md` a `.kiro/steering/14-monorepo-integration.md`.
+Gli `AGENTS.md` dentro le app aggiungono vincoli locali e rimandano sempre allo
+steering root; non creare una seconda cartella di steering.
+
+- architettura e dipendenze: `.kiro/steering/01-architecture.md`;
+- dominio e terminologia: `.kiro/steering/02-domain-model.md`;
+- database e migration: `.kiro/steering/03-database.md`;
+- autenticazione e autorizzazione: `.kiro/steering/04-auth-and-permissions.md`;
+- integrazione monorepo: `.kiro/steering/14-monorepo-integration.md`.

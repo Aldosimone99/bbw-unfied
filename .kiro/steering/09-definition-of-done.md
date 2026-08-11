@@ -8,6 +8,8 @@ Una feature è completata solo quando il comportamento approvato, il confine di 
 - [ ] Casi ambigui sono marcati **Da confermare**, non trasformati in assunzioni.
 - [ ] Modello di dominio, errori, permission e comportamento osservabile sono aggiornati.
 - [ ] README, API o runbook sono aggiornati se cambiano setup o operazioni.
+- [ ] Se cambia architettura o workflow, sono aggiornati gli steering rilevanti e gli `AGENTS.md` che li richiamano.
+- [ ] Non esistono istruzioni operative stale copiate dal progetto sorgente o una seconda steering tree.
 
 ## Database e migrazioni
 

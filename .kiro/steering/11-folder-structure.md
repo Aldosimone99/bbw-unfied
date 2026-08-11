@@ -1,6 +1,15 @@
 # 11 — Struttura delle cartelle
 
-La struttura deve rendere visibile il confine tra rendering, feature, dominio e infrastruttura:
+La struttura deve rendere visibile il confine tra rendering, feature, dominio e infrastruttura. Il repository è un monorepo: il frontend non deve diventare una copia del backend e il backend non deve importare UI.
+
+```text
+apps/
+  next/                    # frontend derivato da bbwlanding
+  backend/                 # API e dominio operativo derivati da bbw-transition
+packages/
+  interfaces/              # contratti Zod e tipi condivisi
+.kiro/steering/            # unica fonte di verità architetturale
+```
 
 ```text
 src/
@@ -26,11 +35,12 @@ src/
     auth/ authorization/ security/ audit/
     services/ repositories/ # membership e active organization service
   types/                  # contratti condivisi minimizzati
-supabase/
+apps/backend/supabase/
   config.toml
-  migrations/             # migration identity/authorization già presenti
-  seed.sql                # seed locale ripetibile già presente
-  tests/                  # regressioni SQL RLS già presenti
+  migrations/             # migration operative e identity/authorization
+  seed.sql                # seed locale ripetibile
+  tests/                  # regressioni SQL RLS
+packages/interfaces/src/  # schemi e contratti condivisi
 ```
 
 Regole:

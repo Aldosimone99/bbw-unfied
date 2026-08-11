@@ -2,7 +2,7 @@
 
 ## Fonte e stato
 
-PostgreSQL tramite Supabase è la fonte dei dati applicativi. Il repository contiene `supabase/config.toml`, migration applicate in ordine, `supabase/seed.sql` e una regressione SQL RLS. Il database implementato è una fondazione identity/authorization, non ancora lo schema completo di BBW.
+PostgreSQL tramite Supabase è la fonte dei dati applicativi. Nel monorepo la fonte operativa è `apps/backend/supabase/`, con `config.toml`, migration applicate in ordine, seed e regressioni SQL RLS. Il database implementato è la fondazione identity/authorization e il backend di transizione; non è ancora lo schema completo di BBW.
 
 Le migration attuali introducono `profiles`, `organization_types`, `organizations`, `organization_members`, `roles`, `permissions`, `role_permissions`, `member_roles` e `account_roles`, con UUID, timestamp UTC, foreign key, indici, check constraint, trigger `updated_at`, RLS e funzioni controllate per la creazione profilo, il salvataggio dei dati onboarding, il completamento del tipo richiesto e l’assegnazione dei ruoli base/owner. `profiles.onboarding_intent` rappresenta il tipo richiesto dall’account, mentre `profiles.account_type_status` separa una richiesta pending dall’autorizzazione. L’organizzazione attiva non è una colonna applicativa: viene mantenuta in un cookie HttpOnly server-managed, sempre riverificato contro il database. Non esistono ancora tabelle per appuntamenti, servizi/trattamenti, consensi, firme, allegati, notifiche o audit event.
 
@@ -41,7 +41,9 @@ Normalizzare relazioni e dati modificabili. Denormalizzare soltanto con una moti
 - concorrenza gestita con unique/check constraint, lock o versionamento quando più richieste possono aggiornare la stessa risorsa;
 - modifiche manuali in produzione vietate, salvo procedura d’emergenza documentata, approvata e poi codificata in migration.
 
-Le migration presenti sono additive e numerate temporalmente (`20260804000100`–`20260808000100`). Il seed è ripetibile e configura tipi organizzativi, ruoli e permission iniziali; non contiene account reali. La suite SQL in `supabase/tests/authorization.sql` verifica l’isolamento tra due organizzazioni per la lettura di profili, organizzazioni e membership, oltre all’assenza di privilegi diretti di mutazione per il ruolo `authenticated`. Il test va eseguito su Supabase locale prima del merge/deploy.
+Le migration presenti includono il baseline/backend di transizione e le migration account-first `20260811000100_account_first_onboarding.sql`, `20260811000200_onboarding_request_context.sql`, `20260811000300_backend_identity_grants.sql` e `20260811000400_backend_identity_profile_reads.sql`. Il seed è ripetibile e configura tipi organizzativi, ruoli e permission iniziali; non contiene account reali. La suite SQL in `apps/backend/supabase/tests/authorization.sql` verifica l’isolamento tra due organizzazioni per la lettura di profili, organizzazioni e membership, oltre all’assenza di privilegi diretti di mutazione per il ruolo `authenticated`. Il test va eseguito su Supabase locale prima del merge/deploy.
+
+Stato da tenere esplicito: il reset locale ha evidenziato cinque tabelle operative legacy con RLS non attiva (`contract_reminders`, `contract_signatures`, `deferred_document_uploads`, `ppl_invites`, `user_consents`). Non abilitarla alla cieca: prima servono policy, test positivi/negativi e verifica dei consumer. Fino ad allora queste superfici non sono considerate pronte per dati reali.
 
 ## Cancellazione, conservazione e audit
 

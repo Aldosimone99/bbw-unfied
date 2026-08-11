@@ -4,6 +4,17 @@ Questo file completa l’architettura: il contratto HTTP non è il modello di do
 
 Stato attuale: il repository espone il callback Auth come Route Handler e usa Server Actions interne per login, registrazione, onboarding e cambio dell’organizzazione attiva. Non sono ancora presenti API Route Handler pubbliche per organizzazioni, appuntamenti, consensi, file o notifiche.
 
+Il backend Express espone già il percorso identity/onboarding usato dal frontend:
+
+| Endpoint | Scopo | Nota autorizzativa |
+| --- | --- | --- |
+| `POST /auth/register` | crea account Auth e dati iniziali | non accetta tipo di account o ruolo dal client |
+| `POST /auth/login` | verifica le credenziali del backend | la sessione browser viene stabilita da Supabase Auth |
+| `POST /auth/onboarding/profile` | salva nome, cognome e telefono | richiede Bearer verificato e agisce sull'account corrente |
+| `POST /auth/onboarding/complete` | salva il tipo richiesto e, se previsto, il contesto | il tipo richiesto non concede da solo privilegi |
+
+Il frontend invoca queste route tramite `/api/backend/*`; i contratti condivisi vivono in `packages/interfaces`.
+
 ## Convenzioni
 
 - path in minuscolo e kebab-case, versionamento solo se serve compatibilità;

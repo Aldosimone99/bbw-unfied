@@ -15,6 +15,10 @@ Usare funzioni pure per trasformazioni e calcoli; isolare I/O, clock, random e p
 - route App Router: convenzioni Next (`page.tsx`, `layout.tsx`, `route.ts`);
 - database: `snake_case`; permission: namespace con punto, ad esempio `organization.members.manage`;
 - UUID come tipo/identificativo, non come “role” o stringa semantica senza validazione.
+- Nel codice usare `Account` per l’identità Auth, `Profile` per i dati personali,
+  `OrganizationMembership` per l’appartenenza, `Role`/`Permission` per
+  l’autorizzazione e `Subject` per la persona o entità cui si riferiscono i
+  dati. Evitare `User` come modello universale e nomi come `ClinicUser`.
 
 ## Import e componenti
 

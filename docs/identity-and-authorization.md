@@ -22,7 +22,8 @@ concetti.
 Il flusso implementato è:
 
 ```text
-account autenticato
+registrazione minima (email/password/consensi)
+  → account autenticato
   → profilo incompleto
   → /onboarding
   → dati personali
@@ -66,11 +67,17 @@ Il tipo di organizzazione e il ruolo vengono risolti tramite `code`, mai tramite
 
 ### Database e RPC
 
-La migration principale è:
+Le migration operative rilevanti sono:
 
-`supabase/migrations/20260808000100_onboarding_account_type.sql`
+`apps/backend/supabase/migrations/20260811000100_account_first_onboarding.sql`
 
-Introduce o aggiorna:
+`apps/backend/supabase/migrations/20260811000200_onboarding_request_context.sql`
+
+`apps/backend/supabase/migrations/20260811000300_backend_identity_grants.sql`
+
+`apps/backend/supabase/migrations/20260811000400_backend_identity_profile_reads.sql`
+
+Nel loro insieme introducono o aggiornano:
 
 - `profiles.account_type_status`;
 - lo stato `account_type_required`;
@@ -80,22 +87,24 @@ Introduce o aggiorna:
 - privilegi di aggiornamento del profilo limitati ai dati personali;
 - grant/revoke per le funzioni autenticato-only.
 
-Le migration locali e quelle del progetto Supabase collegato risultano allineate. Verificare sempre con:
+La fonte operativa del database è il backend unificato. Verificare sempre lo
+stato del progetto locale dalla directory backend con:
 
 ```bash
-supabase migration list
+cd apps/backend
+npx supabase migration list
 ```
 
 Applicazione locale senza reset:
 
 ```bash
-supabase migration up --local
+npx supabase migration up --local
 ```
 
 Applicazione al progetto collegato:
 
 ```bash
-supabase migration up --linked
+npx supabase migration up --linked
 ```
 
 ### Guard e autorizzazione
@@ -132,28 +141,25 @@ La dashboard mostra la superficie operativa temporanea: saluto, azioni rapide, p
 
 ## File principali
 
-- `src/app/(auth)/onboarding/page.tsx` — guard e composizione onboarding;
-- `src/features/auth/OnboardingForm.tsx` — form a due step;
-- `src/features/auth/actions.ts` — Server Action;
-- `src/server/services/auth-service.ts` — casi d’uso onboarding;
-- `src/server/services/membership-service.ts` — membership e organizzazioni accessibili;
-- `src/server/services/active-organization-service.ts` — risoluzione e scrittura del contesto attivo;
-- `src/server/repositories/authorization-repository.ts` — mapping profilo/cataloghi;
-- `src/server/authorization/` — contesto, permessi e access decision;
-- `src/features/organizations/` — Context Switcher e Server Action;
-- `src/features/dashboard/` — dashboard e guard platform;
-- `src/lib/validation/` — schemi Zod;
-- `supabase/migrations/` — schema e funzioni PostgreSQL;
-- `supabase/tests/authorization.sql` — regressioni RLS.
+- `apps/next/src/app/(auth)/onboarding/page.tsx` — guard e composizione onboarding;
+- `apps/next/src/features/auth/OnboardingForm.tsx` — form a due step;
+- `apps/next/src/features/auth/actions.ts` — Server Actions;
+- `apps/next/src/server/services/auth-service.ts` — casi d’uso auth/onboarding;
+- `apps/next/src/server/services/membership-service.ts` — membership e organizzazioni accessibili;
+- `apps/next/src/server/services/active-organization-service.ts` — contesto attivo;
+- `apps/backend/src/routes/auth/` — route Express per auth/onboarding;
+- `apps/backend/src/services/` — servizi backend di dominio;
+- `apps/backend/supabase/migrations/` — schema e funzioni PostgreSQL;
+- `apps/backend/supabase/tests/authorization.sql` — regressioni RLS.
 
 ## Verifiche eseguite
 
 - `npm run typecheck`;
-- `npm run test` — 55 test passati;
+- `npm test` — suite workspace passata: 71 file backend / 347 test, 11 file frontend / 51 test, 11 file interfaces / 61 test;
 - `npm run lint` — 0 errori, 7 warning `@next/next/no-img-element`;
 - `npm run build`;
 - `git diff --check`;
-- `supabase test db --local supabase/tests/authorization.sql` — 9 assertion pgTAP passate;
+- regressione SQL RLS locale — 9 assertion pgTAP passate;
 - E2E browser non eseguito: il backend Browser in-app non risultava disponibile nella sessione.
 
 ## Registro modifiche
@@ -176,16 +182,18 @@ La dashboard mostra la superficie operativa temporanea: saluto, azioni rapide, p
 - Aggiunti helper `getActiveOrganization`, `requireOrganizationMembership` e `requireOrganizationPermission`.
 - Aggiornata la regressione SQL RLS per isolamento membership e assenza di scritture dirette.
 - Aggiunti test per cookie invalido, selezione non autorizzata, membership rimossa e isolamento dei permessi tra organizzazioni.
-- Verificati typecheck, lint, 55 test Vitest, build e regressione SQL RLS locale; E2E browser ancora da eseguire quando sarà disponibile un backend Browser.
+- Verificati typecheck, lint, test workspace, build e regressione SQL RLS locale; E2E browser ancora da eseguire quando sarà disponibile un backend Browser.
 
 ### 2026-08-11 — Registrazione account-first nel backend di transizione
 
 - La registrazione iniziale richiede soltanto email, password, conferma password e consensi; non chiede più cliente, professionista, clinica o altro tipo operativo.
+- La password usa una soglia minima di 8 caratteri, con maiuscola, minuscola, numero e carattere speciale.
 - Dopo il primo login il frontend porta l’account a `/onboarding`, dove raccoglie prima i dati personali e poi il caso d’uso richiesto.
 - Le migration `apps/backend/supabase/migrations/20260811000100_account_first_onboarding.sql` e `20260811000200_onboarding_request_context.sql` rendono nome e codice fiscale inizialmente opzionali e aggiungono stato onboarding, tipo richiesto, nome contesto richiesto e timestamp di completamento.
 - Le migration `20260811000300_backend_identity_grants.sql` e `20260811000400_backend_identity_profile_reads.sql` concedono al solo `service_role` del backend i privilegi minimi per registrazione, onboarding e lettura del profilo; anon e authenticated non ricevono accesso aggiuntivo.
 - `requested_account_type` è una richiesta/intenzione e non assegna `tipo_utente`, ruolo, permission o membership. Un nuovo account resta con il valore neutro `privato` finché un workflow autorizzato non assegna un ruolo operativo.
 - La verifica email via codice è temporaneamente disattivata per il bootstrap locale e deve essere riattivata prima della produzione.
+- Il backend crea l'account confermato solo per il bootstrap locale; non replicare questa configurazione in staging/production.
 - Le route `/auth/onboarding/profile` e `/auth/onboarding/complete` passano dal service backend; i campi controllati dai form restano disponibili dopo gli errori di validazione.
 - Verifiche previste: typecheck, test, build, diff check e applicazione non distruttiva della migration locale con `supabase migration up --local`.
 

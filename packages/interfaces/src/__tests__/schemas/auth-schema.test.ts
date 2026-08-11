@@ -34,6 +34,15 @@ describe('registerRequestSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('accepts the eight-character minimum when complexity requirements are met', () => {
+    const result = registerRequestSchema.safeParse({
+      ...basePayload,
+      password: 'ValidP1!',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it('accepts cliente registration payloads', () => {
     const result = registerRequestSchema.safeParse({
       ...basePayload,

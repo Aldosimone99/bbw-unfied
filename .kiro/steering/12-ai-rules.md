@@ -1,10 +1,12 @@
 # 12 — Regole per contributi assistiti da AI
 
 - Analizzare repository, stato Git e istruzioni prima di modificare file.
+- Leggere il `AGENTS.md` root e tutti gli steering `00-product.md`–`14-monorepo-integration.md`; gli `AGENTS.md` applicativi aggiungono solo vincoli locali.
 - Non trattare marketing copy, placeholder o una bozza Steering come requisito approvato.
 - Marcare le decisioni ambigue come **Da confermare**; non inventare ruoli, dati sanitari, workflow legali o integrazioni.
 - Non implementare autenticazione, database, API o feature quando la richiesta è documentale.
 - Non modificare codice esistente, asset, dipendenze o environment senza richiesta esplicita.
+- Quando il lavoro è documentale, aggiornare README e steering insieme se descrivono lo stesso comportamento; non lasciare istruzioni del progetto sorgente non più applicabili.
 - Non leggere, riportare o committare secret reali; non usare `env.local` come documentazione di valori.
 - Non creare autorizzazione basata su nomi visibili (`clinic`, `doctor`, `patient`) o soltanto sulla UI.
 - Non mettere service role, query sensibili o logica critica in Client Components.

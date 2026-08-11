@@ -21,7 +21,9 @@ BBW non deve essere descritto come un semplice marketplace: il valore previsto �
 
 È già presente una fondazione tecnica, non ancora il prodotto completo:
 
-- registrazione e accesso email/password tramite Server Actions, validazione Zod e messaggi di errore controllati;
+- registrazione account-first e accesso email/password tramite Server Actions, backend Express di transizione, validazione Zod e messaggi di errore controllati;
+- registrazione iniziale ridotta a email, password, conferma password e consensi; il tipo di account non viene richiesto prima del primo login;
+- in locale la conferma email è temporaneamente disabilitata per il bootstrap; la verifica email resta un requisito da reinserire prima di staging/production;
 - callback Auth, refresh della sessione tramite `src/proxy.ts` e redirect post-login con allowlist;
 - profilo minimo creato al nuovo account, onboarding con tipi richiesti `personal`, `healthcare_professional`, `beauty_professional`, `organization` e `commercial`;
 - schema iniziale per profili, organizzazioni, membership, ruoli e permission, con RLS, seed e test SQL;
@@ -90,7 +92,7 @@ Da valutare solo dopo aver validato il nucleo e i requisiti legali: pagamenti e 
 - fornire diagnosi, prescrizioni o consulenza medica automatizzata;
 - sostituire cartelle cliniche o sistemi gestionali sanitari completi;
 - distribuire direttamente prodotti assicurativi o assumere il ruolo di intermediario;
-- riutilizzare codice del progetto precedente;
+- mantenere una seconda fonte di verità identity/authorization dal progetto precedente;
 - affidare la sicurezza alla sola UI o a un ruolo nominale;
 - rendere tutti i dati ricercabili a costo di indebolire privacy e separazione dei tenant.
 
