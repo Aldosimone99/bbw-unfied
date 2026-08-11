@@ -1,0 +1,2289 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Beauty Broker World | La bellezza di essere in salute</title>
+  <meta name="description" content="Beauty Broker World, piattaforma digitale italiana per medicina estetica, longevità e benessere.">
+  <link rel="icon" type="image/png" href="iconflat.png">
+  <style>
+    :root {
+      color-scheme: light;
+      --gold: #C9943A;
+      --champagne: #E8C97E;
+      --ivory: #F5EFE0;
+      --powder: #EFE6E1;
+      --warm-beige: #E8DCC8;
+      --terracotta: #C8623A;
+      --brown: #2C1E10;
+      --coffee: #14110F;
+      --deep: #1E1813;
+      --chocolate: #2B2119;
+      --light-ivory: #F4EEE3;
+      --dark-cream: #D7C7AE;
+      --ink-soft: rgba(44, 30, 16, .68);
+      --ink-faint: rgba(44, 30, 16, .44);
+      --white-soft: rgba(244, 238, 227, .82);
+      --line: rgba(44, 30, 16, .16);
+      --gold-line: rgba(201, 148, 58, .34);
+      --sans: "Avenir Next", Avenir, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html {
+      scroll-behavior: smooth;
+      scroll-snap-type: y proximity;
+      overscroll-behavior-y: none;
+    }
+    body {
+      margin: 0;
+      background: var(--powder);
+      color: var(--brown);
+      font-family: var(--sans);
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+      overscroll-behavior-y: none;
+    }
+    body.menu-open { overflow: hidden; }
+    img, video { display: block; max-width: 100%; }
+    a { color: inherit; }
+    button, summary { font: inherit; }
+
+    .page {
+      min-height: 100vh;
+      overflow: hidden;
+      background: var(--powder);
+    }
+    main > section,
+    .siteFooter {
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
+
+    .siteHeader {
+      position: fixed;
+      z-index: 50;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 104px;
+      color: var(--light-ivory);
+      transition: color .28s ease, background .28s ease, border-color .28s ease;
+    }
+    .siteHeader.is-scrolled,
+    .siteHeader.is-open {
+      color: var(--brown);
+      background: rgba(239, 230, 225, .92);
+      border-bottom: 1px solid rgba(44, 30, 16, .12);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .headerInner {
+      width: min(1780px, calc(100% - 96px));
+      height: 100%;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      text-decoration: none;
+      width: auto;
+      height: auto;
+      justify-content: flex-start;
+      color: currentColor;
+    }
+    .brand img {
+      width: 82px;
+      height: 82px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 12px rgba(232, 201, 126, .28)) drop-shadow(0 8px 18px rgba(20, 17, 15, .26));
+      transition: filter .28s ease, transform .28s ease;
+    }
+    .brand:hover img { transform: scale(1.04); }
+    .siteHeader.is-scrolled .brand img,
+    .siteHeader.is-open .brand img { filter: drop-shadow(0 0 8px rgba(201, 148, 58, .2)) drop-shadow(0 6px 14px rgba(44, 30, 16, .18)); }
+    .brand span {
+      color: currentColor;
+      font-size: .96rem;
+      font-weight: 520;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+    .desktopNav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(22px, 3vw, 48px);
+      margin-left: auto;
+      color: currentColor;
+    }
+    .desktopNav a {
+      position: relative;
+      color: currentColor;
+      text-decoration: none;
+      font-size: .84rem;
+      font-weight: 450;
+      letter-spacing: .03em;
+      opacity: .82;
+      transition: opacity .22s ease, color .22s ease;
+    }
+    .desktopNav a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -9px;
+      height: 1px;
+      background: currentColor;
+      opacity: 0;
+      transform: scaleX(.4);
+      transform-origin: center;
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    .desktopNav a:hover {
+      opacity: 1;
+      color: var(--champagne);
+    }
+    .desktopNav a:hover::after {
+      opacity: .52;
+      transform: scaleX(1);
+    }
+    .headerActions {
+      display: flex;
+      align-items: center;
+      gap: 34px;
+    }
+    .headerReserve {
+      min-width: 136px;
+      min-height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      color: currentColor;
+      text-decoration: none;
+      font-size: .93rem;
+      font-weight: 400;
+    }
+    .headerDivider {
+      display: none;
+      width: 1px;
+      height: 28px;
+      background: currentColor;
+      opacity: .72;
+    }
+    .menuButton {
+      width: 106px;
+      height: 54px;
+      display: none;
+      place-items: center;
+      border: 0;
+      background: transparent;
+      color: currentColor;
+      cursor: pointer;
+    }
+    .menuButton span,
+    .menuButton span::before,
+    .menuButton span::after {
+      display: block;
+      width: 106px;
+      height: 1px;
+      background: currentColor;
+      transition: transform .24s ease, opacity .24s ease;
+    }
+    .menuButton span {
+      position: relative;
+    }
+    .menuButton span::before,
+    .menuButton span::after {
+      content: "";
+      position: absolute;
+      left: 0;
+    }
+    .menuButton span::before { top: -12px; }
+    .menuButton span::after { top: 12px; }
+    .siteHeader.is-open .menuButton span { background: transparent; }
+    .siteHeader.is-open .menuButton span::before { transform: translateY(12px) rotate(16deg); }
+    .siteHeader.is-open .menuButton span::after { transform: translateY(-12px) rotate(-16deg); }
+
+    .siteNav {
+      position: fixed;
+      z-index: 45;
+      inset: 0;
+      min-height: 100svh;
+      display: grid;
+      align-content: center;
+      background: var(--powder);
+      color: var(--brown);
+      transform: translateY(-100%);
+      transition: transform .55s cubic-bezier(.7, 0, .2, 1);
+    }
+    .siteHeader.is-open + .siteNav { transform: translateY(0); }
+    .navInner {
+      width: min(1120px, calc(100% - 48px));
+      margin: 0 auto;
+      display: grid;
+      gap: 0;
+      border-top: 1px solid var(--line);
+    }
+    .siteNav a {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding: 28px 0;
+      text-decoration: none;
+    }
+    .siteNav em {
+      color: var(--gold);
+      font-style: normal;
+      font-size: .82rem;
+    }
+    .siteNav span {
+      font-size: clamp(3rem, 8vw, 8.5rem);
+      font-weight: 300;
+      line-height: .9;
+      letter-spacing: 0;
+    }
+
+    .container {
+      width: min(1620px, calc(100% - 96px));
+      margin: 0 auto;
+    }
+    .narrow {
+      width: min(980px, calc(100% - 48px));
+      margin: 0 auto;
+    }
+    .section {
+      position: relative;
+      min-height: 100svh;
+      height: 100svh;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      padding: calc(104px + clamp(20px, 4vh, 54px)) 0 clamp(24px, 5vh, 58px);
+    }
+    .overline {
+      margin: 0 0 20px;
+      color: var(--ink-soft);
+      font-size: clamp(1.25rem, 2.2vw, 2.05rem);
+      font-weight: 300;
+      line-height: 1.1;
+    }
+    .display {
+      margin: 0;
+      font-size: clamp(4.3rem, 8.6vw, 9.8rem);
+      font-weight: 300;
+      line-height: .86;
+      letter-spacing: 0;
+    }
+    .subtitle {
+      margin: 22px 0 0;
+      color: var(--brown);
+      font-size: clamp(1.15rem, 2vw, 2rem);
+      font-weight: 400;
+      line-height: 1.25;
+    }
+    .copy {
+      margin: 22px 0 0;
+      max-width: 560px;
+      color: var(--ink-soft);
+      font-size: clamp(.96rem, 1.08vw, 1.08rem);
+      line-height: 1.52;
+    }
+    .copyGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: clamp(36px, 6vw, 88px);
+      max-width: 860px;
+    }
+    .outlineButton {
+      min-height: 54px;
+      width: max-content;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      padding: 0 28px;
+      color: currentColor;
+      background: transparent;
+      text-decoration: none;
+      font-size: .96rem;
+      font-weight: 400;
+      transition: transform .25s ease, background .25s ease;
+    }
+    .outlineButton:hover {
+      transform: translateY(-2px);
+      background: rgba(201, 148, 58, .08);
+    }
+
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 72% 50%, rgba(232, 201, 126, .115), transparent 0 34%),
+        radial-gradient(ellipse at 18% 20%, rgba(215, 199, 174, .055), transparent 0 32%),
+        radial-gradient(ellipse at 62% 84%, rgba(201, 148, 58, .07), transparent 0 34%),
+        linear-gradient(142deg, #14110F 0%, #1E1813 54%, #2B2119 100%);
+      color: var(--light-ivory);
+    }
+
+    .heroAmbient,
+    .heroProfileLine {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .heroAmbient {
+      z-index: 1;
+      overflow: hidden;
+    }
+    .heroAmbient::before,
+    .heroAmbient::after {
+      content: "";
+      position: absolute;
+      inset: -18%;
+    }
+    .heroAmbient::before {
+      background:
+        radial-gradient(ellipse at 68% 50%, rgba(232, 201, 126, .08), rgba(232, 201, 126, .026) 31%, transparent 62%),
+        radial-gradient(ellipse at 42% 46%, rgba(244, 238, 227, .035), transparent 36%);
+      opacity: .76;
+      transform: scale(1.04);
+    }
+    .heroAmbient::after {
+      background:
+        radial-gradient(ellipse at 70% 48%, rgba(244, 238, 227, .045), transparent 34%),
+        linear-gradient(90deg, rgba(20, 17, 15, .42), transparent 38%, rgba(20, 17, 15, .26)),
+        linear-gradient(180deg, rgba(244, 238, 227, .018), transparent 44%, rgba(201, 148, 58, .018));
+      filter: blur(16px);
+      opacity: .68;
+    }
+
+    .heroProfileLine {
+      z-index: 2;
+      overflow: hidden;
+      opacity: 1;
+    }
+    .heroProfileLine::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -8vw;
+      width: min(54vw, 840px);
+      height: min(80vh, 840px);
+      background: radial-gradient(ellipse at 52% 50%, rgba(232, 201, 126, .09), rgba(201, 148, 58, .024) 42%, transparent 72%);
+      filter: blur(18px);
+      opacity: .18;
+      transform: translateY(-50%);
+    }
+    .heroProfileLine img {
+      position: absolute;
+      top: 50%;
+      right: clamp(-250px, -12vw, -130px);
+      width: min(64vw, 960px);
+      height: min(92vh, 960px);
+      object-fit: contain;
+      opacity: .18;
+      mix-blend-mode: screen;
+      filter: drop-shadow(0 0 14px rgba(201, 148, 58, .045));
+      transform: translateY(-50%) scale(1);
+      animation: heroProfileBreath 12s ease-in-out infinite;
+      will-change: opacity, transform;
+    }
+    @keyframes heroProfileBreath {
+      0%, 100% { opacity: .16; transform: translateY(-50%) scale(1); }
+      50% { opacity: .2; transform: translateY(-50%) scale(1.008); }
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      background:
+        linear-gradient(180deg, rgba(20, 17, 15, .04), rgba(20, 17, 15, .16) 52%, rgba(20, 17, 15, .46)),
+        radial-gradient(circle at 50% 45%, rgba(20, 17, 15, 0) 0 32%, rgba(20, 17, 15, .44) 78%);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      z-index: 3;
+      top: 104px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: rgba(232, 201, 126, .24);
+    }
+    .heroContent {
+      position: relative;
+      z-index: 4;
+      width: min(920px, calc(100% - 160px));
+      display: grid;
+      justify-self: start;
+      justify-items: start;
+      text-align: left;
+      margin-left: clamp(72px, 10vw, 176px);
+      padding-top: 22px;
+    }
+    .hero h1 {
+      margin: 0;
+      color: var(--light-ivory);
+      font-family: "Avenir Next", Avenir, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: clamp(4.1rem, 8.25vw, 10.1rem);
+      font-weight: 350;
+      line-height: .9;
+      letter-spacing: 0;
+      text-shadow: 0 26px 74px rgba(20, 17, 15, .46);
+    }
+    .hero h1 span { display: block; }
+    .hero h1 .heroTitleAccent {
+      color: rgba(232, 201, 126, .86);
+      font-weight: 380;
+    }
+
+    .hero p {
+      margin: 30px 0 0;
+      max-width: 680px;
+      color: rgba(244, 238, 227, .82);
+      font-size: clamp(1.04rem, 1.18vw, 1.2rem);
+      font-weight: 410;
+      line-height: 1.56;
+    }
+
+    .heroActions {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      bottom: clamp(92px, 11vh, 148px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      transform: translateX(-50%);
+    }
+    .heroActions[data-reveal] {
+      transform: translate(-50%, 34px);
+    }
+    .heroActions[data-reveal].is-visible {
+      transform: translate(-50%, 0);
+    }
+    .heroButton {
+      width: clamp(132px, 10.8vw, 168px);
+      min-height: auto;
+      aspect-ratio: 1 / 1;
+      display: inline-grid;
+      place-items: center;
+      padding: 0;
+      position: relative;
+      text-decoration: none;
+      text-align: center;
+      font-size: .74rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border: 0;
+      background: transparent;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .heroButtonShape {
+      position: absolute;
+      inset: -2px;
+      pointer-events: none;
+      display: block;
+      z-index: 1;
+      color: rgba(255, 248, 235, .96);
+      filter: drop-shadow(0 18px 34px rgba(20, 17, 15, .32));
+      transform: translate(0, 0);
+      transition: color .35s ease, filter .35s ease, transform .28s cubic-bezier(.22, .9, .32, 1);
+    }
+    .heroButtonSvg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+    .heroButtonBlob {
+      fill: rgba(36, 28, 24, .28);
+      stroke: currentColor;
+      stroke-width: 1.28;
+      vector-effect: non-scaling-stroke;
+    }
+    .heroButtonGhost {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: .65;
+      opacity: .24;
+      vector-effect: non-scaling-stroke;
+    }
+    .heroButtonLabel {
+      position: relative;
+      z-index: 3;
+      color: #FFF8EB;
+      padding: 12px 20px;
+      display: inline-block;
+      line-height: 1.2;
+      text-shadow: 0 1px 10px rgba(20, 17, 15, .42);
+    }
+    .heroButton:hover .heroButtonShape {
+      color: #E8C97E;
+      filter: drop-shadow(0 0 22px rgba(201, 148, 58, .2)) drop-shadow(0 18px 34px rgba(20, 17, 15, .34));
+    }
+    .heroButtonPrimary {
+      background: transparent;
+      color: #E8C97E;
+    }
+    .heroButtonPrimary .heroButtonShape {
+      color: rgba(255, 248, 235, .97);
+    }
+    .heroButtonPrimary .heroButtonBlob {
+      fill: rgba(201, 148, 58, .15);
+    }
+    .heroButton:focus-visible {
+      outline: 1px solid rgba(232, 201, 126, .72);
+      outline-offset: 7px;
+    }
+
+    .heroMethodLink {
+      position: absolute;
+      z-index: 4;
+      top: auto;
+      bottom: calc(clamp(42px, 5.6vw, 78px) - 16px);
+      left: 50%;
+      color: rgba(232, 201, 126, .72);
+      font-size: .76rem;
+      font-weight: 560;
+      letter-spacing: .055em;
+      text-decoration: none;
+      text-transform: uppercase;
+      text-shadow: 0 14px 28px rgba(20, 17, 15, .38);
+      line-height: 1.08;
+      white-space: nowrap;
+      transform: translateX(-50%);
+      transition: color .28s ease, transform .28s ease;
+    }
+    .heroMethodLinkArrow {
+      display: block;
+      margin-top: 8px;
+      text-align: center;
+      font-size: 1.08em;
+      line-height: 1;
+    }
+    .heroMethodLink:hover {
+      color: rgba(244, 238, 227, .9);
+      transform: translate(-50%, -2px);
+    }
+    .heroMethodLink:focus-visible {
+      outline: 1px solid rgba(232, 201, 126, .62);
+      outline-offset: 6px;
+    }
+
+    /* reduce motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      .heroButtonShape { transition: color .2s ease, filter .2s ease; }
+    }
+    .heroFootnote {
+      position: absolute;
+      z-index: 4;
+      left: clamp(72px, 10vw, 176px);
+      bottom: clamp(42px, 5.6vw, 78px);
+      max-width: 360px;
+      color: rgba(215, 199, 174, .68);
+      font-size: clamp(.95rem, 1.15vw, 1.08rem);
+      font-weight: 300;
+      line-height: 1.18;
+    }
+
+    .scrollModule {
+      position: fixed;
+      z-index: 42;
+      top: 104px;
+      bottom: 0;
+      right: clamp(20px, 3.2vw, 58px);
+      width: 34px;
+      color: rgba(44, 30, 16, .28);
+      pointer-events: none;
+      transition: color .28s ease, opacity .28s ease, visibility .28s ease;
+    }
+    .scrollModule.is-before-progress {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .scrollModule.is-on-dark {
+      color: rgba(232, 201, 126, .28);
+    }
+    .scrollModuleRail {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 1px;
+      background: currentColor;
+      opacity: .28;
+      transform: translateX(-50%);
+    }
+    .scrollModuleThumb {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 18px;
+      height: 18px;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 0 9px rgba(244, 238, 227, .055);
+      transform: translateX(-50%) translateY(calc(var(--thumb-y, 0px) - 50%));
+      transition: color .28s ease, box-shadow .28s ease;
+      will-change: transform;
+    }
+    .scrollModule.is-on-dark .scrollModuleThumb {
+      box-shadow: 0 0 0 9px rgba(232, 201, 126, .055);
+    }
+    .scrollModuleTick {
+      position: absolute;
+      left: 50%;
+      width: 16px;
+      height: 16px;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      opacity: .26;
+      transform: translate(-50%, -50%);
+    }
+    .scrollModuleTick.is-active {
+      opacity: 0;
+    }
+
+    .manifesto {
+      background: var(--powder);
+      padding-top: calc(104px + clamp(12px, 3vh, 38px));
+    }
+
+    @media (max-width: 640px) {
+      .heroProfileLine::before { opacity: .055; right: -38vw; width: 120vw; }
+      .heroProfileLine img {
+        right: -68vw;
+        width: 148vw;
+        height: 76vh;
+        opacity: .035;
+        animation: none;
+      }
+
+
+      .heroActions { left: 50%; right: auto; bottom: 60px; justify-content: center; gap: 0; transform: translateX(-50%); }
+      .heroButton { width: 118px; aspect-ratio: 1; }
+      .heroButtonLabel { padding: 10px 12px; font-size: .8rem; }
+      .heroMethodLink { bottom: 20px; font-size: .66rem; }
+    }
+    .manifesto .container {
+      display: grid;
+      max-width: 1200px;
+      margin: 0 auto;
+      grid-template-columns: minmax(420px, 560px) minmax(520px, 640px);
+      column-gap: clamp(64px, 6vw, 110px);
+      justify-content: center;
+      align-items: center;
+      transform: translateX(clamp(-40px, -2vw, -20px));
+    }
+    .manifestoText {
+      max-width: 770px;
+      margin-left: clamp(0px, 1.6vw, 24px);
+    }
+    .manifesto .overline {
+      color: rgba(44, 30, 16, .9);
+      font-weight: 390;
+    }
+    .manifesto .display {
+      font-size: clamp(4.2rem, 7.8vw, 9rem);
+    }
+    .manifesto .subtitle {
+      max-width: 620px;
+    }
+    .manifesto .copyGrid {
+      max-width: 780px;
+      gap: clamp(28px, 4.8vw, 64px);
+    }
+    .manifestoPrinciples {
+      align-self: center;
+      justify-self: start;
+      width: min(100%, 520px);
+      max-width: 520px;
+      margin-top: 0;
+      display: grid;
+      grid-template-columns: 1fr;
+      border-top: 1px solid rgba(130, 101, 61, .46);
+    }
+    .manifestoPrinciple {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: clamp(22px, 3vw, 42px);
+      padding: clamp(24px, 3.2vh, 36px) 0;
+      border-bottom: 1px solid rgba(130, 101, 61, .36);
+    }
+    .manifestoPrinciple em {
+      color: rgba(151, 111, 40, .82);
+      font-size: .88rem;
+      font-style: normal;
+      font-weight: 480;
+      letter-spacing: .08em;
+      line-height: 1.3;
+    }
+    .manifestoPrinciple h3 {
+      margin: 0;
+      color: #32271F;
+      font-size: clamp(1.42rem, 1.85vw, 2.05rem);
+      font-weight: 440;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+    .manifestoPrinciple p {
+      margin: 10px 0 0;
+      max-width: 400px;
+      color: var(--ink-soft);
+      font-size: clamp(.96rem, 1.04vw, 1.08rem);
+      font-weight: 400;
+      line-height: 1.46;
+    }
+
+    @media (max-width: 1180px) {
+      .manifesto .container {
+        grid-template-columns: minmax(360px, 1fr) minmax(440px, 1fr);
+        column-gap: 48px;
+      }
+    }
+
+    .splitStory {
+      background: var(--powder);
+    }
+    .methodStory {
+      height: auto;
+      min-height: 100svh;
+      overflow: visible;
+      padding-top: calc(104px + clamp(0px, .6vh, 10px));
+    }
+    .storyGrid {
+      display: grid;
+      grid-template-columns: 1.16fr .84fr;
+      gap: clamp(42px, 7vw, 110px);
+      align-items: center;
+    }
+    .storyText {
+      max-width: 520px;
+    }
+    .storyText .display {
+      font-size: clamp(4rem, 7.6vw, 9rem);
+    }
+    .methodStory .storyGrid {
+      max-width: 1200px;
+      margin: 0 auto;
+      grid-template-columns: minmax(420px, 560px) minmax(520px, 640px);
+      column-gap: clamp(64px, 6vw, 110px);
+      justify-content: center;
+      transform: translateX(clamp(-40px, -2vw, -20px));
+    }
+    .methodContent {
+      max-width: 770px;
+      margin-left: clamp(0px, 1.6vw, 24px);
+    }
+    .methodContent .overline {
+      color: rgba(44, 30, 16, .82);
+    }
+    .methodContent .display {
+      font-size: clamp(3.78rem, 7.15vw, 8.45rem);
+    }
+    .methodContent .subtitle {
+      max-width: 620px;
+    }
+    .methodContent .copy {
+      max-width: 650px;
+    }
+    .methodContent .outlineButton {
+      margin-top: 34px;
+    }
+    .methodTimeline {
+      align-self: center;
+      justify-self: start;
+      width: min(100%, 560px);
+      max-width: 560px;
+      display: grid;
+      grid-template-columns: 1fr;
+      border-top: 1px solid rgba(130, 101, 61, .38);
+    }
+    .methodStep {
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr);
+      gap: clamp(22px, 3vw, 38px);
+      padding: clamp(24px, 3.2vh, 36px) 0;
+      border-bottom: 1px solid rgba(130, 101, 61, .28);
+    }
+    .methodStep em {
+      color: rgba(201, 148, 58, .86);
+      font-size: .82rem;
+      font-style: normal;
+      font-weight: 500;
+      line-height: 1.3;
+      letter-spacing: .09em;
+    }
+    .methodStep h3 {
+      margin: 0;
+      color: #32271F;
+      font-size: clamp(1.28rem, 1.7vw, 1.9rem);
+      font-weight: 430;
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+    .methodStep p {
+      margin: 8px 0 0;
+      max-width: 430px;
+      color: var(--ink-soft);
+      font-size: clamp(.92rem, 1vw, 1.05rem);
+      font-weight: 400;
+      line-height: 1.44;
+    }
+
+    @media (max-width: 1180px) {
+      .methodStory .storyGrid {
+        grid-template-columns: minmax(360px, 1fr) minmax(440px, 1fr);
+        column-gap: 48px;
+      }
+    }
+
+    .toolsSection {
+      background: var(--powder);
+      height: auto;
+      min-height: 100svh;
+      overflow: visible;
+    }
+    .toolsGrid {
+      display: grid;
+      max-width: 1200px;
+      margin: 0 auto;
+      gap: clamp(46px, 7vh, 82px);
+      justify-items: center;
+    }
+    .toolsIntro {
+      max-width: 760px;
+      text-align: center;
+    }
+    .toolsIntro .display {
+      font-size: clamp(3.78rem, 7.15vw, 8.45rem);
+    }
+    .toolsIntro .subtitle {
+      max-width: 620px;
+      margin-inline: auto;
+    }
+    .toolsList {
+      width: min(980px, 80vw);
+      max-width: 980px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      column-gap: clamp(30px, 3.6vw, 54px);
+      border-top: 1px solid rgba(130, 101, 61, .32);
+    }
+    .toolItem {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      align-items: start;
+      gap: clamp(16px, 2vw, 26px);
+      padding: clamp(24px, 3vh, 34px) 0;
+      border-bottom: 1px solid rgba(130, 101, 61, .24);
+    }
+    .toolItem em {
+      color: rgba(151, 111, 40, .78);
+      font-size: .82rem;
+      font-style: normal;
+      font-weight: 520;
+      line-height: 1.3;
+      letter-spacing: .09em;
+    }
+    .toolItem h3 {
+      margin: 0;
+      color: #32271F;
+      font-size: clamp(1.12rem, 1.4vw, 1.52rem);
+      font-weight: 470;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+    .toolItem p {
+      margin: 10px 0 0;
+      max-width: 280px;
+      color: rgba(44, 30, 16, .76);
+      font-size: clamp(.92rem, 1vw, 1.04rem);
+      font-weight: 400;
+      line-height: 1.52;
+    }
+
+    @media (max-width: 1180px) {
+      .toolsGrid {
+        max-width: 1040px;
+      }
+      .toolsList {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .sectionHeadCenter {
+      text-align: center;
+      margin-bottom: clamp(22px, 4vh, 44px);
+    }
+    .sectionHeadCenter .display {
+      font-size: clamp(3.8rem, 6.6vw, 7.6rem);
+    }
+    .sectionHeadCenter .copy {
+      margin-inline: auto;
+    }
+
+    .network {
+      background: var(--powder);
+      padding-bottom: clamp(56px, 8vh, 104px);
+    }
+    .specializedNetwork {
+      background: var(--powder);
+    }
+    .specializedNetwork .networkIntro {
+      margin-bottom: clamp(18px, 3.2vh, 34px);
+    }
+    .specializedNetwork .networkIntro .display {
+      font-size: clamp(3.35rem, 5.5vw, 6.45rem);
+    }
+    .specializedNetwork .portrait {
+      box-shadow: 0 14px 34px rgba(44, 30, 16, .035);
+    }
+    .networkIntro {
+      display: grid;
+      grid-template-columns: .95fr 1.05fr;
+      gap: clamp(42px, 8vw, 130px);
+      align-items: end;
+      margin-bottom: clamp(34px, 5.4vh, 64px);
+    }
+    .networkIntro .display {
+      font-size: clamp(3.7rem, 6.2vw, 7.2rem);
+    }
+    .networkMetaLine {
+      margin: 22px 0 0;
+      color: rgba(44, 30, 16, .62);
+      font-size: clamp(.88rem, 1vw, 1.02rem);
+      font-weight: 420;
+      line-height: 1.45;
+    }
+    .networkMetaLine span {
+      color: rgba(151, 111, 40, .88);
+      font-weight: 520;
+    }
+    .portraitWall {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(24px, 3.4vw, 52px);
+      align-items: stretch;
+    }
+    .portrait {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 24px;
+      padding: clamp(14px, 1.6vw, 18px) clamp(14px, 1.6vw, 18px) clamp(22px, 2.2vw, 30px);
+      border: 1px solid rgba(130, 101, 61, .18);
+      border-radius: 8px;
+      background: rgba(245, 239, 224, .22);
+      box-shadow: 0 18px 42px rgba(44, 30, 16, .045);
+    }
+    .portrait img {
+      width: 100%;
+      height: clamp(300px, 36vh, 390px);
+      object-fit: cover;
+      object-position: center 18%;
+      background: var(--warm-beige);
+      filter: saturate(.9) contrast(.98);
+      border-radius: 6px;
+    }
+    .portrait h3 {
+      margin: 0;
+      color: #32271F;
+      font-size: clamp(1.36rem, 1.72vw, 2rem);
+      font-weight: 410;
+      line-height: 1.05;
+    }
+    .portrait p,
+    .portraitMeta {
+      margin: 0;
+      color: var(--ink-soft);
+      line-height: 1.35;
+    }
+    .portraitInfo {
+      display: grid;
+      gap: 12px;
+      padding: 0 2px;
+    }
+    .portraitRole {
+      order: -1;
+      color: rgba(151, 111, 40, .86);
+      font-size: .78rem;
+      font-weight: 560;
+      letter-spacing: .08em;
+      line-height: 1.3;
+      text-transform: uppercase;
+    }
+    .portraitSpec {
+      color: rgba(44, 30, 16, .58);
+      font-size: .92rem;
+      line-height: 1.35;
+    }
+    .portraitBadge {
+      width: max-content;
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      border-top: 1px solid rgba(201, 148, 58, .46);
+      border-bottom: 1px solid rgba(201, 148, 58, .34);
+      color: rgba(126, 91, 35, .94);
+      font-size: .82rem;
+      font-weight: 540;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .networkCta {
+      display: flex;
+      justify-content: center;
+      margin-top: clamp(24px, 4vh, 46px);
+    }
+
+    .trust {
+      background: var(--deep);
+      color: var(--light-ivory);
+      overflow: hidden;
+      height: auto;
+      min-height: 82svh;
+    }
+    .trust .display {
+      color: var(--light-ivory);
+      font-size: clamp(4rem, 7.4vw, 8.8rem);
+    }
+    .trust .overline,
+    .trust .copy {
+      color: rgba(244, 238, 227, .68);
+    }
+    .trustLayout {
+      display: grid;
+      grid-template-columns: .84fr 1.16fr;
+      gap: clamp(38px, 7vw, 120px);
+      align-items: center;
+    }
+    .trustList {
+      border-top: 1px solid rgba(244, 238, 227, .2);
+    }
+    .trustItem {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 26px;
+      padding: clamp(18px, 2.7vh, 28px) 0;
+      border-bottom: 1px solid rgba(244, 238, 227, .18);
+    }
+    .trustItem em {
+      color: var(--champagne);
+      font-style: normal;
+      font-size: 1.15rem;
+    }
+    .trustItem h3 {
+      margin: 0;
+      color: var(--light-ivory);
+      font-size: clamp(1.45rem, 2.2vw, 2.7rem);
+      font-weight: 300;
+      line-height: 1;
+    }
+    .trustItem p {
+      margin: 14px 0 0;
+      color: rgba(244, 238, 227, .66);
+      line-height: 1.55;
+    }
+    .trustItem a {
+      display: inline-flex;
+      margin-top: 18px;
+      color: var(--champagne);
+      text-decoration-color: rgba(232, 201, 126, .42);
+      text-underline-offset: 5px;
+    }
+
+    .faq {
+      background: var(--powder);
+    }
+    .faq .sectionHeadCenter {
+      margin-bottom: clamp(18px, 3vh, 34px);
+    }
+    .faqList {
+      border-top: 1px solid var(--line);
+    }
+    details {
+      border-bottom: 1px solid var(--line);
+    }
+    summary {
+      min-height: clamp(60px, 7.5vh, 82px);
+      display: grid;
+      grid-template-columns: 86px minmax(0, 1fr) 40px;
+      gap: 22px;
+      align-items: center;
+      cursor: pointer;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    .faqNumber {
+      color: var(--gold);
+      font-size: 1.16rem;
+    }
+    summary h3 {
+      margin: 0;
+      font-size: clamp(1.3rem, 2.2vw, 2.55rem);
+      font-weight: 300;
+      line-height: 1;
+    }
+    .faqIcon {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--gold);
+      transition: transform .24s ease;
+    }
+    details[open] .faqIcon { transform: rotate(45deg); }
+    details p {
+      max-width: 720px;
+      margin: -6px 0 16px 108px;
+      color: var(--ink-soft);
+      line-height: 1.6;
+    }
+
+    .finalCta {
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      background: var(--coffee);
+      color: var(--light-ivory);
+      text-align: center;
+      overflow: hidden;
+    }
+    .finalCta img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      filter: brightness(.28) saturate(.72) contrast(1.04);
+    }
+    .finalCta::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(20, 17, 15, .16), rgba(20, 17, 15, .58));
+    }
+    .finalInner {
+      position: relative;
+      z-index: 1;
+      width: min(1040px, calc(100% - 48px));
+      display: grid;
+      justify-items: center;
+    }
+    .finalInner .display {
+      color: var(--light-ivory);
+      font-size: clamp(4rem, 8vw, 9.6rem);
+    }
+    .finalInner .copy {
+      margin-inline: auto;
+      color: rgba(244, 238, 227, .72);
+    }
+    .finalActions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+      margin-top: clamp(28px, 5vh, 52px);
+    }
+
+    .siteFooter {
+      background: var(--coffee);
+      color: rgba(244, 238, 227, .62);
+      border-top: 1px solid rgba(244, 238, 227, .16);
+      padding: 54px 0 38px;
+    }
+    .footerGrid {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 58px;
+      align-items: start;
+    }
+    .footerBrand img {
+      width: 92px;
+      filter: brightness(0) invert(1);
+      margin-bottom: 18px;
+    }
+    .footerBrand strong {
+      display: block;
+      color: var(--light-ivory);
+      font-size: 1.3rem;
+      font-weight: 300;
+    }
+    .footerColumns {
+      display: grid;
+      grid-template-columns: 1.1fr .7fr .55fr;
+      gap: 42px;
+    }
+    .siteFooter h3 {
+      margin: 0 0 14px;
+      color: var(--champagne);
+      font-size: .78rem;
+      font-weight: 400;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .siteFooter p {
+      margin: 0 0 7px;
+      font-size: .88rem;
+      line-height: 1.5;
+    }
+    .siteFooter a {
+      color: var(--light-ivory);
+      text-decoration-color: rgba(232, 201, 126, .42);
+      text-underline-offset: 5px;
+    }
+    .footerLegal {
+      margin-top: 36px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(244, 238, 227, .14);
+      color: rgba(244, 238, 227, .46);
+    }
+
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(34px);
+      transition: opacity .9s ease, transform .9s ease;
+      transition-delay: var(--delay, 0ms);
+    }
+    [data-reveal].is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 980px) {
+      .siteHeader { height: 86px; }
+      .headerInner { width: calc(100% - 32px); }
+      .brand {
+        gap: 0;
+      }
+      .brand img {
+        width: 60px;
+        height: 60px;
+      }
+      .brand span { font-size: .82rem; }
+      .desktopNav { display: none; }
+      .headerActions { gap: 16px; }
+      .menuButton { display: grid; }
+      .headerReserve {
+        min-width: 104px;
+        min-height: 44px;
+        font-size: .84rem;
+      }
+      .headerDivider { display: none; }
+      .menuButton,
+      .menuButton span,
+      .menuButton span::before,
+      .menuButton span::after { width: 58px; }
+      .hero::after,
+      .scrollModule { top: 86px; }
+      .heroContent {
+        width: calc(100% - 64px);
+        margin-left: 32px;
+      }
+      .container { width: calc(100% - 32px); }
+      .section {
+        height: 100svh;
+        min-height: 100svh;
+        padding: calc(86px + 28px) 0 28px;
+      }
+      .display { font-size: clamp(3.4rem, 13vw, 6.8rem); }
+      .copyGrid,
+      .storyGrid,
+      .manifesto .container,
+      .networkIntro,
+      .trustLayout,
+      .footerGrid,
+      .footerColumns {
+        grid-template-columns: 1fr;
+      }
+      .manifesto {
+        height: auto;
+        min-height: 100svh;
+        overflow: visible;
+      }
+      .manifesto .container {
+        gap: 0;
+        transform: none;
+      }
+      .manifestoPrinciples,
+      .portraitWall {
+        grid-template-columns: 1fr;
+      }
+      .manifestoText { margin-left: 0; }
+      .manifestoPrinciples {
+        margin-top: 34px;
+        max-width: none;
+        width: 100%;
+      }
+      .manifestoPrinciple {
+        grid-template-columns: 38px minmax(0, 1fr);
+        gap: 20px;
+        padding: 26px 0;
+      }
+      .storyGrid { gap: 28px; }
+      .methodStory .storyGrid {
+        grid-template-columns: 1fr;
+        gap: 38px;
+        transform: none;
+      }
+      .methodStory {
+        padding-top: calc(86px + 18px);
+      }
+      .methodContent {
+        margin-left: 0;
+        max-width: none;
+      }
+      .methodContent .outlineButton {
+        margin-top: 26px;
+      }
+      .methodTimeline {
+        width: 100%;
+        max-width: none;
+        grid-template-columns: 1fr;
+      }
+      .methodStep {
+        grid-template-columns: 38px minmax(0, 1fr);
+        gap: 20px;
+        padding: 22px 0;
+      }
+      .toolsGrid {
+        grid-template-columns: 1fr;
+        gap: 38px;
+        transform: none;
+      }
+      .toolsIntro {
+        margin-left: 0;
+        max-width: none;
+      }
+      .toolsList {
+        width: 100%;
+        max-width: none;
+        grid-template-columns: 1fr;
+      }
+      .toolItem {
+        grid-template-columns: 38px minmax(0, 1fr);
+        gap: 20px;
+        padding: 22px 0;
+      }
+      .sectionHeadCenter { margin-bottom: 24px; }
+      .portrait:nth-child(2) {
+        align-self: auto;
+        margin-top: 0;
+      }
+      .portrait {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+      }
+      .portrait img { height: clamp(290px, 42vh, 400px); }
+      .networkCta { margin-top: 24px; }
+      .trustItem { padding: 18px 0; }
+    }
+
+    @media (max-width: 640px) {
+      .headerReserve { display: none; }
+      .heroContent {
+        width: calc(100% - 48px);
+        margin-left: 24px;
+        padding-top: 50px;
+      }
+      .hero h1 {
+        font-size: clamp(3.25rem, 16vw, 5.2rem);
+        line-height: .88;
+      }
+      .hero p {
+        font-size: .98rem;
+        line-height: 1.48;
+        max-width: 330px;
+      }
+      .heroActions {
+        left: 50%;
+        right: auto;
+        width: auto;
+        display: flex;
+        bottom: 58px;
+        justify-content: center;
+        gap: 0;
+        transform: translateX(-50%);
+      }
+      .heroButton {
+        width: 136px;
+        min-height: auto;
+        font-size: .66rem;
+        letter-spacing: .06em;
+        padding: 0;
+      }
+      .heroButtonLabel {
+        padding: 8px 12px;
+        font-size: .66rem;
+        line-height: 1.22;
+      }
+      .heroMethodLink {
+        font-size: .64rem;
+        bottom: 22px;
+      }
+      .heroProfileLine::before {
+        right: -20vw;
+        width: 88vw;
+        opacity: .1;
+      }
+      .heroProfileLine img {
+        right: -34vw;
+        width: 100vw;
+        height: 82vh;
+        opacity: .055;
+      }
+
+
+      .heroFootnote,
+      .scrollModule { display: none; }
+      .siteNav a {
+        grid-template-columns: 52px minmax(0, 1fr);
+        padding: 22px 0;
+      }
+      .siteNav span { font-size: clamp(2.7rem, 14vw, 5rem); }
+      .section { padding: 96px 0 22px; }
+      .manifesto { padding-bottom: 42px; }
+      .display { font-size: clamp(3.15rem, 16vw, 5rem); }
+      .overline { font-size: 1.02rem; margin-bottom: 12px; }
+      .subtitle { font-size: 1.08rem; margin-top: 14px; }
+      .copy { font-size: .88rem; line-height: 1.42; margin-top: 14px; }
+      .copyGrid { gap: 10px; }
+      .storyText .display,
+      .sectionHeadCenter .display,
+      .networkIntro .display,
+      .trust .display,
+      .finalInner .display {
+        font-size: clamp(3.15rem, 16vw, 5rem);
+      }
+      .methodStep {
+        grid-template-columns: 30px minmax(0, 1fr);
+        gap: 14px;
+        padding: 18px 0;
+      }
+      .methodStep h3 { font-size: 1.22rem; }
+      .methodStep p { font-size: .88rem; line-height: 1.42; }
+      .toolsIntro .display { font-size: clamp(3.15rem, 16vw, 5rem); }
+      .toolItem {
+        grid-template-columns: 30px minmax(0, 1fr);
+        gap: 14px;
+        padding: 18px 0;
+      }
+      .toolItem h3 { font-size: 1.22rem; }
+      .toolItem p { color: rgba(44, 30, 16, .76); font-size: .9rem; line-height: 1.48; }
+      .manifesto .display { font-size: clamp(3.15rem, 15vw, 4.8rem); }
+      .manifestoPrinciples { margin-top: 28px; }
+      .manifestoPrinciple {
+        grid-template-columns: 30px minmax(0, 1fr);
+        gap: 14px;
+        padding: 22px 0;
+      }
+      .manifestoPrinciple h3 { font-size: 1.24rem; }
+      .manifestoPrinciple p { font-size: .9rem; line-height: 1.42; }
+      .networkIntro { gap: 18px; margin-bottom: 16px; }
+      .portraitWall { gap: 12px; }
+      .portrait {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 12px;
+      }
+      .portrait img { height: 280px; }
+      .portrait h3 { font-size: 1.1rem; }
+      .portrait p { font-size: .8rem; }
+      .portraitSpec { font-size: .78rem; }
+      .portraitBadge { min-height: 26px; font-size: .7rem; }
+      .networkCta { margin-top: 14px; }
+      .summaryText { min-width: 0; }
+      summary {
+        min-height: 64px;
+        grid-template-columns: 42px minmax(0, 1fr) 32px;
+        gap: 12px;
+      }
+      summary h3 { font-size: 1.1rem; }
+      details p {
+        margin-left: 54px;
+        font-size: .84rem;
+        line-height: 1.38;
+      }
+      .trustItem {
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 16px;
+        padding: 14px 0;
+      }
+      .trustItem h3 { font-size: 1.35rem; }
+      .trustItem p { font-size: .84rem; line-height: 1.38; }
+      .finalActions { display: grid; width: 100%; }
+      .outlineButton { width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+      }
+      [data-reveal] {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="siteHeader" id="siteHeader">
+      <div class="headerInner">
+        <a class="brand" href="#" aria-label="Beauty Broker World">
+          <img id="brandLogo" src="iconflat.png" alt="Beauty Broker World">
+          <span>Beauty Broker World</span>
+        </a>
+        <nav class="desktopNav" aria-label="Navigazione principale">
+          <a href="#manifesto">Scelta</a>
+          <a href="#come-funziona">Metodo</a>
+          <a href="#specialisti">Network</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <div class="headerActions">
+          <a class="headerReserve" href="/accesso">Accedi</a>
+          <span class="headerDivider" aria-hidden="true"></span>
+          <button class="menuButton" id="menuButton" type="button" aria-label="Apri menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="siteNav" id="siteNav" aria-label="Navigazione principale">
+      <div class="navInner">
+        <a href="#manifesto"><em>01</em><span>Scelta</span></a>
+        <a href="#come-funziona"><em>02</em><span>Metodo</span></a>
+        <a href="#specialisti"><em>03</em><span>Network</span></a>
+        <a href="#faq"><em>04</em><span>FAQ</span></a>
+      </div>
+    </nav>
+
+    <div class="scrollModule" id="scrollModule" aria-hidden="true">
+      <span class="scrollModuleRail"></span>
+      <span class="scrollModuleThumb" id="scrollModuleThumb"></span>
+    </div>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="heroAmbient" aria-hidden="true"></div>
+        <div class="heroProfileLine" aria-hidden="true">
+          <img src="bbw-logo-hero-watermark-large.png" alt="" loading="eager">
+        </div>
+        <div class="heroContent">
+          <h1 id="hero-title" data-reveal><span>La bellezza</span><span>di essere in</span><span class="heroTitleAccent">salute.</span></h1>
+          <p data-reveal style="--delay: 120ms">Piattaforma digitale italiana per estetica medica, longevità e percorsi guidati da professionisti qualificati.</p>
+        </div>
+        <div class="heroActions" data-reveal style="--delay: 240ms">
+          <a class="heroButton heroButtonPrimary" href="/accesso" aria-label="Inizia il percorso">
+            <span class="heroButtonShape" aria-hidden="true">
+              <svg class="heroButtonSvg" viewBox="0 0 200 200" focusable="false">
+                <path class="heroButtonGhost" d="M98 22 C142 18 180 55 178 101 C176 145 145 177 99 179 C52 181 21 144 22 99 C23 56 55 24 98 22 Z" />
+                <path class="heroButtonBlob" d="M100 18 C145 16 184 54 182 103 C180 148 146 182 99 181 C53 180 18 145 20 98 C22 52 55 20 100 18 Z">
+                  <animate class="heroButtonMorph" attributeName="d" dur="3.6s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines=".42 0 .58 1;.42 0 .58 1" values="M100 18 C145 16 184 54 182 103 C180 148 146 182 99 181 C53 180 18 145 20 98 C22 52 55 20 100 18 Z; M101 16 C150 20 180 56 184 100 C188 147 149 179 101 184 C56 188 16 146 19 100 C22 55 54 12 101 16 Z; M100 18 C145 16 184 54 182 103 C180 148 146 182 99 181 C53 180 18 145 20 98 C22 52 55 20 100 18 Z" />
+                </path>
+              </svg>
+            </span>
+            <span class="heroButtonLabel">INIZIA<br>IL PERCORSO</span>
+          </a>
+        </div>
+        <a class="heroMethodLink" href="#come-funziona">Scopri il metodo<span class="heroMethodLinkArrow" aria-hidden="true">↓</span></a>
+        <p class="heroFootnote">Scegli con più calma, più metodo, più fiducia.</p>
+      </section>
+
+      <section id="manifesto" class="section manifesto">
+        <div class="container">
+          <div class="manifestoText">
+            <p class="overline" data-reveal>1. Per pazienti e professionisti</p>
+            <h2 class="display" data-reveal>La<br>scelta</h2>
+            <p class="subtitle" data-reveal>Un ecosistema per scegliere con più consapevolezza.</p>
+            <div class="copyGrid" data-reveal>
+              <p class="copy">Beauty Broker World accompagna pazienti e professionisti in un percorso più chiaro, sicuro e strutturato.</p>
+              <p class="copy">Non un marketplace indistinto, ma una rete selezionata per orientare le decisioni in estetica medica, medicina avanzata, benessere e longevità.</p>
+            </div>
+          </div>
+          <div class="manifestoPrinciples" aria-label="Concetti chiave Beauty Broker World" data-reveal>
+            <article class="manifestoPrinciple">
+              <em>01</em>
+              <div>
+                <h3>Rete selezionata</h3>
+                <p>Professionisti qualificati, scelti per competenza, esperienza ed etica.</p>
+              </div>
+            </article>
+            <article class="manifestoPrinciple">
+              <em>02</em>
+              <div>
+                <h3>Scelta consapevole</h3>
+                <p>Informazioni chiare, strumenti digitali e supporto prima della decisione.</p>
+              </div>
+            </article>
+            <article class="manifestoPrinciple">
+              <em>03</em>
+              <div>
+                <h3>Percorso più sicuro</h3>
+                <p>Coperture, pagamenti e continuità pensati per vivere l'esperienza con serenità.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="come-funziona" class="section splitStory methodStory">
+        <div class="container storyGrid">
+          <div class="storyText methodContent">
+            <p class="overline" data-reveal>2. Il metodo BBW</p>
+            <h2 class="display" data-reveal>Il<br>metodo</h2>
+            <p class="subtitle" data-reveal>Prima, durante, dopo.</p>
+            <p class="copy" data-reveal>Un percorso pensato per accompagnare pazienti e professionisti in modo più chiaro, sicuro e continuativo: dalla scelta dello specialista agli strumenti digitali, fino al supporto dopo il trattamento.</p>
+            <a class="outlineButton" href="#strumenti" data-reveal>Scopri come funziona</a>
+          </div>
+          <div class="methodTimeline" aria-label="Percorso del metodo Beauty Broker World">
+            <article class="methodStep" data-reveal>
+              <em>01</em>
+              <div>
+                <h3>Orientamento</h3>
+                <p>Un primo accesso chiaro per comprendere servizi, possibilità e percorso.</p>
+              </div>
+            </article>
+            <article class="methodStep" data-reveal style="--delay: 90ms">
+              <em>02</em>
+              <div>
+                <h3>Specialista</h3>
+                <p>Professionisti selezionati per competenza, esperienza ed etica.</p>
+              </div>
+            </article>
+            <article class="methodStep" data-reveal style="--delay: 180ms">
+              <em>03</em>
+              <div>
+                <h3>Protezione</h3>
+                <p>Coperture assicurative e pagamenti smart per affrontare il percorso con serenità.</p>
+              </div>
+            </article>
+            <article class="methodStep" data-reveal style="--delay: 270ms">
+              <em>04</em>
+              <div>
+                <h3>Continuità</h3>
+                <p>Beauty Passport, storico digitale e supporto anche dopo il trattamento.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="strumenti" class="section toolsSection">
+        <div class="container toolsGrid">
+          <div class="toolsIntro">
+            <p class="overline" data-reveal>3. Strumenti BBW</p>
+            <h2 class="display" data-reveal>Gli<br>strumenti</h2>
+            <p class="subtitle" data-reveal>Tutto ciò che rende il percorso più chiaro, protetto e continuo.</p>
+          </div>
+          <div class="toolsList" aria-label="Strumenti Beauty Broker World" data-reveal>
+            <article class="toolItem">
+              <em>01</em>
+              <div>
+                <h3>Membership Card</h3>
+                <p>Accedi ai vantaggi del network BBW e ai servizi dedicati.</p>
+              </div>
+            </article>
+            <article class="toolItem">
+              <em>02</em>
+              <div>
+                <h3>Coperture assicurative</h3>
+                <p>Soluzioni assicurative fornite da partner terzi autorizzati.</p>
+              </div>
+            </article>
+            <article class="toolItem">
+              <em>03</em>
+              <div>
+                <h3>Pagamenti Smart</h3>
+                <p>Piani flessibili e rateali per gestire il percorso con serenità.</p>
+              </div>
+            </article>
+            <article class="toolItem">
+              <em>04</em>
+              <div>
+                <h3>Beauty Passport</h3>
+                <p>Lo storico digitale dei trattamenti, sempre ordinato e accessibile.</p>
+              </div>
+            </article>
+            <article class="toolItem">
+              <em>05</em>
+              <div>
+                <h3>Assistenza dedicata</h3>
+                <p>Supporto prima, durante e dopo il percorso.</p>
+              </div>
+            </article>
+            <article class="toolItem">
+              <em>06</em>
+              <div>
+                <h3>Rewards Club</h3>
+                <p>Benefit e vantaggi dedicati all'interno dell'ecosistema BBW.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="specialisti" class="section network">
+        <div class="container">
+          <div class="networkIntro">
+            <div>
+              <p class="overline" data-reveal>4. Network selezionato</p>
+              <h2 class="display" data-reveal>Specialisti<br>d&rsquo;eccellenza</h2>
+            </div>
+            <div>
+              <p class="subtitle" data-reveal>Medicina estetica, chirurgia plastica e longevità. Professionisti selezionati per competenza, esperienza clinica ed etica professionale.</p>
+              <p class="networkMetaLine" data-reveal>Un network selezionato di oltre <span>250</span> professionisti verificati.<br>Medicina estetica <span>·</span> Chirurgia plastica <span>·</span> Longevità</p>
+            </div>
+          </div>
+          <div class="portraitWall">
+            <article class="portrait" data-reveal>
+              <img src="bbw-landing-assets/Francesco_Sisto.png" alt="Dr. Francesco Sisto" loading="lazy">
+              <div class="portraitInfo">
+                <h3>Dr. Francesco Sisto</h3>
+                <p class="portraitRole">Chirurgo plastico</p>
+                <span class="portraitBadge">Professionista verificato</span>
+              </div>
+            </article>
+            <article class="portrait" data-reveal style="--delay: 120ms">
+              <img src="bbw-landing-assets/Davide_Francomano.png" alt="Dr. Davide Francomano" loading="lazy">
+              <div class="portraitInfo">
+                <h3>Dr. Davide Francomano</h3>
+                <p class="portraitRole">Endocrinologo</p>
+                <span class="portraitBadge">Professionista verificato</span>
+              </div>
+            </article>
+            <article class="portrait" data-reveal style="--delay: 220ms">
+              <img src="bbw-landing-assets/Giuseppe_Mazzarella.png" alt="Dr. Giuseppe Mazzarella" loading="lazy">
+              <div class="portraitInfo">
+                <h3>Dr. Giuseppe Mazzarella</h3>
+                <p class="portraitRole">Medico estetico</p>
+                <span class="portraitBadge">Professionista verificato</span>
+              </div>
+            </article>
+          </div>
+          <div class="networkCta">
+            <a class="outlineButton" href="/accesso" data-reveal>Esplora il network completo</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section network specializedNetwork">
+        <div class="container">
+          <div class="networkIntro">
+            <div>
+              <p class="overline" data-reveal>5. Figure specializzate</p>
+              <h2 class="display" data-reveal>Beauty<br>Specialist</h2>
+            </div>
+            <div>
+              <p class="subtitle" data-reveal>Figure dedicate all'accompagnamento del cliente: orientamento, benessere e continuità nel percorso.</p>
+            </div>
+          </div>
+          <div class="portraitWall">
+            <article class="portrait" data-reveal>
+              <img src="bbw-landing-assets/Agnese_Mita.png" alt="Agnese Mita" loading="lazy">
+              <div class="portraitInfo">
+                <h3>Agnese Mita</h3>
+                <p class="portraitRole">Beauty Specialist</p>
+                <p class="portraitSpec">Senior Beauty Specialist</p>
+                <span class="portraitBadge">Professionista verificata</span>
+              </div>
+            </article>
+            <article class="portrait" data-reveal style="--delay: 120ms">
+              <img src="bbw-landing-assets/Antonella_Greco.png" alt="Prof. Antonella Greco" loading="lazy">
+              <div class="portraitInfo">
+                <h3>Prof. Antonella Greco</h3>
+                <p class="portraitRole">Beauty Specialist</p>
+                <p class="portraitSpec">Master Beauty Specialist</p>
+                <span class="portraitBadge">Professionista verificata</span>
+              </div>
+            </article>
+            <article class="portrait" data-reveal style="--delay: 220ms">
+              <img src="bbw-landing-assets/Sabrina_Quaranta.png" alt="Dr.ssa Sabrina Quaranta" loading="lazy">
+              <div class="portraitInfo">
+                <h3>Dr.ssa Sabrina Quaranta</h3>
+                <p class="portraitRole">Biologa nutrizionista</p>
+                <p class="portraitSpec">Specialista senior</p>
+                <span class="portraitBadge">Professionista verificata</span>
+              </div>
+            </article>
+          </div>
+          <div class="networkCta">
+            <a class="outlineButton" href="/accesso" data-reveal>Esplora il network completo</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section trust">
+        <div class="container trustLayout">
+          <div>
+            <p class="overline" data-reveal>6. Media e recensioni</p>
+            <h2 class="display" data-reveal>La<br>fiducia</h2>
+            <p class="copy" data-reveal>Stampa, testimonianze e percorsi reali raccontano il valore di una piattaforma costruita intorno a sicurezza e consapevolezza.</p>
+          </div>
+          <div class="trustList">
+            <article class="trustItem" data-reveal>
+              <em>01</em>
+              <div><h3>Rassegna stampa</h3><p>Investire in longevità e capitale estetico: il nuovo HTSI Beauty e Gioielli.</p><a href="https://www.ilsole24ore.com/art/investire-longevita-e-capitale-estetico-nuovo-htsi-beauty-e-gioielli-AHI4DlpD" target="_blank" rel="noopener noreferrer">Il Sole 24 Ore</a></div>
+            </article>
+            <article class="trustItem" data-reveal>
+              <em>02</em>
+              <div><h3>Esperienze reali</h3><p>“Dopo anni di ricerche, con Beauty Broker ho trovato finalmente lo specialista giusto.”</p></div>
+            </article>
+            <article class="trustItem" data-reveal>
+              <em>03</em>
+              <div><h3>Network etico</h3><p>Professionisti verificati e strumenti per rendere ogni scelta più trasparente.</p></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" class="section faq">
+        <div class="narrow">
+          <div class="sectionHeadCenter">
+            <p class="overline" data-reveal>7. Prima di scegliere</p>
+            <h2 class="display" data-reveal>FAQ</h2>
+            <p class="subtitle" data-reveal>Risposte chiare, prima di scegliere.</p>
+          </div>
+          <div class="faqList" data-reveal>
+            <details open>
+              <summary><span class="faqNumber">01</span><h3>Il consulto iniziale è gratuito?</h3><span class="faqIcon" aria-hidden="true">+</span></summary>
+              <p>La registrazione e l'accesso alla piattaforma sono gratuiti. Eventuali servizi o percorsi vengono presentati con condizioni chiare prima della conferma.</p>
+            </details>
+            <details>
+              <summary><span class="faqNumber">02</span><h3>Come funzionano le coperture assicurative?</h3><span class="faqIcon" aria-hidden="true">+</span></summary>
+              <p>Beauty Broker World integra l'accesso a soluzioni assicurative fornite e gestite da terze parti autorizzate, senza svolgere attività di distribuzione assicurativa.</p>
+            </details>
+            <details>
+              <summary><span class="faqNumber">03</span><h3>Posso pagare a rate?</h3><span class="faqIcon" aria-hidden="true">+</span></summary>
+              <p>Sì, la piattaforma può proporre pagamenti rateali tramite partner dedicati, in base al percorso scelto e alle condizioni applicabili.</p>
+            </details>
+            <details>
+              <summary><span class="faqNumber">04</span><h3>Chi sono i medici della piattaforma?</h3><span class="faqIcon" aria-hidden="true">+</span></summary>
+              <p>Sono professionisti qualificati e selezionati per competenza, esperienza clinica, abilitazioni e coerenza con gli standard etici del network.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="section finalCta">
+        <img src="bbw-landing-assets/step-3.jpg" alt="" loading="lazy" aria-hidden="true">
+        <div class="finalInner">
+          <h2 class="display" data-reveal>Pronta a<br>splendere?</h2>
+          <p class="copy" data-reveal>Oltre 5.000 persone hanno scelto un percorso più sicuro, consapevole e guidato.</p>
+          <div class="finalActions" data-reveal>
+            <a class="outlineButton" href="/accesso">Unisciti a noi</a>
+            <a class="outlineButton" href="mailto:info@beautybrokerworld.it">Contattaci</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="siteFooter">
+      <div class="container footerGrid">
+        <div class="footerBrand">
+          <img src="bbw-landing-assets/beauty-broker-logo.png" alt="Beauty Broker World">
+          <strong>Beauty Broker World</strong>
+          <p>Medicina estetica, longevità, benessere e network selezionato.</p>
+        </div>
+        <div class="footerColumns">
+          <section>
+            <h3>Azienda</h3>
+            <p>Beauty Broker World S.R.L.</p>
+            <p>Via Loffredo, 10 - 73100 Lecce (LE), Italy</p>
+            <p>C.F. e P.IVA 05435250757</p>
+            <p>Capitale soc. Euro 10.000,00 interamente versato</p>
+          </section>
+          <section>
+            <h3>Contatti</h3>
+            <p><a href="mailto:info@beautybrokerworld.it">info@beautybrokerworld.it</a></p>
+          </section>
+          <section>
+            <h3>Legale</h3>
+            <p><a href="/privacy">Privacy</a></p>
+            <p><a href="#">Cookie policy</a></p>
+          </section>
+        </div>
+      </div>
+      <div class="container footerLegal">
+        <p>Beauty Broker World non svolge attività di distribuzione assicurativa: le polizze sono distribuite e gestite da intermediari assicurativi autorizzati.</p>
+        <p>Beauty Broker World non svolge attività di consulenza medicale, affidate a professionisti medici abilitati.</p>
+        <p>© 2026 Beauty Broker World S.R.L. - Tutti i diritti riservati.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var header = document.getElementById("siteHeader");
+      var menuButton = document.getElementById("menuButton");
+      var nav = document.getElementById("siteNav");
+      var brandLogo = document.getElementById("brandLogo");
+      var scrollModule = document.getElementById("scrollModule");
+      var scrollModuleThumb = document.getElementById("scrollModuleThumb");
+      var pageSections = Array.prototype.slice.call(document.querySelectorAll("main > section"));
+      var snapTargets = Array.prototype.slice.call(document.querySelectorAll("main > section, .siteFooter"));
+      var progressTicks = [];
+      var ticking = false;
+      var snapIndex = 0;
+      var isSnapping = false;
+      var snapTimer = 0;
+      var snapTargetTop = 0;
+      var wheelDelta = 0;
+      var wheelIdleTimer = 0;
+      var wheelGestureLocked = false;
+      var lastWheelEventAt = 0;
+      var touchStartY = 0;
+      var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var brandLogoDefaultSrc = "iconflat.png";
+      var brandLogoLightSrc = "bbw-logo-flat-dark-bronze.png";
+
+      function setScrolled() {
+        header.classList.toggle("is-scrolled", window.scrollY > 18);
+        updateBrandLogo();
+      }
+
+      function updateBrandLogo() {
+        if (!brandLogo) return;
+
+        var useLightHeaderLogo = header.classList.contains("is-scrolled") || header.classList.contains("is-open");
+        var nextSrc = useLightHeaderLogo ? brandLogoLightSrc : brandLogoDefaultSrc;
+        if (brandLogo.getAttribute("src") !== nextSrc) {
+          brandLogo.setAttribute("src", nextSrc);
+        }
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      function getNearestSnapIndex() {
+        var scrollTop = window.scrollY || window.pageYOffset || 0;
+        var nearestIndex = 0;
+        var nearestDistance = Infinity;
+
+        snapTargets.forEach(function (target, index) {
+          var distance = Math.abs(target.offsetTop - scrollTop);
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestIndex = index;
+          }
+        });
+
+        return nearestIndex;
+      }
+
+      function getMaxScroll() {
+        return Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
+      }
+
+      function getSnapTop(target) {
+        if (!target) return 0;
+        return Math.round(clamp(target.offsetTop, 0, getMaxScroll()));
+      }
+
+      function finishSnap() {
+        isSnapping = false;
+        snapIndex = getNearestSnapIndex();
+        if (Date.now() - lastWheelEventAt > 70) {
+          wheelGestureLocked = false;
+        }
+        requestScrollUpdate();
+      }
+
+      function hasReachedSnapTarget() {
+        return Math.abs((window.scrollY || window.pageYOffset || 0) - snapTargetTop) <= 4;
+      }
+
+      function snapToIndex(index) {
+        if (!snapTargets.length || document.body.classList.contains("menu-open")) return;
+
+        var nextIndex = clamp(index, 0, snapTargets.length - 1);
+        var target = snapTargets[nextIndex];
+        var targetTop = getSnapTop(target);
+        var behavior = prefersReducedMotion ? "auto" : "smooth";
+        var duration = prefersReducedMotion ? 80 : 480;
+
+        snapIndex = nextIndex;
+        isSnapping = true;
+        snapTargetTop = targetTop;
+        window.clearTimeout(snapTimer);
+        window.scrollTo({ top: targetTop, behavior: behavior });
+
+        snapTimer = window.setTimeout(function () {
+          window.scrollTo({ top: getSnapTop(snapTargets[snapIndex]), behavior: "auto" });
+          finishSnap();
+        }, duration);
+      }
+
+      function snapByDirection(direction) {
+        if (isSnapping) return;
+        snapIndex = getNearestSnapIndex();
+        snapToIndex(snapIndex + direction);
+      }
+
+      function onWheel(event) {
+        if (document.body.classList.contains("menu-open")) return;
+        if (event.ctrlKey) return;
+
+        event.preventDefault();
+
+        var deltaY = event.deltaY;
+        if (event.deltaMode === 1) deltaY *= 16;
+        if (event.deltaMode === 2) deltaY *= window.innerHeight;
+        lastWheelEventAt = Date.now();
+
+        window.clearTimeout(wheelIdleTimer);
+        wheelIdleTimer = window.setTimeout(function () {
+          wheelDelta = 0;
+          if (isSnapping) return;
+          wheelGestureLocked = false;
+        }, 70);
+
+        if (isSnapping || wheelGestureLocked) return;
+        if (Math.abs(deltaY) < 6) return;
+
+        wheelDelta += deltaY;
+        if (Math.abs(wheelDelta) < 14) return;
+
+        var direction = wheelDelta > 0 ? 1 : -1;
+        wheelDelta = 0;
+        wheelGestureLocked = true;
+        snapByDirection(direction);
+      }
+
+      function onKeyDown(event) {
+        var tagName = event.target && event.target.tagName;
+        var isEditable = tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || event.target.isContentEditable;
+        if (isEditable || document.body.classList.contains("menu-open")) return;
+
+        if (event.key === "ArrowDown" || event.key === "PageDown" || event.key === " ") {
+          event.preventDefault();
+          snapByDirection(1);
+        }
+        if (event.key === "ArrowUp" || event.key === "PageUp") {
+          event.preventDefault();
+          snapByDirection(-1);
+        }
+        if (event.key === "Home") {
+          event.preventDefault();
+          snapToIndex(0);
+        }
+        if (event.key === "End") {
+          event.preventDefault();
+          snapToIndex(snapTargets.length - 1);
+        }
+      }
+
+      function onTouchStart(event) {
+        touchStartY = event.touches && event.touches.length ? event.touches[0].clientY : 0;
+      }
+
+      function onTouchMove(event) {
+        if (!touchStartY || document.body.classList.contains("menu-open")) return;
+
+        var currentY = event.touches && event.touches.length ? event.touches[0].clientY : touchStartY;
+        if (Math.abs(touchStartY - currentY) > 6) {
+          event.preventDefault();
+        }
+      }
+
+      function onTouchEnd(event) {
+        if (!touchStartY || document.body.classList.contains("menu-open")) return;
+        var touchEndY = event.changedTouches && event.changedTouches.length ? event.changedTouches[0].clientY : touchStartY;
+        var deltaY = touchStartY - touchEndY;
+        touchStartY = 0;
+        if (Math.abs(deltaY) < 52) return;
+        snapByDirection(deltaY > 0 ? 1 : -1);
+      }
+
+      function buildScrollModule() {
+        if (!scrollModule || !pageSections.length) return;
+        pageSections.forEach(function () {
+          var tick = document.createElement("span");
+          tick.className = "scrollModuleTick";
+          scrollModule.appendChild(tick);
+          progressTicks.push(tick);
+        });
+      }
+
+      function updateScrollModule() {
+        if (!scrollModule || !scrollModuleThumb || !pageSections.length) return;
+
+        var scrollTop = window.scrollY || window.pageYOffset || 0;
+        var maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+        var progress = clamp((scrollTop / maxScroll) * 100, 0, 100);
+        var railHeight = scrollModule.clientHeight || 1;
+        var viewportAnchor = scrollTop + window.innerHeight * 0.52;
+        var activeIndex = 0;
+
+        pageSections.forEach(function (section, index) {
+          if (section.offsetTop <= viewportAnchor) activeIndex = index;
+        });
+
+        progressTicks.forEach(function (tick, index) {
+          var sectionProgress = clamp((pageSections[index].offsetTop / maxScroll) * 100, 0, 100);
+          tick.style.top = String(sectionProgress) + "%";
+          tick.classList.toggle("is-active", index === activeIndex);
+        });
+
+        var activeSection = pageSections[activeIndex];
+        var onDark = activeSection && (
+          activeSection.classList.contains("hero") ||
+          activeSection.classList.contains("trust") ||
+          activeSection.classList.contains("finalCta")
+        );
+
+        scrollModule.style.setProperty("--thumb-y", String((progress / 100) * railHeight) + "px");
+        scrollModule.classList.toggle("is-on-dark", Boolean(onDark));
+        scrollModule.classList.toggle("is-before-progress", activeIndex === 0);
+      }
+
+      function requestScrollUpdate() {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(function () {
+          setScrolled();
+          updateScrollModule();
+          ticking = false;
+        });
+      }
+
+      function closeMenu() {
+        document.body.classList.remove("menu-open");
+        header.classList.remove("is-open");
+        menuButton.setAttribute("aria-expanded", "false");
+        updateBrandLogo();
+      }
+
+      function toggleMenu() {
+        var isOpen = header.classList.toggle("is-open");
+        document.body.classList.toggle("menu-open", isOpen);
+        menuButton.setAttribute("aria-expanded", String(isOpen));
+        updateBrandLogo();
+      }
+
+      buildScrollModule();
+      setScrolled();
+      updateScrollModule();
+      snapIndex = getNearestSnapIndex();
+      window.addEventListener("wheel", onWheel, { passive: false });
+      window.addEventListener("touchstart", onTouchStart, { passive: true });
+      window.addEventListener("touchmove", onTouchMove, { passive: false });
+      window.addEventListener("touchend", onTouchEnd, { passive: true });
+      window.addEventListener("scroll", function () {
+        if (isSnapping && hasReachedSnapTarget()) {
+          window.clearTimeout(snapTimer);
+          finishSnap();
+        } else {
+          snapIndex = getNearestSnapIndex();
+          requestScrollUpdate();
+        }
+      }, { passive: true });
+      window.addEventListener("resize", requestScrollUpdate);
+      window.addEventListener("load", requestScrollUpdate);
+      menuButton.addEventListener("click", toggleMenu);
+      nav.querySelectorAll("a").forEach(function (link) {
+        link.addEventListener("click", closeMenu);
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeMenu();
+      });
+      document.addEventListener("keydown", onKeyDown);
+
+      if (!prefersReducedMotion && "IntersectionObserver" in window) {
+        var revealObserver = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              revealObserver.unobserve(entry.target);
+            }
+          });
+        }, { threshold: .14 });
+
+        document.querySelectorAll("[data-reveal]").forEach(function (el) {
+          revealObserver.observe(el);
+        });
+      } else {
+        document.querySelectorAll("[data-reveal]").forEach(function (el) {
+          el.classList.add("is-visible");
+        });
+      }
+    })();
+  </script>
+  <script>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var isCoarse = window.matchMedia('(pointer: coarse)').matches;
+      if (reduce || isCoarse) {
+        Array.prototype.slice.call(document.querySelectorAll('.heroButtonMorph')).forEach(function (morph) {
+          morph.remove();
+        });
+        return;
+      }
+
+      var buttons = Array.prototype.slice.call(document.querySelectorAll('.heroButton'));
+      if (!buttons.length) return;
+
+      function onPointerMove(e) {
+        if (e.pointerType === 'touch') return;
+        var px = e.clientX, py = e.clientY;
+        buttons.forEach(function (btn) {
+          var shape = btn.querySelector('.heroButtonShape');
+          if (!shape) return;
+          var rect = btn.getBoundingClientRect();
+          var cx = rect.left + rect.width / 2;
+          var cy = rect.top + rect.height / 2;
+          var dx = px - cx;
+          var dy = py - cy;
+          var dist = Math.hypot(dx, dy);
+          var influence = Math.max(0, 1 - dist / 220);
+          var tx = Math.max(-8, Math.min(8, dx * 0.04 * influence));
+          var ty = Math.max(-8, Math.min(8, dy * 0.04 * influence));
+          shape.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+        });
+      }
+
+      function resetShapes() {
+        buttons.forEach(function (btn) {
+          var shape = btn.querySelector('.heroButtonShape');
+          if (shape) shape.style.transform = '';
+        });
+      }
+
+      document.addEventListener('pointermove', onPointerMove, { passive: true });
+      document.addEventListener('pointerleave', resetShapes, { passive: true });
+      window.addEventListener('blur', resetShapes);
+    })();
+  </script>
+</body>
+</html>
