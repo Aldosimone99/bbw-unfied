@@ -1,7 +1,13 @@
 import { createClient } from "../../lib/supabase/server";
 import { mapAuthError, type AuthApplicationError } from "../../features/auth/errors/map-auth-error";
-import type { LoginInput, RegisterInput } from "../../lib/validation/auth";
+import type {
+  LoginInput,
+  OnboardingAccountTypeInput,
+  OnboardingProfileInput,
+  RegisterInput
+} from "../../lib/validation/auth";
 import { requestBackend } from "../backend/server-request";
+import { requestTransitionBackend } from "../auth/transition-session";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -18,58 +24,18 @@ function getSupabaseConfigurationMessage(error: unknown): string | null {
     : null;
 }
 
-export type RegistrationOtpResult =
-  | { status: "success"; reference: string; code?: string }
-  | { status: "error"; message: string };
-
-export async function requestRegistrationOtp(email: string): Promise<RegistrationOtpResult> {
-  const response = await requestBackend<{ reference?: string; code?: string }>("/auth/otp/send", {
-    method: "POST",
-    body: JSON.stringify({ email, purpose: "registration" })
-  });
-
-  if (!response.ok || !response.data.reference) {
-    return { status: "error", message: "Non è stato possibile inviare il codice email." };
-  }
-
-  return { status: "success", reference: response.data.reference, code: response.data.code };
-}
-
 export type RegisterResult =
   | { status: "redirect" }
   | { status: "error"; error: AuthApplicationError };
 
 export async function registerAccount(input: RegisterInput): Promise<RegisterResult> {
-  const verifyResponse = await requestBackend("/auth/otp/verify", {
-    method: "POST",
-    body: JSON.stringify({
-      email: input.email,
-      reference: input.otpReference,
-      code: input.otpCode,
-      purpose: "registration"
-    })
-  });
-
-  if (!verifyResponse.ok) {
-    return { status: "error", error: { kind: "generic", message: "Il codice email non è valido o è scaduto." } };
-  }
-
   const response = await requestBackend<{ userId?: string }>("/auth/register", {
     method: "POST",
     body: JSON.stringify({
-      tipo_utente: input.tipoUtente,
       email: input.email,
       password: input.password,
-      otp_reference: input.otpReference,
       accept_terms: input.acceptTerms,
       accept_privacy: input.acceptPrivacy,
-      nome: input.nome,
-      cognome: input.cognome,
-      codice_fiscale: input.codiceFiscale,
-      ragione_sociale: input.ragioneSociale,
-      partita_iva: input.partitaIva,
-      studio_citta: input.studioCitta,
-      numero_albo: input.numeroAlbo,
       consenso_marketing: false,
       consenso_profilazione: false
     })
@@ -121,4 +87,32 @@ async function signInWithSupabase(email: string, password: string): Promise<Logi
 export async function logoutAccount(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
+}
+
+export type OnboardingResult =
+  | { status: "success" }
+  | { status: "unauthorized" }
+  | { status: "error" };
+
+export async function saveOnboardingProfile(input: OnboardingProfileInput): Promise<OnboardingResult> {
+  const response = await requestTransitionBackend("/auth/onboarding/profile", {
+    method: "POST",
+    body: JSON.stringify({ nome: input.firstName, cognome: input.lastName, telefono: input.phone ?? null })
+  });
+
+  if (response.status === 401) return { status: "unauthorized" };
+  return response.ok ? { status: "success" } : { status: "error" };
+}
+
+export async function completeOnboarding(input: OnboardingAccountTypeInput): Promise<OnboardingResult> {
+  const response = await requestTransitionBackend("/auth/onboarding/complete", {
+    method: "POST",
+    body: JSON.stringify({
+      account_type: input.accountType,
+      organization_display_name: input.organizationDisplayName ?? null
+    })
+  });
+
+  if (response.status === 401) return { status: "unauthorized" };
+  return response.ok ? { status: "success" } : { status: "error" };
 }

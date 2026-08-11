@@ -3,12 +3,18 @@
 import { redirect } from "next/navigation";
 
 import { getFieldErrors, type FieldErrors } from "../../lib/validation/action-errors";
-import { loginInputSchema, registerInputSchema } from "../../lib/validation/auth";
 import {
+  loginInputSchema,
+  onboardingAccountTypeInputSchema,
+  onboardingProfileInputSchema,
+  registerInputSchema
+} from "../../lib/validation/auth";
+import {
+  completeOnboarding,
   loginAccount,
   logoutAccount,
-  requestRegistrationOtp,
-  registerAccount
+  registerAccount,
+  saveOnboardingProfile
 } from "../../server/services/auth-service";
 import { resolvePostLoginDestination } from "../../server/services/post-login-service";
 
@@ -19,11 +25,16 @@ export type LoginActionState = {
 };
 
 export type RegisterActionState = {
-  status: "idle" | "error" | "otp_sent";
+  status: "idle" | "error";
   message?: string;
   fieldErrors?: FieldErrors;
-  otpReference?: string;
-  devOtpCode?: string;
+};
+
+export type OnboardingActionState = {
+  status: "idle" | "error" | "success";
+  step: "profile" | "account_type";
+  message?: string;
+  fieldErrors?: FieldErrors;
 };
 
 export async function logoutAction() {
@@ -34,6 +45,14 @@ export async function logoutAction() {
 function getFormValue(formData: FormData, name: string): FormDataEntryValue | null {
   return formData.get(name);
 }
+
+const onboardingAccountTypeAliases: Record<string, string> = {
+  cliente: "personal",
+  medico: "healthcare_professional",
+  estetista: "beauty_professional",
+  clinica: "organization",
+  commerciale: "commercial"
+};
 
 export async function loginAction(
   _previousState: LoginActionState,
@@ -56,49 +75,65 @@ export async function loginAction(
 }
 
 export async function registerAction(
-  previousState: RegisterActionState,
+  _previousState: RegisterActionState,
   formData: FormData
 ): Promise<RegisterActionState> {
-  if (formData.get("_action") === "send_otp") {
-    const email = String(getFormValue(formData, "email") ?? "").trim();
-    const parsedEmail = registerInputSchema.shape.email.safeParse(email);
-    if (!parsedEmail.success) {
-      return { status: "error", message: "Inserisci prima un indirizzo email valido.", fieldErrors: { email: ["Inserisci un indirizzo email valido."] } };
-    }
-
-    const otp = await requestRegistrationOtp(parsedEmail.data);
-    if (otp.status === "error") return { status: "error", message: otp.message };
-    return {
-      status: "otp_sent",
-      message: "Codice inviato. Inseriscilo per verificare l’email.",
-      otpReference: otp.reference,
-      devOtpCode: otp.code
-    };
-  }
-
   const parsed = registerInputSchema.safeParse({
-    tipoUtente: getFormValue(formData, "tipoUtente"),
     email: getFormValue(formData, "email"),
     password: getFormValue(formData, "password"),
     confirmPassword: getFormValue(formData, "confirmPassword"),
-    nome: getFormValue(formData, "nome"),
-    cognome: getFormValue(formData, "cognome"),
-    codiceFiscale: getFormValue(formData, "codiceFiscale"),
-    ragioneSociale: getFormValue(formData, "ragioneSociale"),
-    partitaIva: getFormValue(formData, "partitaIva"),
-    studioCitta: getFormValue(formData, "studioCitta"),
-    numeroAlbo: getFormValue(formData, "numeroAlbo"),
-    otpReference: getFormValue(formData, "otpReference"),
-    otpCode: getFormValue(formData, "otpCode"),
     acceptTerms: formData.has("acceptTerms"),
     acceptPrivacy: formData.has("acceptPrivacy")
   });
 
   if (!parsed.success) {
-    return { status: "error", message: "Controlla i campi evidenziati.", fieldErrors: getFieldErrors(parsed.error), otpReference: previousState.otpReference, devOtpCode: previousState.devOtpCode };
+    return { status: "error", message: "Controlla i campi evidenziati.", fieldErrors: getFieldErrors(parsed.error) };
   }
 
   const result = await registerAccount(parsed.data);
-  if (result.status === "redirect") redirect("/dashboard");
-  return { status: "error", message: result.error.message, otpReference: previousState.otpReference, devOtpCode: previousState.devOtpCode };
+  if (result.status === "redirect") redirect(await resolvePostLoginDestination());
+  return { status: "error", message: result.error.message };
+}
+
+export async function onboardingAction(
+  _previousState: OnboardingActionState,
+  formData: FormData
+): Promise<OnboardingActionState> {
+  const step = formData.get("step");
+
+  if (step === "profile") {
+    const parsed = onboardingProfileInputSchema.safeParse({
+      firstName: getFormValue(formData, "firstName"),
+      lastName: getFormValue(formData, "lastName"),
+      phone: getFormValue(formData, "phone")
+    });
+
+    if (!parsed.success) {
+      return { status: "error", step: "profile", message: "Completa i dati richiesti.", fieldErrors: getFieldErrors(parsed.error) };
+    }
+
+    const result = await saveOnboardingProfile(parsed.data);
+    if (result.status === "unauthorized") return { status: "error", step: "profile", message: "La sessione non è valida. Accedi di nuovo." };
+    if (result.status === "error") return { status: "error", step: "profile", message: "Non è stato possibile salvare il profilo. Riprova." };
+
+    return { status: "success", step: "account_type", message: "Dati personali salvati. Ora scegli come vuoi iniziare." };
+  }
+
+  const rawAccountType = getFormValue(formData, "accountType");
+  const parsed = onboardingAccountTypeInputSchema.safeParse({
+    accountType: typeof rawAccountType === "string"
+      ? onboardingAccountTypeAliases[rawAccountType] ?? rawAccountType
+      : rawAccountType,
+    organizationDisplayName: getFormValue(formData, "organizationDisplayName")
+  });
+
+  if (!parsed.success) {
+    return { status: "error", step: "account_type", message: "Completa i dati richiesti.", fieldErrors: getFieldErrors(parsed.error) };
+  }
+
+  const result = await completeOnboarding(parsed.data);
+  if (result.status === "unauthorized") return { status: "error", step: "account_type", message: "La sessione non è valida. Accedi di nuovo." };
+  if (result.status === "error") return { status: "error", step: "account_type", message: "Non è stato possibile completare il profilo. Riprova." };
+
+  redirect("/dashboard");
 }

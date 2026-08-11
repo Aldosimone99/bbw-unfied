@@ -32,13 +32,13 @@ describe("resolveDestinationFromContext", () => {
     expect(resolveDestinationFromContext(context({ user: null }))).toBe("/login");
   });
 
-  it("sends transition users to the dashboard without a landing profile row", () => {
-    expect(resolveDestinationFromContext(context({ profile: null }))).toBe("/dashboard");
+  it("sends accounts without completed onboarding to onboarding", () => {
+    expect(resolveDestinationFromContext(context({ profile: null }))).toBe("/onboarding");
     expect(
       resolveDestinationFromContext(
         context({ profile: { ...completedProfile, onboardingStatus: "context_required" } })
       )
-    ).toBe("/dashboard");
+    ).toBe("/onboarding");
   });
 
   it("sends platform administrators to the admin area", () => {

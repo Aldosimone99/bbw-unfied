@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createClient } from "../../lib/supabase/server";
-import { loginAccount, requestRegistrationOtp } from "./auth-service";
+import { loginAccount } from "./auth-service";
 import { requestBackend } from "../backend/server-request";
 
 vi.mock("../../lib/supabase/server", () => ({ createClient: vi.fn() }));
@@ -17,13 +17,6 @@ beforeEach(() => {
 });
 
 describe("transition auth service", () => {
-  it("requests registration OTP through the transition backend", async () => {
-    mockedRequestBackend.mockResolvedValue({ ok: true, status: 200, data: { reference: "otp-ref", code: "123456" } });
-
-    await expect(requestRegistrationOtp("person@example.test")).resolves.toEqual({ status: "success", reference: "otp-ref", code: "123456" });
-    expect(mockedRequestBackend).toHaveBeenCalledWith("/auth/otp/send", expect.objectContaining({ method: "POST" }));
-  });
-
   it("does not create a Supabase session when transition login rejects credentials", async () => {
     mockedRequestBackend.mockResolvedValue({ ok: false, status: 401, data: { error: "INVALID_CREDENTIALS" } });
 

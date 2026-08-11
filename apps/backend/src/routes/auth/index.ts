@@ -7,11 +7,13 @@ import { createPasswordRouter } from './password-routes';
 import { createOtpRouter } from './otp-routes';
 import { createTokenRouter } from './token-routes';
 import { createRegisterValidateRouter } from './register-validate-routes';
+import { createOnboardingAuthRouter } from './onboarding-routes';
 
 export function createAuthRouter(db: SupabaseLike): Router {
   const router = Router();
   router.use(createRegisterRouter(db));
   router.use(createRegisterValidateRouter(db));
+  router.use(createOnboardingAuthRouter(db));
   router.use(createLoginRouter(db));
   router.use(createMeRouter(db));
   router.use(createPasswordRouter(db));

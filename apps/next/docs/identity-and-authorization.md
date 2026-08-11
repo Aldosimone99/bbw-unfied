@@ -4,7 +4,20 @@ Questo documento tiene traccia delle modifiche importanti al perimetro di identi
 
 ## Stato attuale
 
-Ultimo aggiornamento: 2026-08-10
+Ultimo aggiornamento: 2026-08-11
+
+Per il monorepo unificato la fonte di verità operativa per registrazione,
+profilo e autorizzazione è `apps/backend` con lo schema Supabase di
+`apps/backend/supabase`. Il frontend `apps/next` raccoglie input e presenta lo
+stato restituito dal backend; non usa più il vecchio schema identity di
+`bbwlanding` per creare profili, ruoli o membership.
+
+La terminologia da mantenere nel codice è quella del modello di dominio:
+`Account` identifica l’identità autenticata, `Profile` i dati personali,
+`Organization` il contesto collettivo, `OrganizationMembership` l’appartenenza,
+`Role` e `Permission` l’autorizzazione, `Subject` la persona o entità cui si
+riferiscono i dati. `User` non va usato come nome universale per tutti questi
+concetti.
 
 Il flusso implementato è:
 
@@ -164,6 +177,17 @@ La dashboard mostra la superficie operativa temporanea: saluto, azioni rapide, p
 - Aggiornata la regressione SQL RLS per isolamento membership e assenza di scritture dirette.
 - Aggiunti test per cookie invalido, selezione non autorizzata, membership rimossa e isolamento dei permessi tra organizzazioni.
 - Verificati typecheck, lint, 55 test Vitest, build e regressione SQL RLS locale; E2E browser ancora da eseguire quando sarà disponibile un backend Browser.
+
+### 2026-08-11 — Registrazione account-first nel backend di transizione
+
+- La registrazione iniziale richiede soltanto email, password, conferma password e consensi; non chiede più cliente, professionista, clinica o altro tipo operativo.
+- Dopo il primo login il frontend porta l’account a `/onboarding`, dove raccoglie prima i dati personali e poi il caso d’uso richiesto.
+- Le migration `apps/backend/supabase/migrations/20260811000100_account_first_onboarding.sql` e `20260811000200_onboarding_request_context.sql` rendono nome e codice fiscale inizialmente opzionali e aggiungono stato onboarding, tipo richiesto, nome contesto richiesto e timestamp di completamento.
+- Le migration `20260811000300_backend_identity_grants.sql` e `20260811000400_backend_identity_profile_reads.sql` concedono al solo `service_role` del backend i privilegi minimi per registrazione, onboarding e lettura del profilo; anon e authenticated non ricevono accesso aggiuntivo.
+- `requested_account_type` è una richiesta/intenzione e non assegna `tipo_utente`, ruolo, permission o membership. Un nuovo account resta con il valore neutro `privato` finché un workflow autorizzato non assegna un ruolo operativo.
+- La verifica email via codice è temporaneamente disattivata per il bootstrap locale e deve essere riattivata prima della produzione.
+- Le route `/auth/onboarding/profile` e `/auth/onboarding/complete` passano dal service backend; i campi controllati dai form restano disponibili dopo gli errori di validazione.
+- Verifiche previste: typecheck, test, build, diff check e applicazione non distruttiva della migration locale con `supabase migration up --local`.
 
 ## Regola per le prossime modifiche importanti
 

@@ -6,10 +6,12 @@ const backendUrl = (process.env.BBW_BACKEND_URL ?? "http://localhost:3001").repl
 export type TransitionUser = {
   id: string;
   email: string;
-  tipo_utente: "admin" | "medico" | "estetista" | "commerciale" | "clinica" | "cliente";
+  tipo_utente: "admin" | "medico" | "estetista" | "commerciale" | "clinica" | "cliente" | "privato";
   nome?: string | null;
   cognome?: string | null;
   telefono?: string | null;
+  requested_account_type?: ProfileSummary["requestedAccountType"];
+  onboarding_status?: ProfileSummary["onboardingStatus"];
 };
 
 export async function getTransitionAccessToken(): Promise<string | null> {
@@ -52,7 +54,7 @@ export async function requestTransitionBackend<T>(path: string, init?: RequestIn
 }
 
 export function profileFromTransitionUser(user: TransitionUser): ProfileSummary {
-  const accountTypeByRole: Record<TransitionUser["tipo_utente"], ProfileSummary["requestedAccountType"]> = {
+  const accountTypeByRole: Record<Exclude<TransitionUser["tipo_utente"], "privato">, ProfileSummary["requestedAccountType"]> = {
     admin: "personal",
     cliente: "personal",
     medico: "healthcare_professional",
@@ -60,6 +62,8 @@ export function profileFromTransitionUser(user: TransitionUser): ProfileSummary 
     clinica: "organization",
     commerciale: "commercial"
   };
+  const operationalRole = user.tipo_utente === "privato" ? null : user.tipo_utente;
+  const requestedAccountType = user.requested_account_type ?? (operationalRole ? accountTypeByRole[operationalRole] : null);
 
   return {
     id: user.id,
@@ -67,9 +71,10 @@ export function profileFromTransitionUser(user: TransitionUser): ProfileSummary 
     firstName: user.nome ?? null,
     lastName: user.cognome ?? null,
     phone: user.telefono ?? null,
-    requestedAccountType: accountTypeByRole[user.tipo_utente],
+    requestedAccountType,
+    operationalRole,
     accountTypeStatus: "not_required",
-    onboardingStatus: "completed"
+    onboardingStatus: user.onboarding_status ?? (operationalRole ? "completed" : "profile_required")
   };
 }
 

@@ -10,6 +10,23 @@ export type DashboardNavItem = {
 };
 
 export function getTransitionRole(profile: ProfileSummary): TransitionRole {
+  switch (profile.operationalRole) {
+    case "medico":
+      return "medico";
+    case "estetista":
+      return "estetista";
+    case "clinica":
+      return "clinica";
+    case "commerciale":
+      return "commerciale";
+    case "cliente":
+      return "cliente";
+    default:
+      break;
+  }
+
+  // A requested account type never grants the corresponding operational menu.
+  if (!profile.operationalRole) return "cliente";
   switch (profile.requestedAccountType) {
     case "healthcare_professional":
       return "medico";

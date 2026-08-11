@@ -29,12 +29,14 @@ export async function getPostLoginContext(): Promise<PostLoginContext> {
   }
 
   const organizationContext = await getTransitionOrganizationContext(transitionUser.id);
-  const permissions: PermissionCode[] = ["dashboard.access", "profile.read_own", "profile.update_own"];
+  const profile = profileFromTransitionUser(transitionUser);
+  const permissions: PermissionCode[] = ["profile.read_own", "profile.update_own"];
+  if (profile.onboardingStatus === "completed") permissions.push("dashboard.access");
   if (transitionUser.tipo_utente === "admin") permissions.push("platform.admin.access");
 
   return {
     user: { id: transitionUser.id, email: transitionUser.email ?? null },
-    profile: profileFromTransitionUser(transitionUser),
+    profile,
     ...organizationContext,
     globalPermissions: permissions,
     organizationPermissions: [],
@@ -44,6 +46,7 @@ export async function getPostLoginContext(): Promise<PostLoginContext> {
 
 export function resolveDestinationFromContext(context: PostLoginContext): PostLoginDestination {
   if (!context.user) return "/login";
+  if (context.profile?.onboardingStatus !== "completed") return "/onboarding";
   if (context.permissions.includes("platform.admin.access")) return "/admin";
   return "/dashboard";
 }

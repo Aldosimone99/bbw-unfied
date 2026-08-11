@@ -37,6 +37,8 @@ export type ProfileSummary = {
   lastName: string | null;
   phone: string | null;
   requestedAccountType: AccountTypeCode | null;
+  /** Operational role granted by the backend; a requested account type is not sufficient. */
+  operationalRole?: "admin" | "medico" | "estetista" | "commerciale" | "clinica" | "cliente" | null;
   accountTypeStatus: AccountTypeStatus;
   onboardingStatus: OnboardingStatus;
 };

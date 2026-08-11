@@ -27,6 +27,7 @@ export async function requirePlatformContext(allowedRoles?: readonly TransitionR
   if (!context.user) {
     redirect("/login");
   }
+  if (context.profile?.onboardingStatus !== "completed") redirect("/onboarding");
   if (!hasPermission(new Set(context.permissions), "dashboard.access")) forbidden();
   if (allowedRoles && context.profile && !allowedRoles.includes(getTransitionRole(context.profile))) forbidden();
   if (!context.profile) redirect("/login");

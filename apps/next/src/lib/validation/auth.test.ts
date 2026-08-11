@@ -49,15 +49,9 @@ describe("login validation", () => {
 describe("registration validation", () => {
   it("accepts valid credentials and consents", () => {
     const result = registerInputSchema.safeParse({
-      tipoUtente: "cliente",
       email: "person@example.test",
       password: "CorrectHorse12!",
       confirmPassword: "CorrectHorse12!",
-      nome: "Arianna",
-      cognome: "Rossi",
-      codiceFiscale: "RSSRNN80A01H501Z",
-      otpReference: "otp-reference",
-      otpCode: "123456",
       acceptTerms: true,
       acceptPrivacy: true
     });
@@ -67,15 +61,9 @@ describe("registration validation", () => {
 
   it("rejects non-matching passwords", () => {
     const result = registerInputSchema.safeParse({
-      tipoUtente: "cliente",
       email: "person@example.test",
       password: "CorrectHorse12!",
       confirmPassword: "DifferentHorse1!",
-      nome: "Arianna",
-      cognome: "Rossi",
-      codiceFiscale: "RSSRNN80A01H501Z",
-      otpReference: "otp-reference",
-      otpCode: "123456",
       acceptTerms: true,
       acceptPrivacy: true
     });
@@ -84,6 +72,16 @@ describe("registration validation", () => {
     if (!result.success) {
       expect(result.error.issues.some((issue) => issue.path[0] === "confirmPassword")).toBe(true);
     }
+  });
+});
+
+describe("onboarding account type validation", () => {
+  it("accepts Cliente without an organization name", async () => {
+    const { onboardingAccountTypeInputSchema } = await import("./auth");
+    expect(onboardingAccountTypeInputSchema.safeParse({
+      accountType: "personal",
+      organizationDisplayName: null
+    }).success).toBe(true);
   });
 });
 

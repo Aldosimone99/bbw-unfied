@@ -1,9 +1,9 @@
-import type { AppRole } from '@bbw/interfaces';
+import type { PersistedUserType } from '@bbw/interfaces';
 
 export interface ResolvedUser {
   id: string;
   email: string;
-  tipo_utente: AppRole;
+  tipo_utente: PersistedUserType;
   nome?: string | null;
   cognome?: string | null;
 }

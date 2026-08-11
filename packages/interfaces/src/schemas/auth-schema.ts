@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import { APP_ROLES } from '../enums/user-role';
+import { APP_ROLES, PERSISTED_USER_TYPES } from '../enums/user-role';
 
 export const appRoleSchema = z.enum(APP_ROLES);
+export const persistedUserTypeSchema = z.enum(PERSISTED_USER_TYPES);
 export const registerableRoleSchema = appRoleSchema.exclude(['admin']);
 
 export const loginRequestSchema = z.object({
@@ -53,10 +54,10 @@ export const profileUpdateSchema = z.object({
 }).strict();
 
 export const registerRequestSchema = z.object({
-  tipo_utente: registerableRoleSchema,
+  tipo_utente: registerableRoleSchema.optional(),
   email: z.string().email().max(255),
   password: strongPasswordSchema,
-  otp_reference: z.string().min(1),
+  otp_reference: z.string().min(1).optional(),
   accept_terms: z.literal(true),
   accept_privacy: z.literal(true),
   nome: z.string().min(1).max(255).optional(),
@@ -106,6 +107,8 @@ export const registerRequestSchema = z.object({
   studio_provincia: z.string().max(10).optional(),
   studio_cap: z.string().max(10).optional(),
 }).superRefine((payload, ctx) => {
+  if (!payload.tipo_utente) return;
+
   const needsPerson = payload.tipo_utente !== 'clinica';
   if (needsPerson && !payload.codice_fiscale) {
     ctx.addIssue({ code: 'custom', path: ['codice_fiscale'], message: 'codice_fiscale is required' });
@@ -133,7 +136,7 @@ export const registerRequestSchema = z.object({
 export const currentUserSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
-  tipo_utente: appRoleSchema,
+  tipo_utente: persistedUserTypeSchema,
   nome: z.string().nullable().optional(),
   cognome: z.string().nullable().optional(),
 }).passthrough();

@@ -52,6 +52,19 @@ describe('registerRequestSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('accepts registration without email verification for the temporary onboarding flow', () => {
+    const { otp_reference: _otpReference, ...withoutEmailVerification } = basePayload;
+    const result = registerRequestSchema.safeParse({
+      ...withoutEmailVerification,
+      tipo_utente: 'cliente',
+      nome: 'Mario',
+      cognome: 'Rossi',
+      codice_fiscale: 'RSSMRA80A01H501U',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it('accepts medico registration payloads with studio and credentials', () => {
     const result = registerRequestSchema.safeParse({
       ...basePayload,

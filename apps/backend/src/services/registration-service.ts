@@ -33,7 +33,9 @@ async function assertCodiceFiscaleAvailable(db: SupabaseLike, codiceFiscale?: st
   if (data) throw new RegistrationError({ code: 'CODICE_FISCALE_ALREADY_EXISTS', status: 409 });
 }
 
-async function assertRegistrationOtpVerified(db: SupabaseLike, email: string, reference: string): Promise<void> {
+async function assertRegistrationOtpVerified(db: SupabaseLike, email: string, reference?: string): Promise<void> {
+  if (!reference) return;
+
   if (process.env.NODE_ENV !== 'production') {
     const record = devStore.get(reference) as { email: string; verifiedAt: number | null; expiresAt: number } | undefined;
     if (!record || record.email !== email || !record.verifiedAt || Date.now() > record.expiresAt) {
@@ -118,14 +120,14 @@ export async function registerUser(
     await insertOrThrow(db.from('users').insert({
       id: userId,
       email: payload.email,
-      tipo_utente: payload.tipo_utente,
-      nome: payload.nome,
-      cognome: payload.cognome,
+      tipo_utente: payload.tipo_utente ?? 'privato',
+      nome: payload.nome ?? null,
+      cognome: payload.cognome ?? null,
       titolo: payload.titolo,
       telefono: payload.telefono,
       data_nascita: payload.data_nascita,
       sesso: payload.sesso,
-      codice_fiscale: payload.codice_fiscale,
+      codice_fiscale: payload.codice_fiscale ?? null,
       tipo_soggetto: payload.tipo_soggetto,
       consenso_marketing: payload.consenso_marketing,
       consenso_profilazione: payload.consenso_profilazione,
@@ -150,7 +152,9 @@ export async function registerUser(
       }));
     }
 
-    if (['medico', 'estetista', 'commerciale', 'clinica'].includes(payload.tipo_utente)) {
+    const requestedRole = payload.tipo_utente;
+
+    if (requestedRole && ['medico', 'estetista', 'commerciale', 'clinica'].includes(requestedRole)) {
       await insertOrThrow(db.from('user_business_profiles').insert({
         user_id: userId,
         ragione_sociale: payload.ragione_sociale,
@@ -166,7 +170,7 @@ export async function registerUser(
       }));
     }
 
-    if (['medico', 'estetista', 'commerciale'].includes(payload.tipo_utente)) {
+    if (requestedRole && ['medico', 'estetista', 'commerciale'].includes(requestedRole)) {
       await insertOrThrow(db.from('professional_credentials').insert({
         user_id: userId,
         numero_albo: payload.numero_albo,
@@ -175,14 +179,14 @@ export async function registerUser(
         documento_tipo: payload.documento_tipo,
         documento_numero: payload.documento_numero,
         documento_comune_rilascio: payload.documento_comune_rilascio,
-        codice_medico: payload.tipo_utente === 'medico' ? generateProfessionalCode('MED') : null,
-        codice_commerciale: payload.tipo_utente === 'commerciale' ? generateProfessionalCode('COMM') : null,
+        codice_medico: requestedRole === 'medico' ? generateProfessionalCode('MED') : null,
+        codice_commerciale: requestedRole === 'commerciale' ? generateProfessionalCode('COMM') : null,
         codice_riferimento: payload.codice_riferimento,
         dichiarazione_assenza_carichi_giudiziari: payload.dichiarazione_assenza_carichi_giudiziari ?? false,
       }));
     }
 
-    if (['medico', 'estetista'].includes(payload.tipo_utente)) {
+    if (requestedRole && ['medico', 'estetista'].includes(requestedRole)) {
       await insertOrThrow(db.from('professional_studios').insert({
         user_id: userId,
         via: payload.studio_via,

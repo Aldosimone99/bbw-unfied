@@ -1,4 +1,4 @@
-import type { AppRole, ProfileUpdateRequest } from '@bbw/interfaces';
+import type { AppRole, PersistedUserType, ProfileUpdateRequest } from '@bbw/interfaces';
 import type { SupabaseLike } from '../db/supabase';
 import type { ResolvedUser } from './types';
 
@@ -33,8 +33,9 @@ function hasFields(fields: Record<string, unknown>): boolean {
   return Object.keys(fields).length > 0;
 }
 
-function assertRole(actual: AppRole, allowed: AppRole[]): void {
+function assertRole(actual: PersistedUserType, allowed: AppRole[]): void {
   if (actual === 'admin') return;
+  if (actual === 'privato') throw new ProfileAccessError('FORBIDDEN_PROFILE_FIELDS');
   if (!allowed.includes(actual)) throw new ProfileAccessError('FORBIDDEN_PROFILE_FIELDS');
 }
 
