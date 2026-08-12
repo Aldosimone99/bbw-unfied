@@ -14,3 +14,15 @@ export function createSupabaseServerClient(): SupabaseLike {
     realtime: { transport: ws as any },
   });
 }
+
+export function createSupabaseAuthClient(): SupabaseLike {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY are required');
+  }
+  return createClient(url, key, {
+    auth: { persistSession: false },
+    realtime: { transport: ws as any },
+  });
+}

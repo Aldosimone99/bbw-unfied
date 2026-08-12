@@ -3,30 +3,21 @@ import { registerRequestSchema } from '@bbw/interfaces';
 import type { SupabaseLike } from '../../db/supabase';
 import { RegistrationError, registerUser } from '../../services/registration-service';
 
-const availabilityMap = {
-  email: ['users', 'email'],
-  codice_fiscale: ['users', 'codice_fiscale'],
-  partita_iva: ['user_business_profiles', 'partita_iva'],
-  iban: ['user_business_profiles', 'iban'],
-  numero_albo: ['professional_credentials', 'numero_albo'],
-} as const;
-
-export function createAvailabilityHandler(db: SupabaseLike) {
-  return async (req: Request, res: Response) => {
-    const field = String(req.body?.field || '') as keyof typeof availabilityMap;
-    const value = String(req.body?.value || '').trim();
-    const config = availabilityMap[field];
-    if (!config || !value) return res.status(422).json({ error: 'VALIDATION_FAILED' });
-    const [table, column] = config;
-    const { data } = await db.from(table).select('id,user_id').eq(column, value).maybeSingle();
-    return res.json({ available: !data });
-  };
+/**
+ * Kept as a non-mounted compatibility export for the archived transition
+ * tests. Public account-existence checks are intentionally disabled because
+ * they enable user enumeration and depend on the removed legacy profile
+ * tables.
+ */
+export function createAvailabilityHandler(_db: SupabaseLike) {
+  return async (_req: Request, res: Response) => res.status(410).json({
+    error: 'REGISTRATION_AVAILABILITY_DISABLED',
+  });
 }
 
 export function createRegisterRouter(db: SupabaseLike): Router {
   const router = Router();
   router.post('/register', createRegisterHandler(db));
-  router.post('/register/availability', createAvailabilityHandler(db));
   return router;
 }
 

@@ -8,11 +8,13 @@ the related Supabase migrations changes.
 
 Last reviewed: 2026-08-11
 
-For the unified monorepo, `apps/backend` and its Supabase migrations are the
-authoritative source for registration, application profiles, onboarding,
-memberships and permissions. `apps/next` collects input, establishes the SSR
-session and renders the context returned by the backend. The old identity model
-from `bbwlanding` is not maintained as a second source of truth.
+For the unified monorepo, `apps/backend` is the authority for registration,
+application profiles, onboarding, memberships and permissions. `apps/next`
+collects input, establishes the SSR session and renders the context returned by
+the backend. The canonical foundation now uses the normalized identity model
+from `bbwlanding`. Some transition domain services remain in the repository but
+are not yet migrated to the canonical schema and must not be treated as
+production ready until their ownership, permissions, RLS and tests are ported.
 
 Use these terms consistently:
 
@@ -100,7 +102,24 @@ checks rather than trusting UI state.
 
 ## Database migrations
 
-Relevant account-first and authorization migrations are:
+The active foundation migrations are:
+
+- `20260812000000_foundation_identity_authorization.sql` — canonical profiles,
+  organizations, memberships, roles, permissions, professional profiles,
+  subjects, invitations and audit;
+- `20260812000100_account_onboarding_rpc.sql` — service-role-only transactional
+  onboarding;
+- `20260812000200_account_consents.sql` — legal and communication consents;
+- `20260812000300_rls_policy_hardening.sql` — removes recursive membership RLS;
+- `20260812000400_canonical_invitations.sql` — adds canonical invitation
+  metadata, acceptance ownership and pending-email uniqueness;
+- `20260812000500_accept_invitation_transaction.sql` — accepts an invitation
+  atomically with email verification, membership, role and audit.
+
+The former transition migrations are archived under
+`apps/backend/supabase/migrations-legacy` and are not applied to a new database.
+
+Historical account-first migrations were:
 
 - `20260811000100_account_first_onboarding.sql` — neutral account state and
   onboarding columns on `public.users`;
@@ -116,7 +135,11 @@ Relevant account-first and authorization migrations are:
   `service_role` access to `companies` and `company_members`, required to
   calculate memberships and permissions.
 
-Apply them only from the backend project directory:
+Queste migration storiche sono archiviate e non vanno applicate a un database
+nuovo. Per il database attivo usare solo le migration `20260812000000`–
+`20260812000500` presenti nella directory operativa.
+
+Apply the active migrations only from the backend project directory:
 
 ```bash
 cd apps/backend
@@ -163,6 +186,25 @@ The latest verification included:
 - local database reset with all migrations, ending with zero local users.
 
 ## Change log
+
+### 2026-08-11 — Foundation reset direction
+
+- Chosen `bbw-unified` as the main repository.
+- Chosen the `bbwlanding` identity/authorization model as the target baseline.
+- Marked the current `bbw-transition`-derived migrations as transitional.
+- Added the foundation roadmap and module inventory.
+- Deferred new SQL until domain states, ownership and permission boundaries are
+  explicitly defined.
+
+### 2026-08-11 — Canonical foundation activated
+
+- Archived the transition migration history under
+  `apps/backend/supabase/migrations-legacy`.
+- Added the canonical identity, organization, professional, subject, invitation
+  and audit schema.
+- Added account consents and service-role-only transactional onboarding.
+- Verified personal and organization onboarding locally with synthetic accounts.
+- Cleaned the local database after verification.
 
 ### 2026-08-11 — Backend-authoritative auth context and session handoff
 

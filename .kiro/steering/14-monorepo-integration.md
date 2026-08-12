@@ -17,8 +17,9 @@ Le variabili runtime restano separate:
 - `apps/backend/.env.local`: Supabase server-side, Redis, porta e CORS.
 
 La chiave `SUPABASE_SERVICE_ROLE_KEY` resta esclusivamente nel backend e deve
-essere la service-role/secret key del progetto locale corretto, mai la chiave
-publishable/anon usata dal browser.
+essere la service-role/secret key del progetto locale corretto. Il backend usa
+separatamente `SUPABASE_ANON_KEY` soltanto per il login utente; la service-role
+non deve stabilire sessioni utente.
 
 `npm run dev` avvia entrambi i processi sulle porte `3000` (frontend) e `3001`
 (backend). Va eseguita una sola istanza root alla volta: se una porta è già
@@ -47,10 +48,19 @@ production.
 
 ## Database
 
-Le migration operative attuali sono in `apps/backend/supabase`. Il vecchio
-schema identity/organization del frontend non va duplicato automaticamente:
-prima di produzione va definita una migration di convergenza e verificata la
-compatibilità tra account Supabase, profili, organizzazioni e membership.
+La baseline attiva usa il modello di `bbwlanding` con profili, organizzazioni,
+membership, ruoli, permessi, profili professionali, soggetti, inviti e audit.
+Le migration legacy sono archiviate in `apps/backend/supabase/migrations-legacy`
+e non vengono applicate a un database nuovo. I moduli transition non ancora
+portati devono restare fuori dai flussi operativi finché schema, permission,
+ownership e test non sono stati adattati.
+
+La variabile `ENABLE_LEGACY_TRANSITION_ROUTES` è `false` per default. Serve
+solo per ispezionare i moduli storici in un ambiente isolato e non autorizza
+il loro uso con dati reali.
+
+Qualsiasi migrazione futura di dati reali richiederà una procedura separata,
+backup e approvazione.
 
 Per un reset locale intenzionale usare `cd apps/backend && npx supabase db reset --local`;
 il comando elimina e ricrea i dati locali applicando tutte le migration, quindi
@@ -67,5 +77,7 @@ npm test
 npm run build
 ```
 
-La suite backend può richiedere socket locali e Redis disponibili, mentre la
-build frontend non richiede servizi esterni.
+`npm test` esegue la suite canonica. `npm run test:legacy --workspace
+@bbw/backend` conserva visibilità sui test transition archiviati, che possono
+restare rossi finché il relativo modulo non viene portato. La build frontend
+non richiede servizi esterni.

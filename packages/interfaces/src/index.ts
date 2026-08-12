@@ -12,6 +12,7 @@ export * from './schemas/document-schema';
 export * from './schemas/onboarding-schema';
 export * from './schemas/register-validate-schema';
 export * from './schemas/notification-schema';
+export * from './schemas/domain-schema';
 export * from './schemas/chat-schema';
 export * from './schemas/booking-schema';
 export * from './schemas/availability-schema';

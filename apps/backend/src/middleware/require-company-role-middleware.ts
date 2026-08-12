@@ -13,21 +13,23 @@ export function requireCompanyRole(db: SupabaseLike, allowedRoles: string[]): Re
     if (!companyId) return res.status(422).json({ success: false, code: 'COMPANY_ID_REQUIRED' });
 
     const { data, error } = await db
-      .from('company_members')
-      .select('role')
-      .eq('company_id', companyId)
+      .from('organization_members')
+      .select('id,status,member_roles(role:roles(code))')
+      .eq('organization_id', companyId)
       .eq('user_id', req.user.id)
-      .eq('is_active', true)
+      .eq('status', 'active')
       .maybeSingle();
 
     if (error || !data) return res.status(403).json({ success: false, code: 'COMPANY_MEMBER_REQUIRED' });
 
-    const role = String((data as { role: string }).role);
-    if (!allowedRoles.includes(role)) {
+    const roles = ((data as any).member_roles ?? [])
+      .map((assignment: any) => assignment.role?.code)
+      .filter(Boolean) as string[];
+    if (!roles.some((role) => allowedRoles.includes(role))) {
       return res.status(403).json({ success: false, code: 'COMPANY_ROLE_INSUFFICIENT' });
     }
 
-    req.companyRole = role;
+    req.companyRole = roles.find((role) => allowedRoles.includes(role)) ?? roles[0] ?? null;
     return next();
   };
 }

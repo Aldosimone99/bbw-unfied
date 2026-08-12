@@ -8,7 +8,7 @@ export class AccountOnboardingError extends Error {
 }
 
 async function readOnboardingState(db: SupabaseLike, userId: string): Promise<string> {
-  const { data, error } = await db.from('users').select('id,onboarding_status').eq('id', userId).single();
+  const { data, error } = await db.from('profiles').select('user_id,onboarding_status').eq('user_id', userId).single();
   if (error || !data) throw new AccountOnboardingError('ONBOARDING_NOT_FOUND');
   return (data as { onboarding_status?: string }).onboarding_status ?? 'profile_required';
 }
@@ -22,12 +22,12 @@ export async function saveAccountProfile(
     throw new AccountOnboardingError('ONBOARDING_ALREADY_COMPLETED');
   }
 
-  const { error } = await db.from('users').update({
-    nome: payload.nome,
-    cognome: payload.cognome,
-    telefono: payload.telefono ?? null,
-    onboarding_status: 'account_type_required',
-  }).eq('id', userId);
+  const { error } = await db.from('profiles').update({
+    first_name: payload.nome,
+    last_name: payload.cognome,
+    phone: payload.telefono ?? null,
+    onboarding_status: 'context_required',
+  }).eq('user_id', userId);
 
   if (error) throw new AccountOnboardingError('ONBOARDING_UPDATE_FAILED');
 }
@@ -36,7 +36,7 @@ export async function completeAccountOnboarding(
   db: SupabaseLike,
   userId: string,
   payload: OnboardingCompletionRequest,
-): Promise<{ companyId: string | null }> {
+): Promise<{ organizationId: string | null }> {
   try {
     const { data, error } = await db.rpc('complete_account_onboarding', {
       p_user_id: userId,
@@ -50,7 +50,8 @@ export async function completeAccountOnboarding(
       throw new AccountOnboardingError('ONBOARDING_UPDATE_FAILED');
     }
 
-    return { companyId: typeof data?.company_id === 'string' ? data.company_id : null };
+    const organizationId = typeof data?.organization_id === 'string' ? data.organization_id : null;
+    return { organizationId };
   } catch (error) {
     if (error instanceof AccountOnboardingError) throw error;
     throw new AccountOnboardingError('ONBOARDING_UPDATE_FAILED');

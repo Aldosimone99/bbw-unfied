@@ -65,7 +65,20 @@ BBW_BACKEND_URL=http://localhost:3001
 
 Use the server-only service-role key from the same local project only as
 `SUPABASE_SERVICE_ROLE_KEY` in `apps/backend/.env.local`. Never expose it to
-the browser or commit it.
+the browser or commit it. Set the local publishable/anon key separately as
+`SUPABASE_ANON_KEY`; the backend uses it only for password login so a
+service-role client never establishes a user session.
+
+The backend also defaults to:
+
+```dotenv
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+JSON_BODY_LIMIT=1mb
+ENABLE_LEGACY_TRANSITION_ROUTES=false
+```
+
+Transition routes are intentionally unavailable until their schema,
+authorization and tests have been ported to the canonical model.
 
 Start Redis once, if it is not already running:
 
@@ -177,8 +190,16 @@ npm test
 npm run build
 ```
 
-The current auth/authorization regression coverage includes backend context,
-onboarding, session handoff, protected routes and migration grants.
+`npm test` runs the canonical regression suite. The archived transition tests
+remain available for migration work:
+
+```bash
+npm run test:legacy --workspace @bbw/backend
+```
+
+They are not a release gate until the corresponding module is ported. The
+canonical coverage includes registration, login, onboarding, HTTP surface,
+CORS, invitations, professional profiles and migration grants.
 
 ## Documentation and contribution rules
 
@@ -189,6 +210,9 @@ local boundaries; they do not create a second steering tree.
 
 Useful references:
 
+- [Foundation roadmap](./docs/foundation-roadmap.md)
+- [Canonical domain model](./docs/canonical-domain-model.md)
+- [Transition module inventory](./docs/transition-module-inventory.md)
 - [Architecture steering](./.kiro/steering/01-architecture.md)
 - [Domain model steering](./.kiro/steering/02-domain-model.md)
 - [Database steering](./.kiro/steering/03-database.md)

@@ -1,10 +1,7 @@
+import { createHash, randomBytes } from 'node:crypto';
 import type { CompanyInviteTargetRole } from '@bbw/interfaces';
 import type { SupabaseLike } from '../db/supabase';
 import type { EmailService } from './email-service';
-import {
-  getOrCreateNotificationThread,
-  insertSystemMessage,
-} from './messaging-service';
 
 export class CompanyInviteError extends Error {
   constructor(public readonly code: string, public readonly status = 422) {
@@ -19,8 +16,8 @@ export type CompanyInviteRow = {
   nome?: string | null;
   cognome?: string | null;
   role: string;
+  role_id?: string;
   status: string;
-  accept_token?: string | null;
   expires_at?: string | null;
   created_at?: string;
   invited_by?: string | null;
@@ -28,22 +25,30 @@ export type CompanyInviteRow = {
   user_id?: string | null;
 };
 
-export function membershipRole(role: string): string {
-  if (role === 'owner') return 'owner';
-  if (role === 'admin') return 'admin';
-  if (role === 'staff') return 'staff';
-  if (role === 'medico' || role === 'estetista' || role === 'profissional') return 'profissional';
-  if (role === 'cliente' || role === 'paciente') return 'paciente';
-  return 'paciente';
-}
+const targetRoleToCanonicalRole: Record<CompanyInviteTargetRole, string> = {
+  medico: 'practitioner',
+  estetista: 'practitioner',
+  cliente: 'customer',
+  admin: 'organization_admin',
+  staff: 'staff',
+};
+
+const canonicalRoleToTargetRole: Record<string, CompanyInviteTargetRole> = {
+  practitioner: 'medico',
+  customer: 'cliente',
+  organization_admin: 'admin',
+  staff: 'staff',
+};
 
 const allowedInviteTargets: Record<string, CompanyInviteTargetRole[]> = {
-  owner: ['admin', 'staff', 'medico', 'estetista', 'cliente'],
-  admin: ['staff', 'medico', 'estetista', 'cliente'],
-  staff: ['medico', 'estetista', 'cliente'],
-  profissional: ['cliente'],
-  paciente: [],
+  organization_owner: ['admin', 'staff', 'medico', 'estetista', 'cliente'],
+  organization_admin: ['staff', 'medico', 'estetista', 'cliente'],
+  office_manager: ['medico', 'estetista', 'cliente'],
 };
+
+export function membershipRole(role: string): string {
+  return role;
+}
 
 type CreateCompanyInvitePayload = {
   companyId: string;
@@ -56,33 +61,25 @@ type CreateCompanyInvitePayload = {
   expiresInDays?: number;
 };
 
-type MessagingServiceLike = {
-  getOrCreateNotificationThread: typeof getOrCreateNotificationThread;
-  insertSystemMessage: typeof insertSystemMessage;
-};
-
-const defaultMessagingService: MessagingServiceLike = {
-  getOrCreateNotificationThread,
-  insertSystemMessage,
-};
-
 type CreateCompanyInviteOptions = {
   tokenFactory?: () => string;
   now?: () => Date;
-  messagingService?: MessagingServiceLike;
+  messagingService?: unknown;
 };
 
-type AcceptCompanyInviteOptions = {
-  messagingService?: MessagingServiceLike;
-};
+type AcceptCompanyInviteOptions = { messagingService?: unknown };
 
 function buildCompanyAcceptLink(token: string): string {
   const base = process.env.FRONTEND_URL ?? 'http://localhost:3000';
   return `${base.replace(/\/$/, '')}/company/invite/accept/${token}`;
 }
 
-function withAcceptLink(row: CompanyInviteRow): CompanyInviteRow & { acceptLink: string } {
-  return { ...row, acceptLink: buildCompanyAcceptLink(row.accept_token ?? '') };
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+function makeToken(): string {
+  return randomBytes(32).toString('base64url');
 }
 
 function assertCanInvite(inviterCompanyRole: string, targetRole: CompanyInviteTargetRole) {
@@ -91,72 +88,117 @@ function assertCanInvite(inviterCompanyRole: string, targetRole: CompanyInviteTa
   }
 }
 
-async function getClinicName(db: SupabaseLike, companyId: string): Promise<string> {
-  const { data } = await db.from('companies').select('name').eq('id', companyId).maybeSingle();
-  return String((data as { name?: string } | null)?.name ?? 'la clinica');
+function toTargetRole(roleCode: string | null | undefined): CompanyInviteTargetRole {
+  return canonicalRoleToTargetRole[roleCode ?? ''] ?? 'staff';
 }
 
-function assertUsable(row: CompanyInviteRow | null): CompanyInviteRow {
-  if (!row) throw new CompanyInviteError('COMPANY_INVITE_NOT_FOUND', 404);
-  if (row.status === 'accepted') return row;
-  if (row.status !== 'pending') throw new CompanyInviteError('COMPANY_INVITE_NOT_PENDING', 422);
-  if (row.expires_at && new Date(row.expires_at).getTime() <= Date.now()) throw new CompanyInviteError('COMPANY_INVITE_EXPIRED', 422);
-  return row;
-}
-
-export async function lookupCompanyInvite(db: SupabaseLike, token: string) {
-  const { data } = await db.from('company_member_invites').select('*').eq('accept_token', token).maybeSingle();
-  const invite = assertUsable(data as CompanyInviteRow | null);
+function normalizeRow(row: any): CompanyInviteRow {
+  const roleCode = row.roles?.code ?? row.role?.code ?? null;
   return {
-    email: invite.email,
-    nome: invite.nome ?? null,
-    cognome: invite.cognome ?? null,
-    role: invite.role,
-    companyId: invite.company_id,
-    companyName: null,
-    expiresAt: invite.expires_at ?? null,
-    userId: invite.user_id ?? null,
-    status: invite.status === 'accepted' ? 'accepted' as const : 'pending' as const,
+    id: row.id,
+    company_id: row.organization_id,
+    email: row.email,
+    nome: row.invitee_first_name ?? null,
+    cognome: row.invitee_last_name ?? null,
+    role: toTargetRole(roleCode),
+    role_id: row.role_id,
+    status: row.status,
+    expires_at: row.expires_at ?? null,
+    created_at: row.created_at,
+    invited_by: row.invited_by ?? null,
+    accepted_by: row.accepted_by ?? null,
   };
 }
 
-export async function acceptCompanyInvite(db: SupabaseLike, token: string, userId: string, options: AcceptCompanyInviteOptions = {}) {
-  const { data } = await db.from('company_member_invites').select('*').eq('accept_token', token).maybeSingle();
-  const invite = assertUsable(data as CompanyInviteRow | null);
-  if (invite.status === 'accepted') {
-    return { companyId: invite.company_id, role: invite.role, membershipRole: membershipRole(invite.role), alreadyMember: true };
+function assertUsable(row: any | null): any {
+  if (!row) throw new CompanyInviteError('COMPANY_INVITE_NOT_FOUND', 404);
+  if (row.status === 'accepted') return row;
+  if (row.status !== 'pending') throw new CompanyInviteError('COMPANY_INVITE_NOT_PENDING', 422);
+  if (row.expires_at && new Date(row.expires_at).getTime() <= Date.now()) {
+    throw new CompanyInviteError('COMPANY_INVITE_EXPIRED', 422);
   }
+  return row;
+}
 
-  const { error: memberError } = await db.from('company_members').upsert({
-    company_id: invite.company_id,
-    user_id: userId,
-    role: membershipRole(invite.role),
-    is_active: true,
-    joined_at: new Date().toISOString(),
+async function getOrganizationName(db: SupabaseLike, organizationId: string): Promise<string> {
+  const { data } = await db
+    .from('organizations')
+    .select('display_name')
+    .eq('id', organizationId)
+    .maybeSingle();
+  return String((data as { display_name?: string } | null)?.display_name ?? 'l’organizzazione');
+}
+
+async function getRoleId(db: SupabaseLike, roleCode: string): Promise<string> {
+  const { data, error } = await db
+    .from('roles')
+    .select('id')
+    .eq('code', roleCode)
+    .eq('scope', 'organization')
+    .eq('is_active', true)
+    .single();
+  if (error || !data?.id) throw new CompanyInviteError('COMPANY_INVITE_ROLE_NOT_CONFIGURED', 500);
+  return String(data.id);
+}
+
+async function getInviteByToken(db: SupabaseLike, token: string) {
+  if (!token) throw new CompanyInviteError('COMPANY_INVITE_NOT_FOUND', 404);
+  const { data, error } = await db
+    .from('invitations')
+    .select('*, roles(id,code,display_name)')
+    .eq('token_hash', hashToken(token))
+    .maybeSingle();
+  if (error) throw new CompanyInviteError('COMPANY_INVITE_LOOKUP_FAILED', 500);
+  return assertUsable(data as any | null);
+}
+
+export async function lookupCompanyInvite(db: SupabaseLike, token: string) {
+  const invite = await getInviteByToken(db, token);
+  const normalized = normalizeRow(invite);
+  return {
+    email: normalized.email,
+    nome: normalized.nome ?? null,
+    cognome: normalized.cognome ?? null,
+    role: normalized.role,
+    companyId: normalized.company_id,
+    companyName: await getOrganizationName(db, normalized.company_id),
+    expiresAt: normalized.expires_at ?? null,
+    userId: normalized.accepted_by ?? null,
+    status: normalized.status === 'accepted' ? 'accepted' as const : 'pending' as const,
+  };
+}
+
+export async function acceptCompanyInvite(
+  db: SupabaseLike,
+  token: string,
+  userId: string,
+  _options: AcceptCompanyInviteOptions = {},
+) {
+  if (!token || !userId) throw new CompanyInviteError('COMPANY_INVITE_NOT_FOUND', 404);
+  const { data, error } = await db.rpc('accept_organization_invitation', {
+    p_token_hash: hashToken(token),
+    p_user_id: userId,
   });
-  if (memberError) throw new CompanyInviteError('COMPANY_MEMBER_LINK_FAILED', 500);
 
-  const { error: inviteError } = await db.from('company_member_invites').update({
-    status: 'accepted',
-    accepted_by: userId,
-    user_id: userId,
-    updated_at: new Date().toISOString(),
-  }).eq('id', invite.id);
-  if (inviteError) throw new CompanyInviteError('COMPANY_INVITE_ACCEPT_FAILED', 500);
-
-  if (invite.invited_by) {
-    const messaging = options.messagingService ?? defaultMessagingService;
-    const clinicName = await getClinicName(db, invite.company_id);
-    const threadId = await messaging.getOrCreateNotificationThread(db, [userId, invite.invited_by]);
-    await messaging.insertSystemMessage(db, threadId, userId, 'invite_accepted', {
-      type: 'invite_accepted',
-      inviteId: invite.id,
-      clinicName,
-      acceptedByName: 'Utente invitato',
-    });
+  if (error) {
+    const message = error.message ?? '';
+    if (message.includes('INVITATION_NOT_FOUND')) throw new CompanyInviteError('COMPANY_INVITE_NOT_FOUND', 404);
+    if (message.includes('INVITATION_EMAIL_MISMATCH')) throw new CompanyInviteError('COMPANY_INVITE_EMAIL_MISMATCH', 403);
+    if (message.includes('INVITATION_EXPIRED')) throw new CompanyInviteError('COMPANY_INVITE_EXPIRED', 422);
+    if (message.includes('INVITATION_NOT_PENDING') || message.includes('INVITATION_ALREADY_ACCEPTED')) {
+      throw new CompanyInviteError('COMPANY_INVITE_NOT_PENDING', 422);
+    }
+    throw new CompanyInviteError('COMPANY_INVITE_ACCEPT_FAILED', 500);
   }
 
-  return { companyId: invite.company_id, role: invite.role, membershipRole: membershipRole(invite.role), alreadyMember: false };
+  const roleCode = String(data?.role_code ?? '');
+  if (!roleCode) throw new CompanyInviteError('COMPANY_INVITE_ROLE_NOT_CONFIGURED', 500);
+  return {
+    companyId: String(data.organization_id),
+    role: toTargetRole(roleCode),
+    membershipRole: membershipRole(roleCode),
+    alreadyMember: Boolean(data.already_member),
+  };
 }
 
 export async function createCompanyInvite(
@@ -167,20 +209,22 @@ export async function createCompanyInvite(
 ): Promise<{ invite: CompanyInviteRow; acceptLink: string }> {
   assertCanInvite(payload.inviterCompanyRole, payload.role);
 
-  const { data: activeMember } = await db
-    .from('company_members')
-    .select('id, users!inner(email)')
-    .eq('company_id', payload.companyId)
-    .eq('is_active', true)
-    .eq('users.email', payload.email)
+  const { data: organization, error: organizationError } = await db
+    .from('organizations')
+    .select('id,status')
+    .eq('id', payload.companyId)
     .maybeSingle();
-  if (activeMember) throw new CompanyInviteError('ALREADY_MEMBER', 409);
+  if (organizationError || !organization || organization.status !== 'active') {
+    throw new CompanyInviteError('COMPANY_NOT_FOUND', 404);
+  }
 
+  const roleId = await getRoleId(db, targetRoleToCanonicalRole[payload.role]);
+  const email = payload.email.trim().toLowerCase();
   const { data: pendingInvite } = await db
-    .from('company_member_invites')
+    .from('invitations')
     .select('id')
-    .eq('company_id', payload.companyId)
-    .ilike('email', payload.email)
+    .eq('organization_id', payload.companyId)
+    .ilike('email', email)
     .eq('status', 'pending')
     .maybeSingle();
   if (pendingInvite) throw new CompanyInviteError('INVITE_ALREADY_PENDING', 409);
@@ -188,49 +232,46 @@ export async function createCompanyInvite(
   const now = options.now?.() ?? new Date();
   const expiresAt = new Date(now);
   expiresAt.setDate(expiresAt.getDate() + (payload.expiresInDays ?? 7));
-  const acceptToken = options.tokenFactory?.() ?? crypto.randomUUID();
+  const rawToken = options.tokenFactory?.() ?? makeToken();
 
-  const { data, error } = await db.from('company_member_invites').insert({
-    company_id: payload.companyId,
-    invited_by: payload.inviterId,
-    email: payload.email,
-    nome: payload.nome ?? null,
-    cognome: payload.cognome ?? null,
-    role: payload.role,
-    status: 'pending',
-    accept_token: acceptToken,
-    expires_at: expiresAt.toISOString(),
-  }).select('*').single();
-  if (error || !data) throw new CompanyInviteError('COMPANY_INVITE_CREATE_FAILED', 500);
+  const { data, error } = await db
+    .from('invitations')
+    .insert({
+      organization_id: payload.companyId,
+      email,
+      role_id: roleId,
+      invited_by: payload.inviterId,
+      token_hash: hashToken(rawToken),
+      status: 'pending',
+      expires_at: expiresAt.toISOString(),
+      invitee_first_name: payload.nome ?? null,
+      invitee_last_name: payload.cognome ?? null,
+    })
+    .select('*, roles(id,code,display_name)')
+    .single();
+  if (error || !data) {
+    if (error?.code === '23505') throw new CompanyInviteError('INVITE_ALREADY_PENDING', 409);
+    throw new CompanyInviteError('COMPANY_INVITE_CREATE_FAILED', 500);
+  }
 
-  const invite = data as CompanyInviteRow;
-  const acceptLink = buildCompanyAcceptLink(invite.accept_token ?? acceptToken);
-  const clinicName = await getClinicName(db, payload.companyId);
+  const invite = normalizeRow(data);
+  const acceptLink = buildCompanyAcceptLink(rawToken);
   await emailService.sendCompanyInviteEmail({
     to: invite.email,
     nome: invite.nome,
-    clinicName,
-    role: invite.role,
+    clinicName: await getOrganizationName(db, payload.companyId),
+    role: payload.role,
     acceptLink,
   });
 
-  const { data: existingUser } = await db
-    .from('users')
-    .select('id')
-    .eq('email', payload.email)
-    .maybeSingle();
-
-  if (existingUser) {
-    const messaging = options.messagingService ?? defaultMessagingService;
-    const threadId = await messaging.getOrCreateNotificationThread(db, [payload.inviterId, String((existingUser as { id: string }).id)]);
-    await messaging.insertSystemMessage(db, threadId, payload.inviterId, 'company_invite', {
-      type: 'company_invite',
-      inviteId: invite.id,
-      clinicName,
-      role: payload.role,
-      token: invite.accept_token ?? acceptToken,
-    });
-  }
+  await db.from('audit_events').insert({
+    actor_user_id: payload.inviterId,
+    organization_id: payload.companyId,
+    action: 'organization.invitation.created',
+    resource_type: 'invitation',
+    resource_id: invite.id,
+    metadata: { targetRole: payload.role },
+  });
 
   return { invite, acceptLink };
 }
@@ -239,48 +280,38 @@ export async function listCompanyInvites(
   db: SupabaseLike,
   companyId: string,
   pagination: { page: number; limit: number },
-): Promise<{ data: (CompanyInviteRow & { acceptLink: string })[]; total: number; page: number; limit: number; pages: number }> {
+): Promise<{ data: (CompanyInviteRow & { acceptLink?: string })[]; total: number; page: number; limit: number; pages: number }> {
   const page = Math.max(1, pagination.page || 1);
   const limit = Math.min(100, Math.max(1, pagination.limit || 20));
   const from = (page - 1) * limit;
   const to = from + limit - 1;
-
   const { data, count, error } = await db
-    .from('company_member_invites')
-    .select('*', { count: 'exact' })
-    .eq('company_id', companyId)
+    .from('invitations')
+    .select('*, roles(id,code,display_name)', { count: 'exact' })
+    .eq('organization_id', companyId)
     .order('created_at', { ascending: false })
     .range(from, to);
-
   if (error) throw new CompanyInviteError('COMPANY_INVITE_LIST_FAILED', 500);
-  const total = count ?? 0;
+
   return {
-    data: ((data ?? []) as CompanyInviteRow[]).map(withAcceptLink),
-    total,
+    data: ((data ?? []) as any[]).map(normalizeRow),
+    total: count ?? 0,
     page,
     limit,
-    pages: Math.ceil(total / limit),
+    pages: Math.ceil((count ?? 0) / limit),
   };
 }
 
 export async function revokeCompanyInvite(db: SupabaseLike, inviteId: string, companyId: string): Promise<void> {
   const { data } = await db
-    .from('company_member_invites')
-    .select('*')
+    .from('invitations')
+    .select('id,status')
     .eq('id', inviteId)
-    .eq('company_id', companyId)
+    .eq('organization_id', companyId)
     .maybeSingle();
-  const invite = data as CompanyInviteRow | null;
-  if (!invite) throw new CompanyInviteError('COMPANY_INVITE_NOT_FOUND', 404);
-  if (invite.status !== 'pending') throw new CompanyInviteError('COMPANY_INVITE_NOT_PENDING', 422);
-
-  const { error } = await db
-    .from('company_member_invites')
-    .update({ status: 'revoked' })
-    .eq('id', inviteId)
-    .eq('company_id', companyId)
-    .select('*')
-    .single();
+  if (!data) throw new CompanyInviteError('COMPANY_INVITE_NOT_FOUND', 404);
+  if (data.status !== 'pending') throw new CompanyInviteError('COMPANY_INVITE_NOT_PENDING', 422);
+  const { error } = await db.from('invitations').update({ status: 'revoked', revoked_at: new Date().toISOString() }).eq('id', inviteId);
   if (error) throw new CompanyInviteError('COMPANY_INVITE_REVOKE_FAILED', 500);
 }
 
@@ -290,22 +321,27 @@ export async function resendCompanyInvite(
   companyId: string,
   emailService: EmailService,
 ): Promise<{ acceptLink: string }> {
-  const { data } = await db
-    .from('company_member_invites')
-    .select('*')
+  const { data, error } = await db
+    .from('invitations')
+    .select('*, roles(id,code,display_name)')
     .eq('id', inviteId)
-    .eq('company_id', companyId)
+    .eq('organization_id', companyId)
     .maybeSingle();
-  const invite = assertUsable(data as CompanyInviteRow | null);
-  const acceptLink = buildCompanyAcceptLink(invite.accept_token ?? '');
-
+  if (error) throw new CompanyInviteError('COMPANY_INVITE_LOOKUP_FAILED', 500);
+  const invite = assertUsable(data as any | null);
+  // A resend cannot reconstruct the original raw token because only its hash is stored.
+  // Rotate it, so a leaked old link is invalidated and the new link is the only usable one.
+  const rawToken = makeToken();
+  const { error: updateError } = await db.from('invitations').update({ token_hash: hashToken(rawToken), expires_at: new Date(Date.now() + 7 * 86400000).toISOString() }).eq('id', invite.id);
+  if (updateError) throw new CompanyInviteError('COMPANY_INVITE_RESEND_FAILED', 500);
+  const normalized = normalizeRow(invite);
+  const acceptLink = buildCompanyAcceptLink(rawToken);
   await emailService.sendCompanyInviteEmail({
-    to: invite.email,
-    nome: invite.nome,
-    clinicName: await getClinicName(db, companyId),
-    role: invite.role,
+    to: normalized.email,
+    nome: normalized.nome,
+    clinicName: await getOrganizationName(db, companyId),
+    role: normalized.role,
     acceptLink,
   });
-
   return { acceptLink };
 }

@@ -37,8 +37,9 @@ npx supabase db reset --local
 ```
 
 The backend listens on <http://localhost:3001>. `SUPABASE_SERVICE_ROLE_KEY`
-must be the server-only key for this local Supabase project. Redis must also be
-available at the configured `REDIS_URL` when a route requires it.
+must be the server-only key for this local Supabase project, while
+`SUPABASE_ANON_KEY` is used only for password login. Redis must also be
+available at the configured `REDIS_URL` when an enabled route requires it.
 
 Start the backend alone from the repository root:
 
@@ -66,13 +67,18 @@ IDs from the client as authorization evidence. Protected routes resolve the
 user from a verified Bearer token, and the database remains a second security
 boundary.
 
+Legacy transition routes are disabled by default. Keep
+`ENABLE_LEGACY_TRANSITION_ROUTES=false` outside an isolated migration
+environment. Canonical runtime routes currently cover auth/onboarding,
+organization invitations, professional profiles and health checks.
+
 ## Database and permissions
 
-Migrations and SQL regressions live in `supabase/`. The backend uses the
-server-only `service_role` client. Its read grants are intentionally limited;
-for authorization context, migration
-`20260811000600_backend_authorization_read_grants.sql` grants read access only
-to the relationship data required for memberships and permissions.
+Migrations and SQL regressions live in `supabase/`. Active migrations are the
+canonical `20260812000000` series; historical transition migrations are kept
+under `supabase/migrations-legacy` and are not applied to a fresh database.
+The server-only `service_role` client performs trusted domain operations; the
+separate anon client performs credential login.
 
 Seeds are synthetic and must never contain production data, credentials,
 passwords or raw tokens.
@@ -86,6 +92,10 @@ npm run typecheck
 npm test
 npm run build
 ```
+
+`npm test` runs the canonical suite. Use `npm run test:legacy` only while
+porting an archived transition module; those tests are kept for reference and
+are not evidence that the module is currently exposed.
 
 The full workspace also includes frontend and shared-interface checks; use the
 root README commands before handoff.

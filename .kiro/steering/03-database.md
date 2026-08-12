@@ -2,9 +2,25 @@
 
 ## Fonte e stato
 
-PostgreSQL tramite Supabase è la fonte dei dati applicativi. Nel monorepo la fonte operativa è `apps/backend/supabase/`, con `config.toml`, migration applicate in ordine, seed e regressioni SQL RLS. Il database implementato è la fondazione identity/authorization e il backend di transizione; non è ancora lo schema completo di BBW.
+PostgreSQL tramite Supabase è la fonte dei dati applicativi. Nel monorepo la
+fonte operativa è `apps/backend/supabase/`, con `config.toml`, migration, seed e
+regressioni SQL RLS. Il database attualmente presente è una base transitoria
+derivata da `bbw-transition`: funziona per il codice esistente, ma non è la
+baseline definitiva per un progetto nuovo.
 
-Il baseline operativo usa `public.users`, `public.companies` e
+La baseline target adotta il modello identity/authorization di `bbwlanding`
+(`profiles`, `organizations`, `organization_members`, ruoli e permessi) con
+`professional_profiles`, `subjects`, inviti e audit. È attiva nelle migration
+`20260812000000`–`20260812000500`. I moduli di dominio legacy non ancora portati
+non devono essere considerati compatibili con questo database solo perché il
+codice esiste nel repository.
+
+Non aggiungere nuove feature identity o organization alle tabelle legacy. Le
+migration legacy restano archiviate e non applicate a un database nuovo. Non
+cancellare né riscrivere migration già applicate: ogni evoluzione richiede una
+nuova migration numerata.
+
+Il baseline transitorio usa `public.users`, `public.companies` e
 `public.company_members` per l’identità applicativa e il contesto organizzativo,
 oltre alle tabelle legacy di profili professionali, indirizzi, inviti,
 messaggistica, catalogo, consensi e prenotazioni. Le migration account-first
@@ -55,7 +71,15 @@ Normalizzare relazioni e dati modificabili. Denormalizzare soltanto con una moti
 - concorrenza gestita con unique/check constraint, lock o versionamento quando più richieste possono aggiornare la stessa risorsa;
 - modifiche manuali in produzione vietate, salvo procedura d’emergenza documentata, approvata e poi codificata in migration.
 
-Le migration account-first e authorization rilevanti sono `20260811000100_account_first_onboarding.sql`, `20260811000200_onboarding_request_context.sql`, `20260811000300_backend_identity_grants.sql`, `20260811000400_backend_identity_profile_reads.sql`, `20260811000500_authoritative_onboarding_context.sql` e `20260811000600_backend_authorization_read_grants.sql`. L’ultima concede al solo `service_role` accesso `SELECT` a `companies` e `company_members`, necessario per `/auth/context`, senza ampliare i privilegi del client. Il seed è ripetibile e non contiene account reali.
+Le migration `20260811000100`–`20260811000600` sono archiviate come storico del
+runtime transitorio e non vanno modificate. La baseline attiva è composta da
+`20260812000000_foundation_identity_authorization.sql`,
+`20260812000100_account_onboarding_rpc.sql` e
+`20260812000200_account_consents.sql`, con hardening RLS in
+`20260812000300_rls_policy_hardening.sql` e
+`20260812000400_canonical_invitations.sql`. L'accettazione atomica degli inviti
+è in `20260812000500_accept_invitation_transaction.sql`. Il seed è ripetibile e non contiene
+account reali.
 
 Le migration si applicano dalla directory backend con `npx supabase migration up --local`. Il reset riproducibile e distruttivo del solo database locale è `npx supabase db reset --local`; non va usato come procedura remota.
 

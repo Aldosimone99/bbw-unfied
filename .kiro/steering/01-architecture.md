@@ -6,7 +6,7 @@ Il repository usa Next.js App Router con `src/app`, React, TypeScript `strict`, 
 
 ## Architettura proposta
 
-Il sistema è un monorepo con frontend Next.js, backend Express/TypeScript derivato da `bbw-transition` e contratti condivisi. PostgreSQL è la fonte dei dati applicativi; Supabase fornisce Auth, database, Storage e strumenti locali. L'API Express è l'autorità per le operazioni del backend di transizione; PostgREST/SDK sono dettagli di accesso e non sostituiscono i servizi che applicano regole di dominio.
+Il sistema è un monorepo con frontend Next.js, backend Express/TypeScript e contratti condivisi. PostgreSQL è la fonte dei dati applicativi; Supabase fornisce Auth, database, Storage e strumenti locali. L'API Express è l'autorità per autenticazione applicativa, autorizzazione e operazioni di dominio; PostgREST/SDK sono dettagli di accesso e non sostituiscono i servizi che applicano regole di dominio. Il backend di `bbw-transition` è una fonte di funzionalità da portare per moduli, non la fonte definitiva del modello identity/authorization.
 
 Direzione delle dipendenze:
 
@@ -25,6 +25,10 @@ Per login e registrazione il backend verifica le credenziali e restituisce la
 sessione Supabase; il frontend la salva con `supabase.auth.setSession(...)` nel
 client SSR. Per le richieste protette successive, il backend ricostruisce il
 contesto da Bearer token, profilo, membership e stato organizzazione.
+Il login usa il client Supabase anon/publishable; il client service-role è
+riservato alle operazioni amministrative e di dominio server-side. Le route
+transition non ancora portate sono disabilitate di default e non fanno parte
+della superficie operativa.
 
 ## Responsabilità dei livelli
 

@@ -22,7 +22,7 @@ type CompanyInvitesRouterOptions = {
 export function createCompanyInvitesRouter(db: SupabaseLike, options: CompanyInvitesRouterOptions = {}): Router {
   const router = Router();
   const requireUser = options.resolveUserMiddleware ?? resolveUser(db);
-  const requireInviteRole = requireCompanyRole(db, ['owner', 'admin', 'staff', 'profissional']);
+  const requireInviteRole = requireCompanyRole(db, ['organization_owner', 'organization_admin', 'office_manager']);
 
   router.get('/lookup/:token', createCompanyInviteLookupHandler(db));
   router.post('/accept', requireUser, createCompanyInviteAcceptHandler(db));

@@ -36,13 +36,31 @@ export function resolveUser(supabase: SupabaseLike, cache: AuthCache = authCache
     const authUser = authData?.user;
     if (error || !authUser) return res.status(401).json({ error: 'INVALID_TOKEN' });
 
-    const { data: appUser, error: userError } = await supabase
-      .from('users')
-      .select('id, email, tipo_utente, nome, cognome')
-      .eq('id', authUser.id)
-      .single();
+    const [{ data: profile, error: profileError }, { data: accountRoles, error: roleError }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name')
+        .eq('user_id', authUser.id)
+        .single(),
+      supabase
+        .from('account_roles')
+        .select('roles(code)')
+        .eq('user_id', authUser.id),
+    ]);
 
-    if (userError || !appUser) return res.status(401).json({ error: 'USER_NOT_FOUND' });
+    if (profileError || roleError || !profile) return res.status(401).json({ error: 'USER_NOT_FOUND' });
+
+    const isPlatformAdmin = (accountRoles ?? []).some((row: any) => row.roles?.code === 'platform_admin');
+    const appUser = {
+      id: authUser.id,
+      email: authUser.email ?? '',
+      // Compatibility field for legacy route adapters. It is never read from
+      // the database as an authorization source; organization roles come from
+      // verified membership and permissions.
+      tipo_utente: isPlatformAdmin ? 'admin' : 'privato',
+      nome: profile.first_name ?? null,
+      cognome: profile.last_name ?? null,
+    } as const;
 
     cache.set(token, appUser);
     req.user = appUser;

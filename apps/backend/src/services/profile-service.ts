@@ -1,81 +1,53 @@
-import type { AppRole, PersistedUserType, ProfileUpdateRequest } from '@bbw/interfaces';
+import type { ProfileUpdateRequest } from '@bbw/interfaces';
 import type { SupabaseLike } from '../db/supabase';
 import type { ResolvedUser } from './types';
 
-const profileSelect = `
-  *,
-  user_addresses(*),
-  user_business_profiles(*),
-  professional_credentials!professional_credentials_user_id_fkey(*),
-  professional_studios(*),
-  user_consents(accepted_at, version)
-`;
-
-const baseKeys = ['nome', 'cognome', 'titolo', 'telefono', 'avatar', 'sesso'] as const;
-const addressKeys = ['via', 'citta', 'provincia', 'cap', 'localita', 'nazione'] as const;
-const businessKeys = ['ragione_sociale', 'partita_iva', 'pec', 'codice_sdi', 'iban', 'azienda_via', 'azienda_citta', 'azienda_provincia', 'azienda_cap', 'azienda_nazione'] as const;
-const credentialKeys = ['numero_albo', 'numero_autorizzazione_asl', 'specializzazioni', 'documento_tipo', 'documento_numero', 'documento_comune_rilascio', 'dichiarazione_assenza_carichi_giudiziari'] as const;
-const studioKeys = ['studio_via', 'studio_citta', 'studio_provincia', 'studio_cap'] as const;
+const supportedProfileKeys = new Set(['nome', 'cognome', 'telefono']);
 
 export class ProfileAccessError extends Error {
   status = 403;
   code = 'FORBIDDEN_PROFILE_FIELDS';
 }
 
-function pick<T extends Record<string, unknown>, K extends readonly string[]>(payload: T, keys: K): Record<K[number], unknown> {
-  return keys.reduce<Record<string, unknown>>((acc, key) => {
-    if (payload[key] !== undefined) acc[key] = payload[key];
-    return acc;
-  }, {}) as Record<K[number], unknown>;
-}
-
-function hasFields(fields: Record<string, unknown>): boolean {
-  return Object.keys(fields).length > 0;
-}
-
-function assertRole(actual: PersistedUserType, allowed: AppRole[]): void {
-  if (actual === 'admin') return;
-  if (actual === 'privato') throw new ProfileAccessError('FORBIDDEN_PROFILE_FIELDS');
-  if (!allowed.includes(actual)) throw new ProfileAccessError('FORBIDDEN_PROFILE_FIELDS');
-}
-
 export async function getCurrentUserProfile(db: SupabaseLike, userId: string) {
-  const { data, error } = await db.from('users').select(profileSelect).eq('id', userId).single();
-  if (error) throw error;
-  return data;
+  const [{ data, error }, { data: authData }] = await Promise.all([
+    db.from('profiles')
+      .select('user_id,first_name,last_name,phone,onboarding_intent,onboarding_status,created_at,updated_at')
+      .eq('user_id', userId)
+      .single(),
+    db.auth.admin.getUserById(userId),
+  ]);
+
+  if (error || !data) throw error ?? new Error('PROFILE_NOT_FOUND');
+
+  return {
+    id: data.user_id,
+    user_id: data.user_id,
+    email: authData?.user?.email ?? null,
+    nome: data.first_name,
+    cognome: data.last_name,
+    telefono: data.phone,
+    onboarding_intent: data.onboarding_intent,
+    onboarding_status: data.onboarding_status,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
 }
 
 export async function updateCurrentUserProfile(db: SupabaseLike, user: ResolvedUser, payload: ProfileUpdateRequest) {
-  if ('tipo_utente' in payload) throw new ProfileAccessError('ROLE_CHANGE_NOT_ALLOWED');
-
-  const base = pick(payload, baseKeys);
-  if (hasFields(base)) await db.from('users').update(base).eq('id', user.id);
-
-  const address = pick(payload, addressKeys);
-  if (hasFields(address)) await db.from('user_addresses').upsert({ user_id: user.id, ...address });
-
-  const business = pick(payload, businessKeys);
-  if (hasFields(business)) {
-    assertRole(user.tipo_utente, ['medico', 'estetista', 'commerciale', 'clinica']);
-    await db.from('user_business_profiles').upsert({ user_id: user.id, ...business });
+  const unsupported = Object.keys(payload).filter((key) => !supportedProfileKeys.has(key));
+  if (unsupported.length > 0 || 'tipo_utente' in payload) {
+    throw new ProfileAccessError('PROFILE_FIELDS_REQUIRE_DOMAIN_WORKFLOW');
   }
 
-  const credentials = pick(payload, credentialKeys);
-  if (hasFields(credentials)) {
-    assertRole(user.tipo_utente, ['medico', 'estetista', 'commerciale']);
-    await db.from('professional_credentials').upsert({ user_id: user.id, ...credentials });
-  }
+  const fields: Record<string, unknown> = {};
+  if (payload.nome !== undefined) fields.first_name = payload.nome;
+  if (payload.cognome !== undefined) fields.last_name = payload.cognome;
+  if (payload.telefono !== undefined) fields.phone = payload.telefono;
 
-  const studio = pick(payload, studioKeys);
-  if (hasFields(studio)) {
-    assertRole(user.tipo_utente, ['medico', 'estetista']);
-    await db.from('professional_studios').upsert({
-      user_id: user.id,
-      via: studio.studio_via,
-      citta: studio.studio_citta,
-      provincia: studio.studio_provincia,
-      cap: studio.studio_cap,
-    });
+  if (Object.keys(fields).length > 0) {
+    const { error } = await db.from('profiles').update(fields).eq('user_id', user.id);
+    if (error) throw error;
   }
 
   return getCurrentUserProfile(db, user.id);

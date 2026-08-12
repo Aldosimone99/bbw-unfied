@@ -9,15 +9,23 @@ import { createTokenRouter } from './token-routes';
 import { createRegisterValidateRouter } from './register-validate-routes';
 import { createOnboardingAuthRouter } from './onboarding-routes';
 
-export function createAuthRouter(db: SupabaseLike): Router {
+type AuthRouterOptions = {
+  enableLegacyRoutes?: boolean;
+};
+
+export function createAuthRouter(db: SupabaseLike, options: AuthRouterOptions = {}): Router {
   const router = Router();
   router.use(createRegisterRouter(db));
-  router.use(createRegisterValidateRouter(db));
   router.use(createOnboardingAuthRouter(db));
   router.use(createLoginRouter(db));
   router.use(createMeRouter(db));
-  router.use(createPasswordRouter(db));
-  router.use(createOtpRouter(db));
-  router.use(createTokenRouter(db));
+
+  if (options.enableLegacyRoutes) {
+    router.use(createRegisterValidateRouter(db));
+    router.use(createPasswordRouter(db));
+    router.use(createOtpRouter(db));
+    router.use(createTokenRouter(db));
+  }
+
   return router;
 }
