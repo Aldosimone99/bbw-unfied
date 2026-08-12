@@ -10,6 +10,7 @@ export * from './schemas/invite-schema';
 export * from './schemas/contract-schema';
 export * from './schemas/document-schema';
 export * from './schemas/onboarding-schema';
+export * from './schemas/operational-readiness-schema';
 export * from './schemas/register-validate-schema';
 export * from './schemas/notification-schema';
 export * from './schemas/domain-schema';

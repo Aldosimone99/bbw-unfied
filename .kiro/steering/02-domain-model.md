@@ -18,6 +18,7 @@ Identità, persona, organizzazione, appartenenza, ruolo, permesso, ownership e r
 | **UserRoleAssignment** | Assegnazione di ruolo a una membership, eventualmente limitata a una risorsa/ambito. | MVP proposto |
 | **PatientRelationship** | Relazione esplicita tra soggetto/persona e professionista o organizzazione, con stato, origine, consenso dove richiesto e revoca. | MVP proposto |
 | **ProfessionalProfile** | Qualifiche e dati pubblicabili di una persona professionista; verifica e visibilità sono separate dall’account. | Da confermare / MVP proposto |
+| **OperationalReadiness** | Vista derivata, non persistita, dei prerequisiti per una capability: completezza personale, organization context e verifica professionale restano dimensioni separate. | Foundation implementata |
 | **Appointment** | Evento con organizzazione/owner, partecipanti, servizio, orari e stato. Gli orari sono istanti con timezone esplicita. | MVP proposto |
 | **Service/Treatment** | Prestazione o percorso offerto; “treatment” può implicare dati clinici e va definito. | Da confermare |
 | **ConsentTemplate** | Versione di un testo/modello predisposto da un soggetto autorizzato. Le versioni pubblicate sono immutabili. | MVP proposto |

@@ -1,17 +1,23 @@
-import type { CurrentUser, OrganizationContextSummary, ProfileSummary } from "../../types/authorization";
-import { getRequestedAccountTypeLabel } from "../dashboard/profileLabels";
-import PlatformShell from "../dashboard/PlatformShell";
-import ProfileForm from "./ProfileForm";
-import styles from "./Profile.module.css";
+import type { OperationalReadiness } from '@bbw/interfaces';
+
+import type { CurrentUser, OrganizationContextSummary, ProfileSummary } from '../../types/authorization';
+import { getRequestedAccountTypeLabel } from '../dashboard/profileLabels';
+import PlatformShell from '../dashboard/PlatformShell';
+import { getReadinessLabel, personalProfileFieldLabels } from '../authorization/readinessLabels';
+import ProfileForm from './ProfileForm';
+import styles from './Profile.module.css';
 
 type ProfileViewProps = {
   user: CurrentUser;
   profile: ProfileSummary;
   organizationContext: OrganizationContextSummary;
+  readiness: OperationalReadiness;
 };
 
-export default function ProfileView({ user, profile, organizationContext }: ProfileViewProps) {
-  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Profilo BBW";
+export default function ProfileView({ user, profile, organizationContext, readiness }: ProfileViewProps) {
+  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Profilo BBW';
+  const missingFields = readiness.personal_profile.missing_fields;
+  const personalProfileComplete = readiness.personal_profile.complete;
 
   return (
     <PlatformShell user={user} profile={profile} activePath="/profilo" organizationContext={organizationContext}>
@@ -29,8 +35,21 @@ export default function ProfileView({ user, profile, organizationContext }: Prof
                 <p className={styles.cardLabel}>Dati personali</p>
                 <h2 id="personal-data-title">Informazioni di base</h2>
               </div>
-              <span className={styles.status}>In aggiornamento</span>
+              <span className={styles.status} data-complete={personalProfileComplete}>
+                {personalProfileComplete ? 'Completo' : `${missingFields.length} mancanti`}
+              </span>
             </div>
+
+            {!personalProfileComplete ? (
+              <div className={styles.completionNotice} aria-labelledby="profile-completeness-title">
+                <h3 id="profile-completeness-title">Profilo incompleto</h3>
+                <p>Completa queste informazioni per usare le future funzioni che richiedono un profilo operativo.</p>
+                <ul>
+                  {missingFields.map((field) => <li key={field}>{getReadinessLabel(field, personalProfileFieldLabels)}</li>)}
+                </ul>
+              </div>
+            ) : null}
+
             <ProfileForm profile={profile} />
           </section>
 
@@ -40,15 +59,15 @@ export default function ProfileView({ user, profile, organizationContext }: Prof
             <dl className={styles.details}>
               <div>
                 <dt>Email</dt>
-                <dd>{user.email ?? "Non disponibile"}</dd>
+                <dd>{user.email ?? 'Non disponibile'}</dd>
               </div>
               <div>
-                <dt>Ruolo</dt>
+                <dt>Intent iniziale</dt>
                 <dd>{getRequestedAccountTypeLabel(profile.requestedAccountType)}</dd>
               </div>
               <div>
-                <dt>Stato</dt>
-                <dd>Profilo in aggiornamento</dd>
+                <dt>Stato profilo</dt>
+                <dd>{personalProfileComplete ? 'Completo' : `${missingFields.length} informazioni mancanti`}</dd>
               </div>
             </dl>
           </aside>

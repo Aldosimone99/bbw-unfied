@@ -120,5 +120,16 @@ export async function requestProfessionalVerification(db: SupabaseLike, userId: 
     .select('id,user_id,display_name,bio,verification_status,verified_at,created_at,updated_at,professional_types(id,code,category,display_name,verification_required)')
     .single();
   if (error || !data) throw new ProfessionalProfileError('PROFESSIONAL_PROFILE_NOT_READY', 422);
+
+  const { error: auditError } = await db.from('audit_events').insert({
+    actor_user_id: userId,
+    organization_id: null,
+    action: 'professional_profile.verification_requested',
+    resource_type: 'professional_profile',
+    resource_id: data.id,
+    metadata: {},
+  });
+  if (auditError) throw new ProfessionalProfileError('PROFESSIONAL_PROFILE_AUDIT_FAILED', 500);
+
   return normalizeProfile(data);
 }

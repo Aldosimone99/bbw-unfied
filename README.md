@@ -159,6 +159,28 @@ by protected backend routes and database policies. The frontend can render the
 state it receives, but it cannot grant permissions, choose an actor, or bypass
 ownership checks.
 
+## Profile completeness and operational readiness
+
+Onboarding, profile completeness, organization completeness, professional
+verification and authorization are distinct states. `GET /auth/context` now
+returns a backend-derived `readiness` object for the authenticated account and
+for the selected organization context. It reports technical missing-field
+identifiers; it does not persist or trust a global `profile_completed` flag.
+
+The personal operational profile requires first name, last name, date of birth,
+tax code and a structured residential address. Phone remains optional. An
+organization requires legal/display data, its type, tax identifier, contacts,
+address and an active member holding the configured `organization.update`
+permission. Professional operational readiness is derived from existing
+professional profiles, their `verification_required` configuration and their
+existing verification status.
+
+The optional `organization_id` query value accepted by `/auth/context` is only
+a context selection request: the backend validates it against the verified
+account's active membership before returning organization readiness. Future
+sensitive routes must enforce authentication, context, permission, readiness
+requirements and only then their business operation.
+
 ## Database workflow
 
 Migrations live under `apps/backend/supabase/migrations` and are the database
@@ -199,7 +221,24 @@ npm run test:legacy --workspace @bbw/backend
 
 They are not a release gate until the corresponding module is ported. The
 canonical coverage includes registration, login, onboarding, HTTP surface,
-CORS, invitations, professional profiles and migration grants.
+CORS, invitations, professional profiles, profile completeness, organization
+readiness and migration grants.
+
+### Manual operational-readiness smoke test
+
+Browser E2E is not configured yet. With local Supabase, Redis and both apps
+running, verify the following manually:
+
+1. Register an account, complete onboarding and open `/dashboard`.
+2. Confirm that dashboard remains accessible and shows the personal-profile
+   configuration notice.
+3. Open `/profilo`, complete date of birth, tax code and residential address,
+   then save; after refresh the personal blocker disappears from dashboard.
+4. For an organization owner, select the organization context, open
+   `/organizzazione`, complete legal/contact/address fields, then save; after
+   refresh the organization readiness becomes complete for that context only.
+5. Switch to another organization and confirm its readiness is calculated from
+   its own data, not copied from the previous organization.
 
 ## Documentation and contribution rules
 

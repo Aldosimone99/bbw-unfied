@@ -244,3 +244,77 @@
     display: grid;
   }
 }
+
+.status[data-complete="true"] {
+  border-color: rgba(98, 117, 70, .28);
+  color: #627546;
+}
+
+.completionNotice {
+  margin-top: 22px;
+  padding: 18px 20px;
+  border: 1px solid rgba(200, 162, 90, .2);
+  border-radius: 10px;
+  background: rgba(247, 239, 229, .58);
+}
+
+.completionNotice h3 {
+  margin: 0;
+  color: #4b3a2e;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.completionNotice p {
+  margin: 8px 0 0;
+  color: rgba(74, 58, 47, .68);
+  font-size: .86rem;
+  line-height: 1.45;
+}
+
+.completionNotice ul {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0;
+  padding-left: 19px;
+  color: #5c4838;
+  font-size: .84rem;
+}
+
+.field > span em {
+  color: rgba(74, 58, 47, .5);
+  font-size: .62rem;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: .04em;
+}
+
+.addressFieldset {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid rgba(127, 90, 52, .12);
+  border-radius: 10px;
+}
+
+.addressFieldset legend {
+  padding: 0 6px;
+  color: rgba(74, 58, 47, .78);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.fieldGridThree {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 760px) {
+  .fieldGridThree {
+    grid-template-columns: 1fr;
+  }
+}

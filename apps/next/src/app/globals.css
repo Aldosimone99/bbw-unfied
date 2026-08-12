@@ -1322,7 +1322,7 @@
       html,
       body {
         height: 100%;
-        overflow: hidden;
+        overflow: visible;
       }
       .page {
         height: 100vh;
@@ -1367,7 +1367,7 @@
       html,
       body {
         height: 100%;
-        overflow: hidden;
+        overflow: visible;
       }
       .page {
         height: 100dvh;

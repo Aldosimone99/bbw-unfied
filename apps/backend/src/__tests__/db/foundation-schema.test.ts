@@ -9,6 +9,8 @@ const consents = readFileSync(resolve(migrationRoot, '20260812000200_account_con
 const rls = readFileSync(resolve(migrationRoot, '20260812000300_rls_policy_hardening.sql'), 'utf8');
 const invitations = readFileSync(resolve(migrationRoot, '20260812000400_canonical_invitations.sql'), 'utf8');
 const invitationAcceptance = readFileSync(resolve(migrationRoot, '20260812000500_accept_invitation_transaction.sql'), 'utf8');
+const readiness = readFileSync(resolve(migrationRoot, '20260812000600_operational_readiness_profile_data.sql'), 'utf8');
+const readinessAuditTransactions = readFileSync(resolve(migrationRoot, '20260812000700_profile_update_audit_transactions.sql'), 'utf8');
 const seed = readFileSync(resolve(process.cwd(), 'supabase/seed.sql'), 'utf8');
 
 describe('canonical foundation schema', () => {
@@ -64,6 +66,23 @@ describe('canonical foundation schema', () => {
     expect(invitations).toContain('accepted_by');
     expect(invitations).toContain('invitations_pending_email_unique');
     expect(seed).toContain("('customer', 'Customer', 'organization', true)");
+  });
+
+  it('adds source data for derived readiness without a persisted completion flag', () => {
+    expect(readiness).toContain('add column birth_date date');
+    expect(readiness).toContain('add column tax_code text');
+    expect(readiness).toContain('add column residential_address jsonb');
+    expect(readiness).toContain('add column tax_identifier text');
+    expect(readiness).toContain('add column registered_address jsonb');
+    expect(readiness).not.toMatch(/profile_completed|operational_readiness\s+boolean/i);
+  });
+
+  it('keeps sensitive updates and their minimized audit events in service-role-only transactions', () => {
+    expect(readinessAuditTransactions).toContain('update_personal_profile_with_audit');
+    expect(readinessAuditTransactions).toContain('update_organization_profile_with_audit');
+    expect(readinessAuditTransactions).toContain("if (select auth.role()) <> 'service_role'");
+    expect(readinessAuditTransactions).toContain("jsonb_build_object('changed_fields', changed_fields)");
+    expect(readinessAuditTransactions).toContain('grant execute on function public.update_personal_profile_with_audit');
   });
 
   it('accepts invitations in a locked service-role-only transaction', () => {

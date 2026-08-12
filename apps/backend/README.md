@@ -56,8 +56,14 @@ Run only one backend process on port `3001`; a second process fails with
 - `POST /auth/login` verifies credentials and returns the Supabase session used
   by the frontend server-side client.
 - `GET /auth/me` returns the verified application profile.
-- `GET /auth/context` calculates profile, memberships, active organization and
-  permissions from the verified Bearer token.
+- `GET /auth/context` calculates profile, memberships, selected active organization,
+  permissions and backend-derived operational readiness from the verified Bearer
+  token. Its optional `organization_id` is validated against active membership;
+  it never authorizes an arbitrary organization ID.
+- `GET /organizations/:organizationId/profile` and
+  `PUT /organizations/:organizationId/profile` read or update legal/contact data
+  only after verified membership and `organization.read`/`organization.update`.
+  Sensitive updates are audited with field identifiers only.
 - `POST /auth/onboarding/profile` saves the first onboarding step.
 - `POST /auth/onboarding/complete` completes onboarding through the protected
   `complete_account_onboarding` RPC.
@@ -65,7 +71,9 @@ Run only one backend process on port `3001`; a second process fails with
 The backend never trusts `userId`, `actorRole`, account labels or organization
 IDs from the client as authorization evidence. Protected routes resolve the
 user from a verified Bearer token, and the database remains a second security
-boundary.
+boundary. Completeness is calculated from canonical profile/organization data;
+it is neither persisted as a global boolean nor a substitute for permission or
+professional verification.
 
 Legacy transition routes are disabled by default. Keep
 `ENABLE_LEGACY_TRANSITION_ROUTES=false` outside an isolated migration

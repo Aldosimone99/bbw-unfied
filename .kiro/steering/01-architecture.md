@@ -24,7 +24,10 @@ apps/next → /api/backend/* → apps/backend → Supabase/PostgreSQL/Redis
 Per login e registrazione il backend verifica le credenziali e restituisce la
 sessione Supabase; il frontend la salva con `supabase.auth.setSession(...)` nel
 client SSR. Per le richieste protette successive, il backend ricostruisce il
-contesto da Bearer token, profilo, membership e stato organizzazione.
+contesto da Bearer token, profilo, membership e stato organizzazione; calcola
+inoltre il readiness dai dati canonici del profilo personale, dell’organizzazione
+selezionata e della verifica professionale. Il readiness è derivato, non è un
+flag persistito e non sostituisce permission o RLS.
 Il login usa il client Supabase anon/publishable; il client service-role è
 riservato alle operazioni amministrative e di dominio server-side. Le route
 transition non ancora portate sono disabilitate di default e non fanno parte

@@ -1,53 +1,83 @@
-import type { ProfileUpdateRequest } from '@bbw/interfaces';
+import type { PersonalProfileUpdateRequest } from '@bbw/interfaces';
 import type { SupabaseLike } from '../db/supabase';
 import type { ResolvedUser } from './types';
 
-const supportedProfileKeys = new Set(['nome', 'cognome', 'telefono']);
-
 export class ProfileAccessError extends Error {
-  status = 403;
-  code = 'FORBIDDEN_PROFILE_FIELDS';
+  constructor(
+    public readonly code: 'PROFILE_NOT_FOUND' | 'PROFILE_UPDATE_FAILED',
+    public readonly status = 404 | 500,
+  ) {
+    super(code);
+    this.name = 'ProfileAccessError';
+  }
+}
+
+type CanonicalProfileRow = {
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  birth_date: string | null;
+  tax_code: string | null;
+  residential_address: unknown;
+  onboarding_intent: string | null;
+  onboarding_status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+const profileColumns = 'user_id,first_name,last_name,phone,birth_date,tax_code,residential_address,onboarding_intent,onboarding_status,created_at,updated_at';
+
+function definedUpdates(payload: PersonalProfileUpdateRequest): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== undefined),
+  );
 }
 
 export async function getCurrentUserProfile(db: SupabaseLike, userId: string) {
   const [{ data, error }, { data: authData }] = await Promise.all([
     db.from('profiles')
-      .select('user_id,first_name,last_name,phone,onboarding_intent,onboarding_status,created_at,updated_at')
+      .select(profileColumns)
       .eq('user_id', userId)
       .single(),
     db.auth.admin.getUserById(userId),
   ]);
 
-  if (error || !data) throw error ?? new Error('PROFILE_NOT_FOUND');
+  if (error || !data) throw new ProfileAccessError('PROFILE_NOT_FOUND', 404);
+  const profile = data as CanonicalProfileRow;
 
   return {
-    id: data.user_id,
-    user_id: data.user_id,
+    id: profile.user_id,
+    user_id: profile.user_id,
     email: authData?.user?.email ?? null,
-    nome: data.first_name,
-    cognome: data.last_name,
-    telefono: data.phone,
-    onboarding_intent: data.onboarding_intent,
-    onboarding_status: data.onboarding_status,
-    created_at: data.created_at,
-    updated_at: data.updated_at,
+    first_name: profile.first_name,
+    last_name: profile.last_name,
+    phone: profile.phone,
+    birth_date: profile.birth_date,
+    tax_code: profile.tax_code,
+    address: profile.residential_address,
+    onboarding_intent: profile.onboarding_intent,
+    onboarding_status: profile.onboarding_status,
+    created_at: profile.created_at,
+    updated_at: profile.updated_at,
   };
 }
 
-export async function updateCurrentUserProfile(db: SupabaseLike, user: ResolvedUser, payload: ProfileUpdateRequest) {
-  const unsupported = Object.keys(payload).filter((key) => !supportedProfileKeys.has(key));
-  if (unsupported.length > 0 || 'tipo_utente' in payload) {
-    throw new ProfileAccessError('PROFILE_FIELDS_REQUIRE_DOMAIN_WORKFLOW');
-  }
+export async function updateCurrentUserProfile(
+  db: SupabaseLike,
+  user: ResolvedUser,
+  payload: PersonalProfileUpdateRequest,
+) {
+  const updates = definedUpdates(payload);
+  if (Object.keys(updates).length === 0) return getCurrentUserProfile(db, user.id);
 
-  const fields: Record<string, unknown> = {};
-  if (payload.nome !== undefined) fields.first_name = payload.nome;
-  if (payload.cognome !== undefined) fields.last_name = payload.cognome;
-  if (payload.telefono !== undefined) fields.phone = payload.telefono;
-
-  if (Object.keys(fields).length > 0) {
-    const { error } = await db.from('profiles').update(fields).eq('user_id', user.id);
-    if (error) throw error;
+  const { error } = await db.rpc('update_personal_profile_with_audit', {
+    p_user_id: user.id,
+    p_updates: updates,
+  });
+  if (error) {
+    const status = error.message?.includes('PROFILE_NOT_FOUND') ? 404 : 500;
+    throw new ProfileAccessError(status === 404 ? 'PROFILE_NOT_FOUND' : 'PROFILE_UPDATE_FAILED', status);
   }
 
   return getCurrentUserProfile(db, user.id);

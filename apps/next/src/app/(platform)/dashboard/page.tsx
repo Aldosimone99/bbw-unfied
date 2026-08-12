@@ -10,6 +10,7 @@ export default async function DashboardPage() {
       profile={context.profile}
       organizationContext={context}
       permissions={context.permissions}
+      readiness={context.readiness!}
     />
   );
 }

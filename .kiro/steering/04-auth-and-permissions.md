@@ -42,7 +42,7 @@ Questa è una **matrice iniziale da approvare**, non lo schema definitivo. Ogni 
 
 ## Enforcement e revoca
 
-Il backend `/auth/context` calcola il contesto da Bearer verificato, profilo, membership e stato organizzazione. La dashboard applica già le decisioni `login`, `onboarding`, `forbidden` e `allowed`; RLS resta il confine database. I permessi sono separati tra global/platform e organizzazione attiva; una membership non attiva o un’organizzazione non attiva non produce permessi scoped. Il frontend usa il contesto ricevuto per il rendering, ma non decide autorizzazioni.
+Il backend `/auth/context` calcola il contesto da Bearer verificato, profilo, membership, stato organizzazione e readiness derivato. Il readiness non è un ruolo, una permission né un flag client-side: serve a valutare prerequisiti dichiarati dopo authentication, tenant context e permission. La dashboard applica già le decisioni `login`, `onboarding`, `forbidden` e `allowed`; RLS resta il confine database. I permessi sono separati tra global/platform e organizzazione attiva; una membership non attiva o un’organizzazione non attiva non produce permessi scoped. Il frontend usa il contesto ricevuto per il rendering, ma non decide autorizzazioni.
 
 Revoca membership/ruolo, sospensione account e disabilitazione devono avere effetto sulle richieste successive; definire se e come invalidare sessioni già aperte. Un errore di ownership non deve essere aggirabile cambiando un UUID.
 

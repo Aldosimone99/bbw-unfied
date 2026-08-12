@@ -1,3 +1,4 @@
+import type { OperationalReadiness } from '@bbw/interfaces';
 import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
 
 import type { CurrentUser, OrganizationContextSummary, PermissionCode, ProfileSummary } from "../../types/authorization";
@@ -5,6 +6,12 @@ import PlatformShell from "./PlatformShell";
 import PlatformIcon, { type PlatformIconName } from "./PlatformIcon";
 import { getDashboardNavItems } from "./transitionNavigation";
 import { getRequestedAccountTypeLabel } from "./profileLabels";
+import {
+  getReadinessLabel,
+  organizationProfileFieldLabels,
+  personalProfileFieldLabels,
+  professionalBlockerLabels,
+} from "../authorization/readinessLabels";
 import styles from "./Dashboard.module.css";
 
 type DashboardViewProps = {
@@ -12,6 +19,7 @@ type DashboardViewProps = {
   profile: ProfileSummary;
   organizationContext: OrganizationContextSummary;
   permissions: PermissionCode[];
+  readiness: OperationalReadiness;
 };
 
 function QuickActionIcon({ name }: { name: PlatformIconName }) {
@@ -30,7 +38,7 @@ function getGreeting() {
   return "Buonasera";
 }
 
-export default function DashboardView({ user, profile, organizationContext, permissions }: DashboardViewProps) {
+export default function DashboardView({ user, profile, organizationContext, permissions, readiness }: DashboardViewProps) {
   const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Profilo BBW";
   const firstName = profile.firstName || fullName;
   const greeting = getGreeting();
@@ -50,6 +58,44 @@ export default function DashboardView({ user, profile, organizationContext, perm
             <p>Bentornato nel tuo spazio personale.</p>
           </div>
         </div>
+
+        <section className={styles.readinessBanner} aria-labelledby="readiness-title">
+          <div>
+            <p className={styles.eyebrow}>Configurazione account</p>
+            <h2 id="readiness-title">Completa la configurazione del tuo account</h2>
+            <p>Puoi continuare a usare la dashboard; alcune future funzioni richiederanno i dati indicati.</p>
+          </div>
+          <div className={styles.readinessItems}>
+            {!readiness.personal_profile.complete ? (
+              <div>
+                <strong>Profilo personale</strong>
+                <span>{readiness.personal_profile.missing_fields.map((field) => getReadinessLabel(field, personalProfileFieldLabels)).join(', ')}</span>
+                <a href="/profilo">Completa profilo</a>
+              </div>
+            ) : null}
+            {readiness.organization.applicable && !readiness.organization.complete ? (
+              <div>
+                <strong>Organizzazione</strong>
+                <span>{readiness.organization.missing_fields.map((field) => getReadinessLabel(field, organizationProfileFieldLabels)).join(', ')}</span>
+                {permissions.includes('organization.update') ? <a href="/organizzazione">Completa organizzazione</a> : null}
+              </div>
+            ) : null}
+            {readiness.professional.applicable && !readiness.professional.operational ? (
+              <div>
+                <strong>Verifica professionale</strong>
+                <span>{readiness.professional.blockers.map((blocker) => getReadinessLabel(blocker, professionalBlockerLabels)).join(', ')}</span>
+              </div>
+            ) : null}
+            {readiness.personal_profile.complete
+              && (!readiness.organization.applicable || readiness.organization.complete)
+              && (!readiness.professional.applicable || readiness.professional.operational) ? (
+                <div>
+                  <strong>Configurazione completata</strong>
+                  <span>I requisiti attuali risultano soddisfatti.</span>
+                </div>
+              ) : null}
+          </div>
+        </section>
 
         <section className={styles.quickActions} aria-label="Azioni rapide">
           <div className={styles.quickActionsGrid}>
