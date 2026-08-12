@@ -36,7 +36,7 @@ Ogni action/handler definisce input schema Zod e DTO di risposta. Il domain mode
 
 ## Date, denaro e dominio
 
-Persistenza in UTC (`timestamptz`), timezone dell’organizzazione/utente esplicita e conversione solo in presentazione. Nell’interfaccia italiana le date devono usare il formato `DD/MM/YYYY` e formatter con locale `it-IT`; valori tecnici, API e database mantengono formati ISO non ambigui (`YYYY-MM-DD`/UTC). Non usare `new Date()` sparso nei casi d’uso senza poter iniettare un clock nei test. Denaro in minor units integer con valuta esplicita, mai float; arrotondamenti e IVA sono **Da confermare**. Preferire branded/validated IDs se confondere due UUID crea rischio.
+Persistenza in UTC (`timestamptz`), timezone dell’organizzazione/utente esplicita e conversione solo in presentazione. Nell’interfaccia italiana le date devono usare il formato `DD/MM/YYYY` e gli orari il formato `HH:mm:ss`, con formatter e locale `it-IT`; valori tecnici, API e database mantengono formati ISO non ambigui (`YYYY-MM-DD`/UTC). Non usare `new Date()` sparso nei casi d’uso senza poter iniettare un clock nei test. Denaro in minor units integer con valuta esplicita, mai float; arrotondamenti e IVA sono **Da confermare**. Preferire branded/validated IDs se confondere due UUID crea rischio.
 
 Evitare enum TypeScript per valori configurabili o che arrivano dal database; usare costanti di dominio, schema e cataloghi. Non duplicare le stringhe delle permission in UI e server: il server è autoritativo e il contratto condiviso deve avere una sola fonte.
 

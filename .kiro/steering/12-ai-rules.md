@@ -17,5 +17,5 @@
 - Verificare typecheck, lint, test, build e impatto responsive/accessibility in proporzione al rischio.
 - Prima di creare una merge request, Kiro deve verificare la branch proposta contro la branch target, identificare e risolvere tutti i conflitti senza scartarne arbitrariamente le modifiche, quindi rieseguire i controlli pertinenti.
 - Prima di creare una merge request, Kiro deve riesaminare il diff e i comportamenti toccati per prevenire regressioni funzionali, di sicurezza, UI e compatibilità; non può assumere assenza di regressioni dal solo esito positivo dei comandi.
-- Nella UI italiana, Kiro deve presentare le date nel formato `DD/MM/YYYY` usando `it-IT`; API, database e valori tecnici mantengono ISO/UTC per evitare ambiguità.
+- Nella UI italiana, Kiro deve presentare le date nel formato `DD/MM/YYYY` e gli orari nel formato `HH:mm:ss` usando `it-IT`; API, database e valori tecnici mantengono ISO/UTC per evitare ambiguità.
 - Se un requisito confligge con sicurezza/privacy o con istruzioni più specifiche del repository, fermare l’implementazione e rendere esplicito il conflitto.

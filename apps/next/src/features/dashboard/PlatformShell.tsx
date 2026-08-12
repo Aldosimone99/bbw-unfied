@@ -3,7 +3,6 @@ import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 
 import { logoutAction } from '../auth/actions';
-import ContextSwitcher from '../operational-context/ContextSwitcher';
 import { getOperationalContextTypeLabel } from '../operational-context/labels';
 import type { CurrentUser, OperationalContextSummary, PermissionCode, ProfileSummary } from '../../types/authorization';
 import PlatformIcon, { type PlatformIconName } from './PlatformIcon';
@@ -78,10 +77,6 @@ export default function PlatformShell({ user, profile, activePath, operationalCo
         </div>
 
         <div className={styles.sidebarBottom}>
-          <ContextSwitcher
-            contexts={operationalContext.availableOperationalContexts}
-            activeContext={activeContext}
-          />
           <details className={styles.sidebarUser}>
             <summary className={styles.sidebarUserSummary}>
               <span className={styles.avatarSmall} aria-hidden="true">{initials}</span>

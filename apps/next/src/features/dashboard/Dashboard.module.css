@@ -39,6 +39,14 @@
   padding: 30px 22px 24px;
   border-right: 1px solid var(--dashboard-line);
   background: rgba(250, 247, 243, .9);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sidebarBottom {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
 }
 
 .brand {
@@ -259,8 +267,8 @@
 }
 
 .sidebarUser {
-  margin-top: auto;
-  overflow: hidden;
+  position: relative;
+  overflow: visible;
   border: 1px solid rgba(200, 162, 90, .22);
   border-radius: 10px;
   background: rgba(255, 252, 248, .72);
@@ -331,6 +339,20 @@
 
 .sidebarAccountMenu form {
   margin: 0;
+}
+
+@media (min-width: 761px) {
+  .sidebarUser[open] .sidebarAccountMenu {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 8px);
+    left: 0;
+    z-index: 2;
+    border: 1px solid rgba(200, 162, 90, .22);
+    border-radius: 10px;
+    background: #fffaf5;
+    box-shadow: 0 8px 24px rgba(76, 56, 43, .1);
+  }
 }
 
 .avatarSmall {
@@ -840,6 +862,11 @@
     padding: 16px 16px 0;
     border-right: 0;
     background: rgba(250, 247, 243, .96);
+    overflow-y: visible;
+  }
+
+  .sidebarBottom {
+    margin-top: 14px;
   }
 
   .brand {
@@ -857,7 +884,7 @@
 
   .sidebarUser {
     display: block;
-    margin-top: 14px;
+    margin-top: 0;
   }
 
   .sidebarUserSummary {
