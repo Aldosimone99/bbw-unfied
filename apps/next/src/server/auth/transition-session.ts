@@ -30,22 +30,6 @@ export async function getTransitionAccessToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
-export async function getTransitionUser(): Promise<TransitionUser | null> {
-  const accessToken = await getTransitionAccessToken();
-  if (!accessToken) return null;
-
-  const response = await fetch(`${backendUrl}/auth/me`, {
-    headers: { authorization: `Bearer ${accessToken}` },
-    cache: "no-store"
-  });
-  if (!response.ok) return null;
-
-  const data = await response.json().catch(() => null);
-  return data && typeof data === "object" && typeof data.id === "string" && typeof data.tipo_utente === "string"
-    ? data as TransitionUser
-    : null;
-}
-
 export async function getTransitionAuthorizationContext(): Promise<TransitionAuthorizationContext | null> {
   const accessToken = await getTransitionAccessToken();
   if (!accessToken) return null;
@@ -76,31 +60,6 @@ export async function requestTransitionBackend<T>(path: string, init?: RequestIn
   });
   const data = await response.json().catch(() => null) as T | null;
   return { ok: response.ok, status: response.status, data };
-}
-
-export function profileFromTransitionUser(user: TransitionUser): ProfileSummary {
-  const accountTypeByRole: Record<Exclude<TransitionUser["tipo_utente"], "privato">, ProfileSummary["requestedAccountType"]> = {
-    admin: "personal",
-    cliente: "personal",
-    medico: "healthcare_professional",
-    estetista: "beauty_professional",
-    clinica: "organization",
-    commerciale: "commercial"
-  };
-  const operationalRole = user.tipo_utente === "privato" ? null : user.tipo_utente;
-  const requestedAccountType = user.requested_account_type ?? (operationalRole ? accountTypeByRole[operationalRole] : null);
-
-  return {
-    id: user.id,
-    userId: user.id,
-    firstName: user.nome ?? null,
-    lastName: user.cognome ?? null,
-    phone: user.telefono ?? null,
-    requestedAccountType,
-    operationalRole,
-    accountTypeStatus: "not_required",
-    onboardingStatus: user.onboarding_status ?? (operationalRole ? "completed" : "profile_required")
-  };
 }
 
 export async function getTransitionOrganizationContext(userId: string): Promise<OrganizationContextSummary> {

@@ -52,7 +52,11 @@ export function mapAuthError(error: unknown, operation: AuthErrorOperation): Aut
 
   const details = getAuthErrorDetails(error);
 
-  if (details.code === "user_already_exists" || details.message === "User already registered") {
+  if (
+    details.code === "user_already_exists" ||
+    details.code === "EMAIL_ALREADY_EXISTS" ||
+    details.message === "User already registered"
+  ) {
     return {
       kind: "email_already_registered",
       message: authErrorMessages.emailAlreadyRegistered

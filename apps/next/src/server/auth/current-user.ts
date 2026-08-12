@@ -1,17 +1,17 @@
 import type { CurrentUser, ProfileSummary } from "../../types/authorization";
-import { getTransitionUser, profileFromTransitionUser } from "./transition-session";
+import { getTransitionAuthorizationContext } from "./transition-session";
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const user = await getTransitionUser();
-  if (!user) return null;
+  const context = await getTransitionAuthorizationContext();
+  if (!context) return null;
 
   return {
-    id: user.id,
-    email: user.email ?? null
+    id: context.user.id,
+    email: context.user.email ?? null
   };
 }
 
 export async function getCurrentProfile(): Promise<ProfileSummary | null> {
-  const transitionUser = await getTransitionUser();
-  return transitionUser ? profileFromTransitionUser(transitionUser) : null;
+  const context = await getTransitionAuthorizationContext();
+  return context?.profile ?? null;
 }

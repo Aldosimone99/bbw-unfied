@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import OnboardingForm from "../../../features/auth/OnboardingForm";
+import { logoutAction } from "../../../features/auth/actions";
 import { getCurrentProfile } from "../../../server/auth/current-user";
 import styles from "../../../components/forms/AuthPage.module.css";
 
@@ -17,7 +18,9 @@ export default async function OnboardingPage() {
           <img src="/images/brand/logo-flat-dark-bronze.png" alt="" />
           <span>Beauty Broker World</span>
         </Link>
-        <Link className={styles.homeLink} href="/accedi">Esci</Link>
+        <form action={logoutAction}>
+          <button className={styles.homeLink} type="submit">Esci</button>
+        </form>
       </header>
       <section className={styles.hero} aria-labelledby="onboarding-title">
         <div className={styles.visual} aria-hidden="true"><img src="/images/brand/logo-hero-watermark-large.png" alt="" /></div>

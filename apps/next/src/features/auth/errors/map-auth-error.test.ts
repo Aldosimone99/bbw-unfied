@@ -8,6 +8,11 @@ describe("mapAuthError", () => {
       kind: "email_already_registered",
       message: "Esiste già un account associato a questa email"
     });
+
+    expect(mapAuthError({ code: "EMAIL_ALREADY_EXISTS" }, "register")).toEqual({
+      kind: "email_already_registered",
+      message: "Esiste già un account associato a questa email"
+    });
   });
 
   it("maps a weak password", () => {
