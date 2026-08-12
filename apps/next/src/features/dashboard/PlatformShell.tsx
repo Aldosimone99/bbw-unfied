@@ -1,34 +1,35 @@
-import type { ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
-import Link from "next/link";
+import type { ReactNode } from 'react';
+import { ChevronDown } from 'lucide-react';
+import Link from 'next/link';
 
-import { logoutAction } from "../auth/actions";
-import type { CurrentUser, OrganizationContextSummary, PermissionCode, ProfileSummary } from "../../types/authorization";
-import { getRequestedAccountTypeLabel } from "./profileLabels";
-import PlatformIcon, { type PlatformIconName } from "./PlatformIcon";
-import { getDashboardNavItems } from "./transitionNavigation";
-import styles from "./Dashboard.module.css";
+import { logoutAction } from '../auth/actions';
+import ContextSwitcher from '../operational-context/ContextSwitcher';
+import { getOperationalContextTypeLabel } from '../operational-context/labels';
+import type { CurrentUser, OperationalContextSummary, PermissionCode, ProfileSummary } from '../../types/authorization';
+import PlatformIcon, { type PlatformIconName } from './PlatformIcon';
+import { getDashboardNavItems } from './transitionNavigation';
+import styles from './Dashboard.module.css';
 
 type PlatformShellProps = {
   user: CurrentUser;
   profile: ProfileSummary;
   activePath: string;
-  organizationContext: OrganizationContextSummary;
+  operationalContext: OperationalContextSummary;
   permissions: PermissionCode[];
   children: ReactNode;
 };
 
-function NavigationGroup({ label, items, activePath }: { label: string; items: Array<{ href: string; label: string; icon: PlatformIconName }>; activePath: string }) {
+function NavigationGroup({ label, items, activePath }: { label: string; items: DashboardNavItem[]; activePath: string }) {
   return (
     <div className={styles.navGroup}>
       <p className={styles.navLabel}>{label}</p>
       <nav aria-label={label} className={styles.navList}>
         {items.map((item) => (
           <a
-            className={`${styles.navItem} ${activePath === item.href ? styles.navItemActive : ""}`}
+            className={`${styles.navItem} ${activePath === item.href ? styles.navItemActive : ''}`}
             href={item.href}
             key={item.href}
-            aria-current={activePath === item.href ? "page" : undefined}
+            aria-current={activePath === item.href ? 'page' : undefined}
           >
             <PlatformIcon name={item.icon} className={styles.navIcon} />
             <span>{item.label}</span>
@@ -39,29 +40,29 @@ function NavigationGroup({ label, items, activePath }: { label: string; items: A
   );
 }
 
-export default function PlatformShell({ user, profile, activePath, organizationContext, permissions, children }: PlatformShellProps) {
-  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Profilo BBW";
-  const accountTypeLabel = getRequestedAccountTypeLabel(profile.requestedAccountType);
-  const navItems = getDashboardNavItems(profile);
-  const accountItems = navItems.filter((item) => item.href === "/profilo" || item.href === "/impostazioni");
-  const canManageOrganization = Boolean(
-    organizationContext.activeOrganization
-      && permissions?.includes("organization.update"),
-  );
-  const organizationProfileItem: { href: string; label: string; icon: PlatformIconName } = {
-    href: "/organizzazione",
-    label: "Profilo struttura",
-    icon: "organization",
+type DashboardNavItem = { href: string; label: string; icon: PlatformIconName };
+
+export default function PlatformShell({ user, profile, activePath, operationalContext, permissions, children }: PlatformShellProps) {
+  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Profilo BBW';
+  const activeContext = operationalContext.activeOperationalContext;
+  const contextLabel = activeContext ? getOperationalContextTypeLabel(activeContext) : 'Setup account';
+  const navItems = getDashboardNavItems(activeContext, permissions);
+  const accountItems = navItems.filter((item) => item.href === '/profilo' || item.href === '/impostazioni');
+  const canManageOrganization = activeContext?.kind === 'organization' && permissions.includes('organization.update');
+  const organizationProfileItem: DashboardNavItem = {
+    href: '/organizzazione',
+    label: 'Profilo struttura',
+    icon: 'organization',
   };
   if (canManageOrganization) accountItems.push(organizationProfileItem);
   const experienceItems = navItems.filter((item) => !accountItems.some((accountItem) => accountItem.href === item.href));
   const mobileNavItems = canManageOrganization ? [...navItems, organizationProfileItem] : navItems;
   const initials = fullName
-    .split(" ")
+    .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
-    .join("") || "BW";
+    .join('') || 'BW';
 
   return (
     <div className={styles.page}>
@@ -77,12 +78,16 @@ export default function PlatformShell({ user, profile, activePath, organizationC
         </div>
 
         <div className={styles.sidebarBottom}>
+          <ContextSwitcher
+            contexts={operationalContext.availableOperationalContexts}
+            activeContext={activeContext}
+          />
           <details className={styles.sidebarUser}>
             <summary className={styles.sidebarUserSummary}>
               <span className={styles.avatarSmall} aria-hidden="true">{initials}</span>
               <span className={styles.sidebarUserName}>
                 <strong>{fullName}</strong>
-                <span>{accountTypeLabel}</span>
+                <span>{contextLabel}</span>
               </span>
               <ChevronDown className={styles.userArrow} size={18} strokeWidth={1.75} aria-hidden="true" focusable="false" />
             </summary>
@@ -101,10 +106,10 @@ export default function PlatformShell({ user, profile, activePath, organizationC
         <div className={styles.mobileNav}>
           {mobileNavItems.map((item) => (
             <a
-              className={`${styles.mobileNavItem} ${activePath === item.href ? styles.mobileNavItemActive : ""}`}
+              className={`${styles.mobileNavItem} ${activePath === item.href ? styles.mobileNavItemActive : ''}`}
               href={item.href}
               key={item.href}
-              aria-current={activePath === item.href ? "page" : undefined}
+              aria-current={activePath === item.href ? 'page' : undefined}
             >
               <PlatformIcon name={item.icon} className={styles.navIcon} />
               {item.label}

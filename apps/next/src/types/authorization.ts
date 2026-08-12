@@ -1,4 +1,11 @@
-import type { AddressInput, OperationalReadiness } from '@bbw/interfaces';
+import type {
+  AddressInput,
+  OperationalContext,
+  OperationalContextKind,
+  OperationalContextReference,
+  OperationalContextRole,
+  OperationalReadiness,
+} from '@bbw/interfaces';
 
 export const permissionCodes = [
   'dashboard.access',
@@ -32,6 +39,7 @@ export const accountTypeCodes = [
 export type AccountTypeCode = (typeof accountTypeCodes)[number];
 export type OnboardingStatus = 'profile_required' | 'account_type_required' | 'context_required' | 'completed' | 'suspended';
 export type AccountTypeStatus = 'not_required' | 'pending' | 'approved' | 'rejected';
+export type { OperationalContext, OperationalContextKind, OperationalContextReference, OperationalContextRole };
 
 export type CurrentUser = {
   id: string;
@@ -48,32 +56,19 @@ export type ProfileSummary = {
   taxCode: string | null;
   address: AddressInput | null;
   requestedAccountType: AccountTypeCode | null;
-  /** Operational role granted by the backend; a requested account type is not sufficient. */
+  /** Legacy display metadata only; it never authorizes an operation. */
   operationalRole?: 'admin' | 'medico' | 'estetista' | 'commerciale' | 'clinica' | 'cliente' | null;
   accountTypeStatus: AccountTypeStatus;
   onboardingStatus: OnboardingStatus;
 };
 
-export type MembershipRole = {
-  code: string;
-  displayName: string;
-};
+export type RoleSummary = OperationalContextRole;
 
-export type MembershipSummary = {
-  id: string;
-  organizationId: string;
-  organizationDisplayName: string | null;
-  organizationTypeCode: string | null;
-  organizationTypeDisplayName: string | null;
-  organizationStatus: string | null;
-  status: string;
-  joinedAt: string | null;
-  roles: MembershipRole[];
-};
-
-export type OrganizationContextSummary = {
-  memberships: MembershipSummary[];
-  activeOrganization: MembershipSummary | null;
+export type OperationalContextSummary = {
+  availableOperationalContexts: OperationalContext[];
+  activeOperationalContext: OperationalContext | null;
+  platformRoles: RoleSummary[];
+  operationalRoles: RoleSummary[];
 };
 
 export type ReadinessContext = OperationalReadiness;

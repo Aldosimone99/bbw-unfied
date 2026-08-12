@@ -2,6 +2,9 @@ import {
   addressInputSchema,
   professionalVerificationStatusSchema,
   type AddressInput,
+  type OperationalContext,
+  type OperationalContextReference,
+  type OperationalContextRole,
 } from '@bbw/interfaces';
 import type { SupabaseLike } from '../db/supabase';
 import {
@@ -44,6 +47,7 @@ type OrganizationRow = {
 
 type MembershipRow = {
   id: string;
+  user_id: string;
   organization_id: string;
   status: string;
   joined_at: string | null;
@@ -69,12 +73,27 @@ type RolePermissionRow = { role_id: string; permission_id: string };
 type MemberRoleRow = { organization_member_id: string; role_id: string };
 type OrganizationMemberRow = { id: string };
 type ProfessionalProfileRow = {
+  id: string;
+  user_id: string;
+  display_name: string | null;
   verification_status: unknown;
-  professional_types: { code: string; verification_required: boolean } | null;
+  professional_types: {
+    code: string;
+    display_name: string;
+    verification_required: boolean;
+    is_active: boolean;
+  } | null;
 };
 
 type AuthorizationContextOptions = {
-  requestedOrganizationId?: string;
+  requestedOperationalContext?: OperationalContextReference;
+};
+
+type OperationalContextResolutionInput = {
+  memberships: MembershipRow[];
+  professionalProfiles: ProfessionalProfileRow[];
+  organizationTypeById: ReadonlyMap<string, OrganizationTypeRow>;
+  rolesByMembershipId: ReadonlyMap<string, OperationalContextRole[]>;
 };
 
 function unique(values: BackendPermissionCode[]): BackendPermissionCode[] {
@@ -90,6 +109,16 @@ function asAddress(value: unknown): AddressInput | null {
   return parsed.success ? parsed.data : null;
 }
 
+function isOperationalProfessionalProfile(profile: ProfessionalProfileRow): boolean {
+  const verificationStatus = professionalVerificationStatusSchema.safeParse(profile.verification_status);
+  const type = profile.professional_types;
+  return Boolean(
+    type?.is_active
+    && verificationStatus.success
+    && (!type.verification_required || verificationStatus.data === 'verified'),
+  );
+}
+
 function toProfessionalReadinessInputs(rows: ProfessionalProfileRow[]): ProfessionalReadinessInput[] {
   return rows.flatMap((row) => {
     const verificationStatus = professionalVerificationStatusSchema.safeParse(row.verification_status);
@@ -101,6 +130,83 @@ function toProfessionalReadinessInputs(rows: ProfessionalProfileRow[]): Professi
       verificationStatus: verificationStatus.data,
     }];
   });
+}
+
+function compareContexts(left: OperationalContext, right: OperationalContext): number {
+  return left.label.localeCompare(right.label, 'it', { sensitivity: 'base' })
+    || left.kind.localeCompare(right.kind)
+    || getOperationalContextId(left).localeCompare(getOperationalContextId(right));
+}
+
+export function getOperationalContextId(context: OperationalContext): string {
+  return context.kind === 'organization' ? context.organizationId : context.professionalProfileId;
+}
+
+/**
+ * Derives the only contexts an account may enter from canonical ownership and
+ * active membership rows. It deliberately accepts no browser-provided role,
+ * membership, organization or profile identifiers.
+ */
+export function getAvailableOperationalContexts(
+  userId: string,
+  input: OperationalContextResolutionInput,
+): OperationalContext[] {
+  const personalContexts = input.professionalProfiles
+    .filter((profile) => profile.user_id === userId && isOperationalProfessionalProfile(profile))
+    .flatMap((profile): OperationalContext[] => {
+      const type = profile.professional_types;
+      if (!type) return [];
+
+      return [{
+        kind: 'personal_professional',
+        professionalProfileId: profile.id,
+        label: profile.display_name?.trim() || type.display_name,
+        professionalTypeCode: type.code,
+        professionalTypeDisplayName: type.display_name,
+      }];
+    });
+
+  const organizationContexts = input.memberships
+    .filter((membership) => (
+      membership.user_id === userId
+      && membership.status === 'active'
+      && membership.organizations?.status === 'active'
+    ))
+    .flatMap((membership): OperationalContext[] => {
+      const organization = membership.organizations;
+      if (!organization) return [];
+
+      const organizationType = input.organizationTypeById.get(organization.organization_type_id);
+      return [{
+        kind: 'organization',
+        organizationId: organization.id,
+        membershipId: membership.id,
+        label: organization.display_name,
+        organizationTypeCode: organizationType?.code ?? null,
+        organizationTypeDisplayName: organizationType?.display_name ?? null,
+        roles: input.rolesByMembershipId.get(membership.id) ?? [],
+      }];
+    });
+
+  return [...personalContexts, ...organizationContexts].sort(compareContexts);
+}
+
+/**
+ * A missing or stale preference is never replaced with an arbitrary context.
+ * The sole unambiguous case is one available context, which is auto-resolved.
+ */
+export function resolveOperationalContext(
+  contexts: readonly OperationalContext[],
+  requestedContext: OperationalContextReference | undefined,
+): OperationalContext | null {
+  if (requestedContext) {
+    return contexts.find((context) => (
+      context.kind === requestedContext.kind
+      && getOperationalContextId(context) === requestedContext.id
+    )) ?? null;
+  }
+
+  return contexts.length === 1 ? contexts[0] ?? null : null;
 }
 
 export async function getAuthorizationContext(
@@ -123,7 +229,7 @@ export async function getAuthorizationContext(
       .eq('user_id', user.id)
       .single(),
     db.from('organization_members')
-      .select('id,organization_id,status,joined_at,organizations(id,display_name,legal_name,tax_identifier,email,phone,registered_address,status,organization_type_id)')
+      .select('id,user_id,organization_id,status,joined_at,organizations(id,display_name,legal_name,tax_identifier,email,phone,registered_address,status,organization_type_id)')
       .eq('user_id', user.id),
     db.from('roles').select('id,code,display_name,scope,is_active').eq('is_active', true),
     db.from('permissions').select('id,code'),
@@ -131,7 +237,7 @@ export async function getAuthorizationContext(
     db.from('account_roles').select('role_id').eq('user_id', user.id),
     db.from('organization_types').select('id,code,display_name').eq('is_active', true),
     db.from('professional_profiles')
-      .select('verification_status,professional_types(code,verification_required)')
+      .select('id,user_id,display_name,verification_status,professional_types(code,display_name,verification_required,is_active)')
       .eq('user_id', user.id),
   ]);
 
@@ -156,7 +262,8 @@ export async function getAuthorizationContext(
   const rolePermissions = (rolePermissionsData ?? []) as RolePermissionRow[];
   const accountRoles = (accountRolesData ?? []) as Array<{ role_id: string }>;
   const organizationTypes = (organizationTypesData ?? []) as OrganizationTypeRow[];
-  const professionalProfiles = toProfessionalReadinessInputs((professionalProfileData ?? []) as ProfessionalProfileRow[]);
+  const professionalProfileRows = (professionalProfileData ?? []) as ProfessionalProfileRow[];
+  const professionalReadinessInputs = toProfessionalReadinessInputs(professionalProfileRows);
 
   const roleById = new Map(roles.map((role) => [role.id, role]));
   const organizationTypeById = new Map(organizationTypes.map((type) => [type.id, type]));
@@ -193,41 +300,50 @@ export async function getAuthorizationContext(
     memberRolesByMembership.set(assignment.organization_member_id, current);
   }
 
-  const activeMemberships = membershipRows
-    .filter((membership) => membership.status === 'active' && membership.organizations?.status === 'active')
-    .map((membership) => {
-      const roleIds = memberRolesByMembership.get(membership.id) ?? [];
-      const membershipRoles = roleIds
-        .map((roleId) => roleById.get(roleId))
-        .filter((role): role is RoleRow => Boolean(role && role.scope === 'organization'));
+  const operationalRolesByMembership = new Map<string, OperationalContextRole[]>();
+  const organizationPermissionsByMembership = new Map<string, BackendPermissionCode[]>();
+  for (const membership of membershipRows) {
+    const organizationRoleRecords = (memberRolesByMembership.get(membership.id) ?? [])
+      .map((roleId) => roleById.get(roleId))
+      .filter((role): role is RoleRow => Boolean(role && role.scope === 'organization'));
 
-      return {
-        summary: {
-          id: membership.id,
-          organizationId: membership.organization_id,
-          organizationDisplayName: membership.organizations?.display_name ?? null,
-          organizationTypeCode: membership.organizations ? organizationTypeById.get(membership.organizations.organization_type_id)?.code ?? null : null,
-          organizationTypeDisplayName: membership.organizations ? organizationTypeById.get(membership.organizations.organization_type_id)?.display_name ?? null : null,
-          organizationStatus: membership.organizations?.status ?? null,
-          status: membership.status,
-          joinedAt: membership.joined_at,
-          roles: membershipRoles.map((role) => ({ code: role.code, displayName: role.display_name })),
-          permissions: permissionsForRoles(membershipRoles.map((role) => role.id)),
-        },
-        organization: membership.organizations,
-      };
-    });
+    operationalRolesByMembership.set(membership.id, organizationRoleRecords.map((role) => ({
+      code: role.code,
+      displayName: role.display_name,
+    })));
+    organizationPermissionsByMembership.set(
+      membership.id,
+      permissionsForRoles(organizationRoleRecords.map((role) => role.id)),
+    );
+  }
 
-  const selectedMembership = options.requestedOrganizationId
-    ? activeMemberships.find((membership) => membership.summary.organizationId === options.requestedOrganizationId) ?? activeMemberships[0] ?? null
-    : activeMemberships[0] ?? null;
+  const availableOperationalContexts = getAvailableOperationalContexts(user.id, {
+    memberships: membershipRows,
+    professionalProfiles: professionalProfileRows,
+    organizationTypeById,
+    rolesByMembershipId: operationalRolesByMembership,
+  });
+  const activeOperationalContext = resolveOperationalContext(
+    availableOperationalContexts,
+    options.requestedOperationalContext,
+  );
+
+  const activeOrganizationContext = activeOperationalContext?.kind === 'organization'
+    ? activeOperationalContext
+    : null;
+  const activeMembership = activeOrganizationContext
+    ? membershipRows.find((membership) => membership.id === activeOrganizationContext.membershipId) ?? null
+    : null;
+  const activeProfessionalProfile = activeOperationalContext?.kind === 'personal_professional'
+    ? professionalProfileRows.find((profile) => profile.id === activeOperationalContext.professionalProfileId) ?? null
+    : null;
 
   let hasActiveManager = false;
-  if (selectedMembership) {
+  if (activeOrganizationContext) {
     const { data: organizationMembersData, error: organizationMembersError } = await db
       .from('organization_members')
       .select('id')
-      .eq('organization_id', selectedMembership.summary.organizationId)
+      .eq('organization_id', activeOrganizationContext.organizationId)
       .eq('status', 'active');
 
     if (organizationMembersError) throw new Error('AUTHORIZATION_CONTEXT_FAILED');
@@ -247,16 +363,24 @@ export async function getAuthorizationContext(
     }
   }
 
-  const globalRoleIds = accountRoles.map((role) => role.role_id);
+  const platformRoleRecords = accountRoles
+    .map((assignment) => roleById.get(assignment.role_id))
+    .filter((role): role is RoleRow => Boolean(role && role.scope === 'platform'));
   const globalPermissions: BackendPermissionCode[] = [
     'profile.read_own',
     'profile.update_own',
   ];
   if (profileRow.onboarding_status === 'completed') globalPermissions.push('dashboard.access');
-  globalPermissions.push(...permissionsForRoles(globalRoleIds));
+  globalPermissions.push(...permissionsForRoles(platformRoleRecords.map((role) => role.id)));
 
-  const activeOrganization = selectedMembership?.summary ?? null;
-  const organizationPermissions = unique(activeOrganization?.permissions ?? []);
+  const operationalPermissions = activeOperationalContext?.kind === 'organization'
+    ? organizationPermissionsByMembership.get(activeOperationalContext.membershipId) ?? []
+    : activeProfessionalProfile && isOperationalProfessionalProfile(activeProfessionalProfile)
+      ? ['professional_profile.read_own', 'professional_profile.update_own'] satisfies BackendPermissionCode[]
+      : [];
+  const operationalRoles = activeOperationalContext?.kind === 'organization'
+    ? activeOperationalContext.roles
+    : [];
   const readiness = getOperationalReadiness({
     personalProfile: {
       firstName: profileRow.first_name ?? null,
@@ -265,18 +389,18 @@ export async function getAuthorizationContext(
       taxCode: profileRow.tax_code ?? null,
       address: asAddress(profileRow.residential_address),
     },
-    organization: selectedMembership?.organization ? {
-      legalName: selectedMembership.organization.legal_name ?? null,
-      displayName: selectedMembership.organization.display_name ?? null,
-      organizationTypeId: selectedMembership.organization.organization_type_id ?? null,
-      taxIdentifier: selectedMembership.organization.tax_identifier ?? null,
-      email: selectedMembership.organization.email ?? null,
-      phone: selectedMembership.organization.phone ?? null,
-      address: asAddress(selectedMembership.organization.registered_address),
+    organization: activeMembership?.organizations ? {
+      legalName: activeMembership.organizations.legal_name ?? null,
+      displayName: activeMembership.organizations.display_name ?? null,
+      organizationTypeId: activeMembership.organizations.organization_type_id ?? null,
+      taxIdentifier: activeMembership.organizations.tax_identifier ?? null,
+      email: activeMembership.organizations.email ?? null,
+      phone: activeMembership.organizations.phone ?? null,
+      address: asAddress(activeMembership.organizations.registered_address),
       hasActiveManager,
     } : null,
-    professionalProfiles,
-    professionalIntent: ['professional', 'healthcare_professional', 'beauty_professional'].includes(profileRow.onboarding_intent ?? ''),
+    professionalProfiles: professionalReadinessInputs,
+    professionalIntent: professionalReadinessInputs.length > 0,
   });
 
   return {
@@ -301,11 +425,13 @@ export async function getAuthorizationContext(
       accountTypeStatus: 'not_required' as const,
       onboardingStatus: profileRow.onboarding_status,
     },
-    memberships: activeMemberships.map((membership) => membership.summary),
-    activeOrganization,
+    availableOperationalContexts,
+    activeOperationalContext,
+    platformRoles: platformRoleRecords.map((role) => ({ code: role.code, displayName: role.display_name })),
+    operationalRoles,
     globalPermissions: unique(globalPermissions),
-    organizationPermissions,
-    permissions: unique([...globalPermissions, ...organizationPermissions]),
+    operationalPermissions: unique(operationalPermissions),
+    permissions: unique([...globalPermissions, ...operationalPermissions]),
     readiness,
   };
 }

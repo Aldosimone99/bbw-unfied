@@ -6,18 +6,9 @@ import { getOwnOrganizationProfile } from '../../../server/services/organization
 
 export default async function OrganizationPage() {
   const context = await requirePlatformContext();
-  const organizationId = context.activeOrganization?.organizationId;
-  if (!organizationId || !context.permissions.includes('organization.update')) forbidden();
+  const activeContext = context.activeOperationalContext;
+  if (activeContext?.kind !== 'organization' || !context.operationalPermissions.includes('organization.update')) forbidden();
 
-  const organization = await getOwnOrganizationProfile(organizationId);
-  return (
-    <OrganizationProfileView
-      user={context.user}
-      profile={context.profile}
-      organizationContext={context}
-      permissions={context.permissions}
-      readiness={context.readiness!}
-      organization={organization}
-    />
-  );
+  const organization = await getOwnOrganizationProfile(activeContext.organizationId);
+  return <OrganizationProfileView user={context.user} profile={context.profile} operationalContext={context} permissions={context.permissions} readiness={context.readiness!} organization={organization} />;
 }

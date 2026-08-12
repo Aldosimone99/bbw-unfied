@@ -37,14 +37,17 @@ async function assertOrganizationPermission(
   organizationId: string,
   permission: 'organization.read' | 'organization.update',
 ): Promise<void> {
-  const context = await getAuthorizationContext(db, user, { requestedOrganizationId: organizationId });
-  if (!context.activeOrganization || context.activeOrganization.organizationId !== organizationId) {
+  const context = await getAuthorizationContext(db, user, {
+    requestedOperationalContext: { kind: 'organization', id: organizationId },
+  });
+  if (context.activeOperationalContext?.kind !== 'organization'
+    || context.activeOperationalContext.organizationId !== organizationId) {
     throw new OrganizationProfileError('ORGANIZATION_NOT_FOUND', 404);
   }
 
   const canReadThroughUpdate = permission === 'organization.read'
-    && context.organizationPermissions.includes('organization.update');
-  if (!canReadThroughUpdate && !context.organizationPermissions.includes(permission)) {
+    && context.operationalPermissions.includes('organization.update');
+  if (!canReadThroughUpdate && !context.operationalPermissions.includes(permission)) {
     throw new OrganizationProfileError('ORGANIZATION_FORBIDDEN', 403);
   }
 }

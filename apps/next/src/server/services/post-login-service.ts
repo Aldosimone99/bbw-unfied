@@ -1,58 +1,87 @@
-import type { OperationalReadiness } from '@bbw/interfaces';
+import type { OperationalContextReference, OperationalReadiness } from '@bbw/interfaces';
+
 import { getTransitionAuthorizationContext } from '../auth/transition-session';
-import type { OrganizationContextSummary, PermissionCode, ProfileSummary } from '../../types/authorization';
+import type { OperationalContextSummary, PermissionCode, ProfileSummary } from '../../types/authorization';
 import { resolveSafePostLoginRedirect, type PostLoginRedirectPath } from '../security/redirects';
-import { activeOrganizationCookieName } from './active-organization-cookie';
-import { cookies } from 'next/headers';
+import {
+  getRequestedOperationalContext,
+  setOperationalContextCookie,
+} from './operational-context-cookie';
 
 export type PostLoginDestination = PostLoginRedirectPath;
 
-export type PostLoginContext = {
+export type PostLoginContext = OperationalContextSummary & {
   user: { id: string; email: string | null } | null;
   profile: ProfileSummary | null;
-  memberships: OrganizationContextSummary['memberships'];
   globalPermissions: PermissionCode[];
-  organizationPermissions: PermissionCode[];
+  operationalPermissions: PermissionCode[];
   permissions: PermissionCode[];
-  activeOrganization: OrganizationContextSummary['activeOrganization'];
   readiness: OperationalReadiness | null;
 };
 
-export async function getPostLoginContext(): Promise<PostLoginContext> {
-  const requestedOrganizationId = (await cookies()).get(activeOrganizationCookieName)?.value ?? null;
-  const authorizationContext = await getTransitionAuthorizationContext(requestedOrganizationId);
-  if (!authorizationContext) {
-    return {
-      user: null,
-      profile: null,
-      memberships: [],
-      globalPermissions: [],
-      organizationPermissions: [],
-      permissions: [],
-      activeOrganization: null,
-      readiness: null,
-    };
-  }
+function emptyPostLoginContext(): PostLoginContext {
+  return {
+    user: null,
+    profile: null,
+    availableOperationalContexts: [],
+    activeOperationalContext: null,
+    platformRoles: [],
+    operationalRoles: [],
+    globalPermissions: [],
+    operationalPermissions: [],
+    permissions: [],
+    readiness: null,
+  };
+}
+
+export async function getPostLoginContext(
+  requestedContext?: OperationalContextReference | null,
+): Promise<PostLoginContext> {
+  const requestedOperationalContext = requestedContext === undefined
+    ? await getRequestedOperationalContext()
+    : requestedContext;
+  const authorizationContext = await getTransitionAuthorizationContext(requestedOperationalContext);
+  if (!authorizationContext) return emptyPostLoginContext();
 
   return {
     user: { id: authorizationContext.user.id, email: authorizationContext.user.email ?? null },
     profile: authorizationContext.profile,
-    memberships: authorizationContext.memberships,
-    activeOrganization: authorizationContext.activeOrganization,
+    availableOperationalContexts: authorizationContext.availableOperationalContexts,
+    activeOperationalContext: authorizationContext.activeOperationalContext,
+    platformRoles: authorizationContext.platformRoles,
+    operationalRoles: authorizationContext.operationalRoles,
     globalPermissions: authorizationContext.globalPermissions,
-    organizationPermissions: authorizationContext.organizationPermissions,
+    operationalPermissions: authorizationContext.operationalPermissions,
     permissions: authorizationContext.permissions,
     readiness: authorizationContext.readiness,
   };
 }
 
+export function getOperationalContextReference(context: NonNullable<PostLoginContext['activeOperationalContext']>): OperationalContextReference {
+  return context.kind === 'organization'
+    ? { kind: context.kind, id: context.organizationId }
+    : { kind: context.kind, id: context.professionalProfileId };
+}
+
 export function resolveDestinationFromContext(context: PostLoginContext): PostLoginDestination {
   if (!context.user) return '/login';
   if (context.profile?.onboardingStatus !== 'completed') return '/onboarding';
-  if (context.permissions.includes('platform.admin.access')) return '/admin';
-  return '/dashboard';
+  if (context.activeOperationalContext || context.availableOperationalContexts.length <= 1) return '/dashboard';
+  return '/seleziona-contesto';
 }
 
 export async function resolvePostLoginDestination(requestedRedirect?: string): Promise<string> {
-  return resolveSafePostLoginRedirect(requestedRedirect, resolveDestinationFromContext(await getPostLoginContext()));
+  const context = await getPostLoginContext();
+  const destination = resolveDestinationFromContext(context);
+
+  if (
+    context.user
+    && context.profile?.onboardingStatus === 'completed'
+    && context.availableOperationalContexts.length === 1
+    && context.activeOperationalContext
+  ) {
+    await setOperationalContextCookie(getOperationalContextReference(context.activeOperationalContext));
+  }
+
+  return resolveSafePostLoginRedirect(requestedRedirect, destination);
 }

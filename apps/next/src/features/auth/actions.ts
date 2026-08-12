@@ -135,5 +135,5 @@ export async function onboardingAction(
   if (result.status === "unauthorized") return { status: "error", step: "account_type", message: "La sessione non è valida. Accedi di nuovo." };
   if (result.status === "error") return { status: "error", step: "account_type", message: "Non è stato possibile completare il profilo. Riprova." };
 
-  redirect("/dashboard");
+  redirect(await resolvePostLoginDestination());
 }

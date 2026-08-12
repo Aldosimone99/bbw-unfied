@@ -19,7 +19,8 @@ const profile = {
 };
 const authorizationContext = {
   user: { id: 'user-1', email: 'person@example.test', tipo_utente: 'privato' as const },
-  profile, memberships: [], activeOrganization: null, globalPermissions: [], organizationPermissions: [], permissions: [], readiness,
+  profile, availableOperationalContexts: [], activeOperationalContext: null, platformRoles: [], operationalRoles: [],
+  globalPermissions: [], operationalPermissions: [], permissions: [], readiness,
 };
 
 describe('current user', () => {

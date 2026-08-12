@@ -1,49 +1,49 @@
-import type { MembershipSummary, PermissionCode } from "../../types/authorization";
+import type { OperationalContext, OperationalContextReference, PermissionCode, RoleSummary } from '../../types/authorization';
 
 /**
- * Compatibility types for server consumers. The data itself is loaded from
- * the backend /auth/context endpoint; this module contains no Supabase reads.
+ * Compatibility shape for server consumers. Data is loaded solely from the
+ * backend /auth/context endpoint; this module performs no Supabase reads.
  */
 export type LoadedAuthorizationContext = {
-  memberships: MembershipSummary[];
+  availableOperationalContexts: OperationalContext[];
+  activeOperationalContext: OperationalContext | null;
+  platformRoles: RoleSummary[];
+  operationalRoles: RoleSummary[];
   globalPermissions: PermissionCode[];
-  organizationPermissions: PermissionCode[];
+  operationalPermissions: PermissionCode[];
   permissions: PermissionCode[];
-  activeOrganization: MembershipSummary | null;
 };
 
-export function selectActiveOrganization(
-  memberships: MembershipSummary[],
-  requestedOrganizationId: string | null = null
-): MembershipSummary | null {
-  const activeMemberships = memberships.filter(
-    (membership) => membership.status === "active" && membership.organizationStatus === "active"
-  );
+function getContextId(context: OperationalContext): string {
+  return context.kind === 'organization' ? context.organizationId : context.professionalProfileId;
+}
 
-  if (requestedOrganizationId) {
-    return activeMemberships.find((membership) => membership.organizationId === requestedOrganizationId) ?? activeMemberships[0] ?? null;
+export function selectActiveOperationalContext(
+  contexts: readonly OperationalContext[],
+  requestedContext: OperationalContextReference | null = null,
+): OperationalContext | null {
+  if (requestedContext) {
+    return contexts.find((context) => (
+      context.kind === requestedContext.kind && getContextId(context) === requestedContext.id
+    )) ?? null;
   }
 
-  return activeMemberships[0] ?? null;
+  return contexts.length === 1 ? contexts[0] ?? null : null;
 }
 
 export function resolveEffectivePermissions(input: {
   globalPermissions: PermissionCode[];
-  organizationPermissionsByMembershipId: ReadonlyMap<string, PermissionCode[]>;
-  activeOrganization: MembershipSummary | null;
+  operationalPermissions: PermissionCode[];
 }): {
   globalPermissions: PermissionCode[];
-  organizationPermissions: PermissionCode[];
+  operationalPermissions: PermissionCode[];
   permissions: PermissionCode[];
 } {
   const globalPermissions = [...new Set(input.globalPermissions)];
-  const organizationPermissions = input.activeOrganization
-    ? [...new Set(input.organizationPermissionsByMembershipId.get(input.activeOrganization.id) ?? [])]
-    : [];
-
+  const operationalPermissions = [...new Set(input.operationalPermissions)];
   return {
     globalPermissions,
-    organizationPermissions,
-    permissions: [...new Set([...globalPermissions, ...organizationPermissions])]
+    operationalPermissions,
+    permissions: [...new Set([...globalPermissions, ...operationalPermissions])],
   };
 }

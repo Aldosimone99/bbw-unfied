@@ -30,7 +30,7 @@ BBW non deve essere descritto come un semplice marketplace: il valore previsto �
 - endpoint `/auth/context` backend che restituisce profilo, membership e permission dopo verifica Bearer;
 - schema iniziale per profili, organizzazioni, membership, ruoli e permission, con RLS, seed e test SQL;
 - membership service con organizzazioni accessibili, ruoli contestuali e tipo organizzazione;
-- calcolo server-side del contesto attivo tramite cookie HttpOnly validato contro membership e stato dell’organizzazione;
+- calcolo server-side dell’OperationalContext attivo tramite cookie HttpOnly minimale, validato contro ownership del professional profile oppure membership e stato dell’organizzazione;
 - Context Switcher con Server Action, revalidation e redirect dopo il cambio;
 - calcolo separato di permessi globali/platform e permessi della sola organizzazione attiva;
 - guardia server-side della dashboard e helper per membership/permission scoped;

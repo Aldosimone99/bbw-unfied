@@ -3,13 +3,5 @@ import { requirePlatformContext } from '../../../features/dashboard/requirePlatf
 
 export default async function ProfilePage() {
   const context = await requirePlatformContext();
-  return (
-    <ProfileView
-      user={context.user}
-      profile={context.profile}
-      organizationContext={context}
-      permissions={context.permissions}
-      readiness={context.readiness!}
-    />
-  );
+  return <ProfileView user={context.user} profile={context.profile} operationalContext={context} permissions={context.permissions} readiness={context.readiness!} />;
 }

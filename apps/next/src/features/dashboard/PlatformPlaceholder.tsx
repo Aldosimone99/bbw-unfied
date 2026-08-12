@@ -1,7 +1,7 @@
-import type { CurrentUser, OrganizationContextSummary, PermissionCode, ProfileSummary } from "../../types/authorization";
-import PlatformIcon, { type PlatformIconName } from "./PlatformIcon";
-import PlatformShell from "./PlatformShell";
-import styles from "./Dashboard.module.css";
+import type { CurrentUser, OperationalContextSummary, PermissionCode, ProfileSummary } from '../../types/authorization';
+import PlatformIcon, { type PlatformIconName } from './PlatformIcon';
+import PlatformShell from './PlatformShell';
+import styles from './Dashboard.module.css';
 
 type PlatformPlaceholderProps = {
   user: CurrentUser;
@@ -10,39 +10,20 @@ type PlatformPlaceholderProps = {
   eyebrow: string;
   title: string;
   description: string;
-  organizationContext: OrganizationContextSummary;
+  operationalContext: OperationalContextSummary;
   permissions: PermissionCode[];
 };
 
-export default function PlatformPlaceholder({
-  user,
-  profile,
-  activePath,
-  eyebrow,
-  title,
-  description,
-  organizationContext,
-  permissions,
-}: PlatformPlaceholderProps) {
+export default function PlatformPlaceholder({ user, profile, activePath, eyebrow, title, description, operationalContext, permissions }: PlatformPlaceholderProps) {
   const iconByPath: Record<string, PlatformIconName> = {
-    "/catalogo": "catalog",
-    "/calendario": "calendar",
-    "/clienti": "clients",
-    "/consensi": "consents",
-    "/disponibilita": "availability",
-    "/inviti": "invites",
-    "/membri": "members",
-    "/messaggi": "messages",
-    "/prenotazioni": "bookings",
-    "/profilo": "profile",
-    "/report": "reports",
-    "/staff": "staff",
-    "/storico": "history",
-    "/impostazioni": "settings"
+    '/catalogo': 'catalog', '/calendario': 'calendar', '/clienti': 'clients', '/consensi': 'consents',
+    '/disponibilita': 'availability', '/inviti': 'invites', '/membri': 'members', '/messaggi': 'messages',
+    '/prenotazioni': 'bookings', '/profilo': 'profile', '/report': 'reports', '/staff': 'staff',
+    '/storico': 'history', '/impostazioni': 'settings',
   };
 
   return (
-    <PlatformShell user={user} profile={profile} activePath={activePath} organizationContext={organizationContext} permissions={permissions}>
+    <PlatformShell user={user} profile={profile} activePath={activePath} operationalContext={operationalContext} permissions={permissions}>
       <section className={styles.placeholderPage} aria-labelledby="placeholder-title">
         <div className={styles.placeholderIntro}>
           <p className={styles.eyebrow}>{eyebrow}</p>
@@ -50,9 +31,7 @@ export default function PlatformPlaceholder({
           <p>{description}</p>
         </div>
         <div className={styles.placeholderCard}>
-          <span className={styles.placeholderIcon}>
-            <PlatformIcon name={iconByPath[activePath] ?? "home"} size={20} />
-          </span>
+          <span className={styles.placeholderIcon}><PlatformIcon name={iconByPath[activePath] ?? 'home'} size={20} /></span>
           <div>
             <p className={styles.cardLabel}>Backend di transizione collegato</p>
             <h2>Sezione pronta per i dati operativi BBW.</h2>

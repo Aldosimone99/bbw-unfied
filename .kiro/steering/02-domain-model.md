@@ -33,7 +33,7 @@ Identità, persona, organizzazione, appartenenza, ruolo, permesso, ownership e r
 - Un **Account** ha al massimo un **Profile** applicativo e zero o più **OrganizationMembership**.
 - Una **Organization** ha zero o più membership, servizi, appuntamenti e template propri.
 - Una membership appartiene a un solo account e a una sola organizzazione; può avere più assegnazioni di ruolo.
-- La foundation implementata supporta zero, una o più membership per account; il contesto attivo non cambia l’appartenenza e non sostituisce la verifica della membership.
+- La foundation implementata supporta zero, una o più membership e zero, uno o più professional profile per account. L’OperationalContext attivo può essere `personal_professional` o `organization`; non cambia ownership o appartenenza e non sostituisce la verifica server-side di professional profile, membership, ruolo o permission.
 - Un **Role** contiene più permission e una permission può appartenere a più ruoli.
 - Una relazione paziente può coinvolgere più professionisti/organizzazioni e deve avere un owner o contesto esplicito.
 - Un appuntamento appartiene a un contesto organizzativo o a un owner definito; i partecipanti sono relazioni, non una stringa di ruolo.

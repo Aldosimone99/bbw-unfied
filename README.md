@@ -4,9 +4,9 @@ Beauty Broker World is a monorepo that combines the `bbwlanding` frontend with
 the operational backend from `bbw-transition`.
 
 The current foundation is intentionally account-first: a person creates a
-minimal account, signs in, completes onboarding, and only then selects the
-context in which they want to use BBW. The selected context is descriptive
-intent; it is not itself a role or permission.
+minimal account, signs in, completes onboarding, and only then works in an
+explicit operational context. An operational context identifies the current
+workspace; it is not an onboarding intent, role or permission.
 
 ## Repository layout
 
@@ -175,11 +175,15 @@ permission. Professional operational readiness is derived from existing
 professional profiles, their `verification_required` configuration and their
 existing verification status.
 
-The optional `organization_id` query value accepted by `/auth/context` is only
-a context selection request: the backend validates it against the verified
-account's active membership before returning organization readiness. Future
-sensitive routes must enforce authentication, context, permission, readiness
-requirements and only then their business operation.
+`GET /auth/context` returns `availableOperationalContexts` and an
+`activeOperationalContext`. The HttpOnly `bbw-active-operational-context`
+cookie stores only a `{ kind, id }` reference: the backend always validates it
+against the authenticated account, professional-profile ownership or active
+organization membership before resolving roles, permissions and readiness.
+With one available context the post-login flow stores it automatically; with
+multiple contexts and no valid preference it redirects to `/seleziona-contesto`.
+Future sensitive routes must enforce authentication, context, permission,
+readiness requirements and only then their business operation.
 
 ## Database workflow
 

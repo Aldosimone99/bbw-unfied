@@ -13,7 +13,7 @@ Il backend Express espone già il percorso identity/onboarding usato dal fronten
 | `POST /auth/onboarding/profile` | salva nome, cognome e telefono | richiede Bearer verificato e agisce sull'account corrente |
 | `POST /auth/onboarding/complete` | completa onboarding tramite RPC transazionale | il tipo richiesto non concede da solo privilegi; organization crea anche membership owner |
 | `GET /auth/me` | restituisce il profilo applicativo verificato | richiede Bearer token verificato |
-| `GET /auth/context` | restituisce profilo, membership, permission e readiness derivato | accetta opzionalmente il contesto organizzativo richiesto, sempre riverificato contro membership attiva |
+| `GET /auth/context` | restituisce profilo, contesti operativi disponibili/attivo, ruoli, permission e readiness derivato | accetta opzionalmente `context_kind` e `context_id`, sempre riverificati contro ownership del professional profile o membership/organizzazione attive |
 | `GET /organizations/:organizationId/profile` | legge dati legali/contatto dell’organizzazione | richiede membership verificata e permission scoped |
 | `PUT /organizations/:organizationId/profile` | aggiorna dati legali/contatto dell’organizzazione | richiede membership, `organization.update` e audit minimizzato |
 

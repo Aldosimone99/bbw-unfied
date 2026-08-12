@@ -1,65 +1,46 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 
-import type { MembershipSummary, PermissionCode } from "../../types/authorization";
-import { resolveEffectivePermissions, selectActiveOrganization } from "./context";
+import type { OperationalContext, PermissionCode } from '../../types/authorization';
+import { resolveEffectivePermissions, selectActiveOperationalContext } from './context';
 
-function membership(id: string, status: string): MembershipSummary {
-  return {
-    id,
-    organizationId: `organization-${id}`,
-    organizationDisplayName: `Organization ${id}`,
-    organizationTypeCode: "independent_practice",
-    organizationTypeDisplayName: "Studio professionale",
-    organizationStatus: "active",
-    status,
-    joinedAt: null,
-    roles: []
-  };
-}
+const personalContext: OperationalContext = {
+  kind: 'personal_professional', professionalProfileId: '00000000-0000-4000-8000-000000000002', label: 'Studio Mario Rossi', professionalTypeCode: 'physician', professionalTypeDisplayName: 'Medico',
+};
+const organizationContext: OperationalContext = {
+  kind: 'organization', organizationId: '00000000-0000-4000-8000-000000000003', membershipId: '00000000-0000-4000-8000-000000000004', label: 'Clinica Aurora', organizationTypeCode: 'clinic', organizationTypeDisplayName: 'Clinica', roles: [],
+};
 
-describe("active organization selection", () => {
-  it("selects the only active membership", () => {
-    expect(selectActiveOrganization([membership("one", "active")])?.id).toBe("one");
+describe('operational context selection', () => {
+  it('selects the sole context automatically', () => {
+    expect(selectActiveOperationalContext([personalContext])).toEqual(personalContext);
   });
 
-  it("uses the valid cookie when multiple memberships are active", () => {
-    expect(selectActiveOrganization([membership("one", "active"), membership("two", "active")], "organization-two")?.id).toBe("two");
-  });
-
-  it("falls back deterministically when the cookie is invalid", () => {
-    expect(selectActiveOrganization([membership("one", "active"), membership("two", "active")], "organization-missing")?.id).toBe("one");
-  });
-
-  it("ignores pending memberships", () => {
-    expect(selectActiveOrganization([membership("pending", "pending"), membership("one", "active")])?.id).toBe("one");
+  it('uses a valid reference with several contexts and rejects stale references', () => {
+    expect(selectActiveOperationalContext([personalContext, organizationContext], { kind: 'organization', id: organizationContext.organizationId })).toEqual(organizationContext);
+    expect(selectActiveOperationalContext([personalContext, organizationContext], { kind: 'organization', id: '00000000-0000-4000-8000-000000000099' })).toBeNull();
+    expect(selectActiveOperationalContext([personalContext, organizationContext])).toBeNull();
   });
 });
 
-describe("scoped permission resolution", () => {
-  it("does not leak organization A permissions into organization B", () => {
-    const organizationA = membership("a", "active");
-    const organizationB = membership("b", "active");
-    const permissionsByMembership = new Map<string, PermissionCode[]>([
-      [organizationA.id, ["organization.members.manage"]],
-      [organizationB.id, ["organization.read"]]
-    ]);
-
-    expect(resolveEffectivePermissions({
-      globalPermissions: ["dashboard.access"],
-      organizationPermissionsByMembershipId: permissionsByMembership,
-      activeOrganization: organizationA
-    })).toMatchObject({
-      organizationPermissions: ["organization.members.manage"],
-      permissions: ["dashboard.access", "organization.members.manage"]
+describe('scoped permission resolution', () => {
+  it('does not leak organization permissions into personal context or another organization', () => {
+    const personal = resolveEffectivePermissions({
+      globalPermissions: ['dashboard.access'],
+      operationalPermissions: ['professional_profile.read_own'],
+    });
+    const practitioner = resolveEffectivePermissions({
+      globalPermissions: ['dashboard.access'],
+      operationalPermissions: ['organization.read'],
+    });
+    const administrator = resolveEffectivePermissions({
+      globalPermissions: ['dashboard.access'],
+      operationalPermissions: ['organization.read', 'organization.members.manage'],
     });
 
-    expect(resolveEffectivePermissions({
-      globalPermissions: ["dashboard.access"],
-      organizationPermissionsByMembershipId: permissionsByMembership,
-      activeOrganization: organizationB
-    })).toMatchObject({
-      organizationPermissions: ["organization.read"],
-      permissions: ["dashboard.access", "organization.read"]
-    });
+    expect(personal.permissions).toEqual(['dashboard.access', 'professional_profile.read_own']);
+    expect(practitioner.permissions).toEqual(['dashboard.access', 'organization.read']);
+    expect(administrator.permissions).toEqual(['dashboard.access', 'organization.read', 'organization.members.manage']);
+    expect(new Set<PermissionCode>(personal.permissions)).not.toEqual(new Set<PermissionCode>(practitioner.permissions));
+    expect(new Set<PermissionCode>(practitioner.permissions)).not.toEqual(new Set<PermissionCode>(administrator.permissions));
   });
 });

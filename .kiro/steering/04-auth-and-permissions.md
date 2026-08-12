@@ -46,9 +46,9 @@ Il backend `/auth/context` calcola il contesto da Bearer verificato, profilo, me
 
 Revoca membership/ruolo, sospensione account e disabilitazione devono avere effetto sulle richieste successive; definire se e come invalidare sessioni già aperte. Un errore di ownership non deve essere aggirabile cambiando un UUID.
 
-## Contesto attivo
+## Contesto operativo attivo
 
-Il punto centrale di lettura è `getActiveOrganization()`. Il cookie `bbw-active-organization` è HttpOnly, SameSite `lax`, con durata limitata e non è una prova di autorizzazione. `setActiveOrganization()` valida input, sessione, membership attiva e stato dell’organizzazione prima di salvarlo. Se il cookie manca, è invalido o non più autorizzato, il server sceglie la prima organizzazione attiva secondo l’ordinamento stabile delle membership oppure `null`.
+Il punto centrale di lettura è l’`OperationalContext` backend-authoritative. Le varianti canoniche sono `personal_professional`, derivata esclusivamente da un `ProfessionalProfile` owned e operativo, e `organization`, derivata da membership attiva e organizzazione attiva. Il cookie `bbw-active-operational-context` è HttpOnly, SameSite `lax`, con durata limitata e contiene soltanto una reference tecnica `{ kind, id }`: non è una prova di autorizzazione. Il server valida input, sessione, ownership/membership e stato operativo prima di salvarlo e risolve ruoli/permission solo dopo questa verifica. Se esiste un solo contesto disponibile viene auto-selezionato; se ne esistono più di uno, un cookie assente, invalido o non più autorizzato richiede una scelta esplicita. Non si seleziona mai silenziosamente il primo contesto disponibile.
 
 ## Super-admin e supporto
 

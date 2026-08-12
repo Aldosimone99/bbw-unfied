@@ -12,8 +12,8 @@ const mockedGetAuthorizationContext = vi.mocked(getAuthorizationContext);
 describe('organization profile service security', () => {
   it('does not accept an organization identifier without an active authorized membership context', async () => {
     mockedGetAuthorizationContext.mockResolvedValue({
-      activeOrganization: null,
-      organizationPermissions: [],
+      activeOperationalContext: null,
+      operationalPermissions: [],
     } as never);
     const db = { from: vi.fn() };
 
@@ -26,7 +26,7 @@ describe('organization profile service security', () => {
     expect(mockedGetAuthorizationContext).toHaveBeenCalledWith(
       db,
       expect.objectContaining({ id: 'verified-user' }),
-      { requestedOrganizationId: '4a7f0a3d-42c0-4384-a0b6-c5b3553f950b' },
+      { requestedOperationalContext: { kind: 'organization', id: '4a7f0a3d-42c0-4384-a0b6-c5b3553f950b' } },
     );
     expect(db.from).not.toHaveBeenCalled();
   });

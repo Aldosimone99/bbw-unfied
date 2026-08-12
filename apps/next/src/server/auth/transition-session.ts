@@ -1,6 +1,12 @@
-import type { OperationalReadiness } from '@bbw/interfaces';
+import {
+  operationalContextSchema,
+  type OperationalContext,
+  type OperationalContextReference,
+  type OperationalReadiness,
+} from '@bbw/interfaces';
+
 import { createClient } from '../../lib/supabase/server';
-import type { OrganizationContextSummary, PermissionCode, ProfileSummary } from '../../types/authorization';
+import type { OperationalContextSummary, PermissionCode, ProfileSummary, RoleSummary } from '../../types/authorization';
 
 const backendUrl = (process.env.BBW_BACKEND_URL ?? 'http://localhost:3001').replace(/\/$/, '');
 
@@ -15,13 +21,11 @@ export type TransitionUser = {
   onboarding_status?: ProfileSummary['onboardingStatus'];
 };
 
-export type TransitionAuthorizationContext = {
+export type TransitionAuthorizationContext = OperationalContextSummary & {
   user: TransitionUser;
   profile: ProfileSummary;
-  memberships: OrganizationContextSummary['memberships'];
-  activeOrganization: OrganizationContextSummary['activeOrganization'];
   globalPermissions: PermissionCode[];
-  organizationPermissions: PermissionCode[];
+  operationalPermissions: PermissionCode[];
   permissions: PermissionCode[];
   readiness: OperationalReadiness;
 };
@@ -32,14 +36,30 @@ export async function getTransitionAccessToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
+function isPermissionList(value: unknown): value is PermissionCode[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
+}
+
+function parseRoleSummaries(value: unknown): RoleSummary[] | null {
+  if (!Array.isArray(value)) return null;
+  const parsed = value.map((entry) => {
+    if (!entry || typeof entry !== 'object') return null;
+    const row = entry as Record<string, unknown>;
+    return typeof row.code === 'string' && typeof row.displayName === 'string'
+      ? { code: row.code, displayName: row.displayName }
+      : null;
+  });
+  return parsed.every((entry): entry is RoleSummary => entry !== null) ? parsed : null;
+}
+
 export async function getTransitionAuthorizationContext(
-  requestedOrganizationId?: string | null,
+  requestedContext?: OperationalContextReference | null,
 ): Promise<TransitionAuthorizationContext | null> {
   const accessToken = await getTransitionAccessToken();
   if (!accessToken) return null;
 
-  const query = requestedOrganizationId
-    ? `?${new URLSearchParams({ organization_id: requestedOrganizationId }).toString()}`
+  const query = requestedContext
+    ? `?${new URLSearchParams({ context_kind: requestedContext.kind, context_id: requestedContext.id }).toString()}`
     : '';
   const response = await fetch(`${backendUrl}/auth/context${query}`, {
     headers: { authorization: `Bearer ${accessToken}` },
@@ -47,9 +67,39 @@ export async function getTransitionAuthorizationContext(
   });
   if (!response.ok) return null;
 
-  const data = await response.json().catch(() => null) as Partial<TransitionAuthorizationContext> | null;
-  if (!data?.user || !data.profile || !data.readiness || !Array.isArray(data.permissions)) return null;
-  return data as TransitionAuthorizationContext;
+  const data = await response.json().catch(() => null) as Record<string, unknown> | null;
+  if (!data || !data.user || !data.profile || !data.readiness || !isPermissionList(data.permissions)
+    || !isPermissionList(data.globalPermissions) || !isPermissionList(data.operationalPermissions)) return null;
+
+  if (!Array.isArray(data.availableOperationalContexts)) return null;
+  const availableContexts: OperationalContext[] = [];
+  for (const context of data.availableOperationalContexts) {
+    const parsed = operationalContextSchema.safeParse(context);
+    if (!parsed.success) return null;
+    availableContexts.push(parsed.data);
+  }
+
+  const activeContext = data.activeOperationalContext === null
+    ? null
+    : operationalContextSchema.safeParse(data.activeOperationalContext);
+  if (activeContext !== null && !activeContext.success) return null;
+
+  const platformRoles = parseRoleSummaries(data.platformRoles);
+  const operationalRoles = parseRoleSummaries(data.operationalRoles);
+  if (!platformRoles || !operationalRoles) return null;
+
+  return {
+    user: data.user as TransitionUser,
+    profile: data.profile as ProfileSummary,
+    availableOperationalContexts: availableContexts,
+    activeOperationalContext: activeContext === null ? null : activeContext.data,
+    platformRoles,
+    operationalRoles,
+    globalPermissions: data.globalPermissions,
+    operationalPermissions: data.operationalPermissions,
+    permissions: data.permissions,
+    readiness: data.readiness as OperationalReadiness,
+  };
 }
 
 export async function requestTransitionBackend<T>(path: string, init?: RequestInit): Promise<{ ok: boolean; status: number; data: T | null }> {
@@ -67,11 +117,4 @@ export async function requestTransitionBackend<T>(path: string, init?: RequestIn
   });
   const data = await response.json().catch(() => null) as T | null;
   return { ok: response.ok, status: response.status, data };
-}
-
-export async function getTransitionOrganizationContext(_userId: string): Promise<OrganizationContextSummary> {
-  const authorizationContext = await getTransitionAuthorizationContext();
-  return authorizationContext
-    ? { memberships: authorizationContext.memberships, activeOrganization: authorizationContext.activeOrganization }
-    : { memberships: [], activeOrganization: null };
 }

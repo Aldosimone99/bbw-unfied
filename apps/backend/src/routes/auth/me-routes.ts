@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
+  operationalContextQuerySchema,
   personalProfileUpdateRequestSchema,
-  readinessContextQuerySchema,
 } from '@bbw/interfaces';
 import type { SupabaseLike } from '../../db/supabase';
 import { resolveUser } from '../../middleware/resolve-user-middleware';
@@ -21,12 +21,14 @@ export function createMeRouter(db: SupabaseLike): Router {
   });
 
   router.get('/context', resolveUser(db), async (req, res) => {
-    const parsed = readinessContextQuerySchema.safeParse(req.query);
+    const parsed = operationalContextQuerySchema.safeParse(req.query);
     if (!parsed.success) return res.status(422).json({ error: 'VALIDATION_FAILED', issues: parsed.error.issues });
 
     try {
       return res.json(await getAuthorizationContext(db, req.user!, {
-        requestedOrganizationId: parsed.data.organization_id,
+        requestedOperationalContext: parsed.data.context_kind && parsed.data.context_id
+          ? { kind: parsed.data.context_kind, id: parsed.data.context_id }
+          : undefined,
       }));
     } catch {
       return res.status(500).json({ error: 'AUTHORIZATION_CONTEXT_FAILED' });

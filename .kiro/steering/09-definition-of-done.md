@@ -70,6 +70,8 @@ Una feature è completata solo quando il comportamento approvato, il confine di 
 
 - [ ] Ambiente target, env, redirect, storage policy e migration plan verificati.
 - [ ] Backup/restore e rollback/roll-forward considerati per dati persistenti.
+- [ ] Prima di creare una merge request, la branch proposta è verificata contro la branch target e tutti i conflitti sono risolti in modo esplicito; dopo la risoluzione vengono rieseguiti i controlli pertinenti.
+- [ ] Il diff rispetto alla branch target e i flussi modificati sono riesaminati per evitare regressioni funzionali, di sicurezza, UI e compatibilità; una suite verde da sola non è prova sufficiente.
 - [ ] Review di codice e sicurezza completate; decisioni aperte approvate.
 - [ ] Nessuna modifica manuale non documentata in production.
 - [ ] La feature è pronta per il deploy solo dopo evidenza dei check, non per assunzione.
