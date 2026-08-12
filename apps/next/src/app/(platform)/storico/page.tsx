@@ -3,5 +3,5 @@ import { requirePlatformContext } from "../../../features/dashboard/requirePlatf
 
 export default async function HistoryPage() {
   const context = await requirePlatformContext(["cliente"]);
-  return <PlatformPlaceholder user={context.user} profile={context.profile} organizationContext={context} activePath="/storico" eyebrow="Account" title="Storico" description="Storico dei trattamenti e delle attività del tuo profilo." />;
+  return <PlatformPlaceholder user={context.user} profile={context.profile} permissions={context.permissions} organizationContext={context} activePath="/storico" eyebrow="Account" title="Storico" description="Storico dei trattamenti e delle attività del tuo profilo." />;
 }

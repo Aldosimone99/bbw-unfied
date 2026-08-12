@@ -1,18 +1,13 @@
-import type { OperationalReadiness } from '@bbw/interfaces';
-import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
+import type { OperationalReadiness } from "@bbw/interfaces";
 
 import type { CurrentUser, OrganizationContextSummary, PermissionCode, ProfileSummary } from "../../types/authorization";
 import PlatformShell from "./PlatformShell";
-import PlatformIcon, { type PlatformIconName } from "./PlatformIcon";
-import { getDashboardNavItems } from "./transitionNavigation";
-import { getRequestedAccountTypeLabel } from "./profileLabels";
-import {
-  getReadinessLabel,
-  organizationProfileFieldLabels,
-  personalProfileFieldLabels,
-  professionalBlockerLabels,
-} from "../authorization/readinessLabels";
 import styles from "./Dashboard.module.css";
+import DashboardMetricCard from "./DashboardMetricCard";
+import DashboardOnboardingBanner from "./DashboardOnboardingBanner";
+import OrganizationSummary from "./OrganizationSummary";
+import AttentionList from "./AttentionList";
+import TodaySchedule from "./TodaySchedule";
 
 type DashboardViewProps = {
   user: CurrentUser;
@@ -22,200 +17,76 @@ type DashboardViewProps = {
   readiness: OperationalReadiness;
 };
 
-function QuickActionIcon({ name }: { name: PlatformIconName }) {
-  return <PlatformIcon name={name} className={styles.quickActionGlyph} />;
-}
+const dashboardMetrics = [
+  {
+    icon: "appointments",
+    label: "Appuntamenti questa settimana",
+    secondaryLabel: "Riepilogo settimanale",
+    emptyMessage: "Dati appuntamenti della settimana non ancora disponibili.",
+  },
+  {
+    icon: "bookings",
+    label: "Prenotazioni da confermare",
+    secondaryLabel: "Richiedono attenzione",
+    emptyMessage: "Dati prenotazioni non ancora disponibili.",
+  },
+  {
+    icon: "consents",
+    label: "Consensi in attesa",
+    secondaryLabel: "Da gestire",
+    emptyMessage: "Dati consensi non ancora disponibili.",
+  },
+  {
+    icon: "professionals",
+    label: "Team attivo",
+    secondaryLabel: "Professionisti attivi",
+    emptyMessage: "Dati team non ancora disponibili.",
+  },
+] as const;
 
-function getGreeting() {
-  const hour = Number(new Intl.DateTimeFormat("it-IT", {
-    hour: "2-digit",
-    hourCycle: "h23",
-    timeZone: "Europe/Rome"
-  }).format(new Date()));
-
-  if (hour < 12) return "Buongiorno";
-  if (hour < 18) return "Buon pomeriggio";
-  return "Buonasera";
-}
-
-export default function DashboardView({ user, profile, organizationContext, permissions, readiness }: DashboardViewProps) {
-  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Profilo BBW";
-  const firstName = profile.firstName || fullName;
-  const greeting = getGreeting();
-  const accountTypeLabel = getRequestedAccountTypeLabel(profile.requestedAccountType);
-
-  const quickActions: Array<{ href: string; label: string; icon: PlatformIconName }> = getDashboardNavItems(profile)
-    .filter((item) => !["/dashboard", "/profilo", "/impostazioni"].includes(item.href))
-    .slice(0, 4);
+export default function DashboardView({
+  user,
+  profile,
+  organizationContext,
+  permissions,
+  readiness,
+}: DashboardViewProps) {
+  const activeOrganization = organizationContext.activeOrganization;
+  const organizationName = activeOrganization?.organizationDisplayName ?? "Nessuna organizzazione attiva";
 
   return (
-    <PlatformShell user={user} profile={profile} activePath="/dashboard" organizationContext={organizationContext}>
+    <PlatformShell user={user} profile={profile} activePath="/dashboard" organizationContext={organizationContext} permissions={permissions}>
       <section className={styles.dashboardPage} aria-labelledby="dashboard-title">
         <div className={styles.dashboardIntro}>
           <div>
-            <p className={styles.eyebrow}>Area personale</p>
-            <h1 id="dashboard-title">{greeting}, {firstName}.</h1>
-            <p>Bentornato nel tuo spazio personale.</p>
+            <p className={styles.eyebrow}>Area organizzativa</p>
+            <h1 id="dashboard-title" className={styles.organizationHeroTitle}>{organizationName}</h1>
+            <p className={styles.organizationHeroSubtitle}>Dashboard operativa</p>
           </div>
         </div>
 
-        <section className={styles.readinessBanner} aria-labelledby="readiness-title">
-          <div>
-            <p className={styles.eyebrow}>Configurazione account</p>
-            <h2 id="readiness-title">Completa la configurazione del tuo account</h2>
-            <p>Puoi continuare a usare la dashboard; alcune future funzioni richiederanno i dati indicati.</p>
-          </div>
-          <div className={styles.readinessItems}>
-            {!readiness.personal_profile.complete ? (
-              <div>
-                <strong>Profilo personale</strong>
-                <span>{readiness.personal_profile.missing_fields.map((field) => getReadinessLabel(field, personalProfileFieldLabels)).join(', ')}</span>
-                <a href="/profilo">Completa profilo</a>
-              </div>
-            ) : null}
-            {readiness.organization.applicable && !readiness.organization.complete ? (
-              <div>
-                <strong>Organizzazione</strong>
-                <span>{readiness.organization.missing_fields.map((field) => getReadinessLabel(field, organizationProfileFieldLabels)).join(', ')}</span>
-                {permissions.includes('organization.update') ? <a href="/organizzazione">Completa organizzazione</a> : null}
-              </div>
-            ) : null}
-            {readiness.professional.applicable && !readiness.professional.operational ? (
-              <div>
-                <strong>Verifica professionale</strong>
-                <span>{readiness.professional.blockers.map((blocker) => getReadinessLabel(blocker, professionalBlockerLabels)).join(', ')}</span>
-              </div>
-            ) : null}
-            {readiness.personal_profile.complete
-              && (!readiness.organization.applicable || readiness.organization.complete)
-              && (!readiness.professional.applicable || readiness.professional.operational) ? (
-                <div>
-                  <strong>Configurazione completata</strong>
-                  <span>I requisiti attuali risultano soddisfatti.</span>
-                </div>
-              ) : null}
-          </div>
-        </section>
+        <DashboardOnboardingBanner permissions={permissions} readiness={readiness} />
 
-        <section className={styles.quickActions} aria-label="Azioni rapide">
-          <div className={styles.quickActionsGrid}>
-            {quickActions.map((action) => (
-              <a className={styles.quickAction} href={action.href} key={action.href}>
-                <QuickActionIcon name={action.icon} />
-                <span>{action.label}</span>
-                <ArrowRight className={styles.quickActionArrow} size={18} strokeWidth={1.75} aria-hidden="true" focusable="false" />
-              </a>
+        <div className={styles.dashboardGrid}>
+          <OrganizationSummary
+            organization={activeOrganization}
+            canManage={permissions.includes("organization.update")}
+          />
+          <AttentionList />
+        </div>
+
+        <TodaySchedule />
+
+        <section className={styles.metricsSection} aria-labelledby="metrics-title">
+          <div className={styles.sectionHeaderCompact}>
+            <p className={styles.eyebrow} id="metrics-title">Indicatori operativi</p>
+          </div>
+          <div className={styles.metricsGrid}>
+            {dashboardMetrics.map((metric) => (
+              <DashboardMetricCard key={metric.label} {...metric} />
             ))}
           </div>
         </section>
-
-        <div className={styles.dashboardGrid}>
-          <section className={`${styles.surfaceCard} ${styles.profileCard}`} aria-labelledby="profile-card-title">
-            <span className={styles.cardMark}>
-              <PlatformIcon name="profile" size={20} className={styles.cardIcon} />
-            </span>
-            <p className={styles.cardLabel}>Il tuo profilo</p>
-            <h2 id="profile-card-title">{fullName}</h2>
-            <p className={styles.profileMeta}>{accountTypeLabel}</p>
-            <a className={styles.textLink} href="/profilo">Visualizza profilo <ArrowRight className={styles.textLinkArrow} size={18} strokeWidth={1.75} aria-hidden="true" focusable="false" /></a>
-          </section>
-
-          <section className={styles.surfaceCard} aria-labelledby="calendar-card-title">
-            <span className={styles.cardMark}>
-              <PlatformIcon name="calendar" size={20} className={styles.cardIcon} />
-            </span>
-              <p className={styles.cardLabel}>Calendario</p>
-            <div className={styles.metricBlock} style={{ display: "block", marginTop: 15 }}>
-              <strong
-                className={styles.metricValue}
-                id="calendar-card-title"
-                style={{ display: "block", color: "#332720", fontSize: "clamp(2.35rem, 3.2vw, 3.45rem)", fontWeight: 300, lineHeight: 1, letterSpacing: "-.04em" }}
-              >0</strong>
-              <br className={styles.metricFallbackBreak} style={{ display: "none" }} />
-              <span
-                className={styles.metricLabel}
-                style={{ display: "block", marginTop: 7, color: "#4c3b30", fontSize: ".82rem", lineHeight: 1.25 }}
-              >Eventi programmati</span>
-            </div>
-            <p className={styles.cardDescription}>Non ci sono eventi in programma.</p>
-            <a className={styles.textLink} href="/calendario">Apri calendario <ArrowRight className={styles.textLinkArrow} size={18} strokeWidth={1.75} aria-hidden="true" focusable="false" /></a>
-          </section>
-
-          <section className={styles.surfaceCard} aria-labelledby="booking-card-title">
-            <span className={styles.cardMark}>
-              <PlatformIcon name="bookings" size={20} className={styles.cardIcon} />
-            </span>
-              <p className={styles.cardLabel}>Prenotazioni</p>
-            <div className={styles.metricBlock} style={{ display: "block", marginTop: 15 }}>
-              <strong
-                className={styles.metricValue}
-                id="booking-card-title"
-                style={{ display: "block", color: "#332720", fontSize: "clamp(2.35rem, 3.2vw, 3.45rem)", fontWeight: 300, lineHeight: 1, letterSpacing: "-.04em" }}
-              >0</strong>
-              <br className={styles.metricFallbackBreak} style={{ display: "none" }} />
-              <span
-                className={styles.metricLabel}
-                style={{ display: "block", marginTop: 7, color: "#4c3b30", fontSize: ".82rem", lineHeight: 1.25 }}
-              >Prenotazioni attive</span>
-            </div>
-            <p className={styles.cardDescription}>Non hai prenotazioni attive.</p>
-            <a className={styles.textLink} href="/prenotazioni">Vai alle prenotazioni <ArrowRight className={styles.textLinkArrow} size={18} strokeWidth={1.75} aria-hidden="true" focusable="false" /></a>
-          </section>
-        </div>
-
-        <section className={styles.accountSummary} aria-labelledby="account-summary-title">
-          <div className={styles.summaryIntro}>
-            <p className={styles.eyebrow}>Riepilogo account</p>
-            <h2 id="account-summary-title">Stato del tuo account</h2>
-          </div>
-          <ul className={styles.checklist}>
-            <li className={styles.checklistDone}><CheckCircle2 className={styles.checkMark} size={16} strokeWidth={1.75} aria-hidden="true" focusable="false" /><span>Email associata</span><strong>Completata</strong></li>
-            <li><Circle className={styles.checkMark} size={16} strokeWidth={1.75} aria-hidden="true" focusable="false" /><span>Nessuna prenotazione</span><strong>In attesa</strong></li>
-            <li><Circle className={styles.checkMark} size={16} strokeWidth={1.75} aria-hidden="true" focusable="false" /><span>Calendario vuoto</span><strong>In attesa</strong></li>
-          </ul>
-        </section>
-
-        <section className={styles.contextSummary} aria-labelledby="context-summary-title">
-          <div className={styles.summaryIntro}>
-            <p className={styles.eyebrow}>Verifica tecnica</p>
-            <h2 id="context-summary-title">Contesto autorizzativo</h2>
-          </div>
-          <dl className={styles.contextDetails}>
-            <div>
-              <dt>Email</dt>
-              <dd>{user.email ?? "—"}</dd>
-            </div>
-            <div>
-              <dt>Organizzazione attiva</dt>
-              <dd>{organizationContext.activeOrganization?.organizationDisplayName ?? "Nessuna"}</dd>
-            </div>
-            <div>
-              <dt>ID organizzazione</dt>
-              <dd>{organizationContext.activeOrganization?.organizationId ?? "—"}</dd>
-            </div>
-            <div>
-              <dt>Tipo</dt>
-              <dd>{organizationContext.activeOrganization?.organizationTypeDisplayName ?? "—"}</dd>
-            </div>
-            <div>
-              <dt>Membership</dt>
-              <dd>{organizationContext.activeOrganization?.status ?? "—"} · {organizationContext.activeOrganization?.id ?? "—"}</dd>
-            </div>
-            <div>
-              <dt>Ruoli attivi</dt>
-              <dd>{organizationContext.activeOrganization?.roles.map((role) => role.displayName).join(", ") || "—"}</dd>
-            </div>
-            <div>
-              <dt>Organizzazioni disponibili</dt>
-              <dd>{organizationContext.memberships.filter((membership) => membership.status === "active" && membership.organizationStatus === "active").map((membership) => membership.organizationDisplayName ?? membership.organizationId).join(", ") || "Nessuna"}</dd>
-            </div>
-            <div>
-              <dt>Permessi nel contesto</dt>
-              <dd>{permissions.join(", ") || "Nessuno"}</dd>
-            </div>
-          </dl>
-        </section>
-
       </section>
     </PlatformShell>
   );

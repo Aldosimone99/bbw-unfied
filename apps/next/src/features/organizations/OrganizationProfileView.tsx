@@ -1,6 +1,6 @@
 import type { OperationalReadiness } from '@bbw/interfaces';
 
-import type { CurrentUser, OrganizationContextSummary, ProfileSummary } from '../../types/authorization';
+import type { CurrentUser, OrganizationContextSummary, PermissionCode, ProfileSummary } from '../../types/authorization';
 import PlatformShell from '../dashboard/PlatformShell';
 import { getReadinessLabel, organizationProfileFieldLabels } from '../authorization/readinessLabels';
 import type { OrganizationProfile } from '../../server/services/organization-profile-service';
@@ -11,6 +11,7 @@ type OrganizationProfileViewProps = {
   user: CurrentUser;
   profile: ProfileSummary;
   organizationContext: OrganizationContextSummary;
+  permissions: PermissionCode[];
   readiness: OperationalReadiness;
   organization: OrganizationProfile;
 };
@@ -19,6 +20,7 @@ export default function OrganizationProfileView({
   user,
   profile,
   organizationContext,
+  permissions,
   readiness,
   organization,
 }: OrganizationProfileViewProps) {
@@ -26,7 +28,7 @@ export default function OrganizationProfileView({
   const missingFields = readiness.organization.missing_fields;
 
   return (
-    <PlatformShell user={user} profile={profile} activePath="/organizzazione" organizationContext={organizationContext}>
+    <PlatformShell user={user} profile={profile} activePath="/organizzazione" organizationContext={organizationContext} permissions={permissions}>
       <section className={styles.page} aria-labelledby="organization-profile-title">
         <div className={styles.intro}>
           <p className={styles.eyebrow}>Organizzazione attiva</p>

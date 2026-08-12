@@ -1,36 +1,48 @@
 import {
+  BadgeCheck,
   BarChart3,
   Building2,
+  CalendarClock,
   CalendarDays,
   CalendarRange,
   ClipboardList,
+  ClipboardPlus,
+  FileSignature,
   House,
   History,
   MessageSquare,
   Send,
   Settings2,
-  ShieldCheck,
+  Stethoscope,
+  TriangleAlert,
   UserRound,
-  Users
+  UsersRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 const platformIcons = {
   home: House,
+  dashboard: House,
   calendar: CalendarDays,
+  appointments: CalendarClock,
   availability: CalendarRange,
   bookings: ClipboardList,
-  catalog: ClipboardList,
-  clients: Users,
-  consents: ShieldCheck,
+  catalog: ClipboardPlus,
+  treatments: ClipboardPlus,
+  clients: UsersRound,
+  consents: FileSignature,
   history: History,
   invites: Send,
-  members: Users,
+  members: UsersRound,
+  professionals: Stethoscope,
   messages: MessageSquare,
+  organization: Building2,
   profile: UserRound,
   reports: BarChart3,
   settings: Settings2,
-  staff: Building2
+  staff: Stethoscope,
+  attention: TriangleAlert,
+  success: BadgeCheck,
 } satisfies Record<string, LucideIcon>;
 
 export type PlatformIconName = keyof typeof platformIcons;

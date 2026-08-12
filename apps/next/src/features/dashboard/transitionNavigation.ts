@@ -43,7 +43,7 @@ export function getTransitionRole(profile: ProfileSummary): TransitionRole {
 }
 
 const commonAccountItems: DashboardNavItem[] = [
-  { href: "/profilo", label: "Profilo", icon: "profile" },
+  { href: "/profilo", label: "Profilo personale", icon: "profile" },
   { href: "/impostazioni", label: "Impostazioni", icon: "settings" }
 ];
 

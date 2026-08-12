@@ -3,5 +3,5 @@ import { requirePlatformContext } from "../../../features/dashboard/requirePlatf
 
 export default async function MembersPage() {
   const context = await requirePlatformContext(["clinica"]);
-  return <PlatformPlaceholder user={context.user} profile={context.profile} organizationContext={context} activePath="/membri" eyebrow="Organizzazione" title="Membri" description="Membri, ruoli e inviti della clinica o organizzazione attiva." />;
+  return <PlatformPlaceholder user={context.user} profile={context.profile} permissions={context.permissions} organizationContext={context} activePath="/membri" eyebrow="Organizzazione" title="Membri" description="Membri, ruoli e inviti della clinica o organizzazione attiva." />;
 }

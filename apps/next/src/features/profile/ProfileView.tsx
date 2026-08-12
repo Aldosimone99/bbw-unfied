@@ -1,6 +1,6 @@
 import type { OperationalReadiness } from '@bbw/interfaces';
 
-import type { CurrentUser, OrganizationContextSummary, ProfileSummary } from '../../types/authorization';
+import type { CurrentUser, OrganizationContextSummary, PermissionCode, ProfileSummary } from '../../types/authorization';
 import { getRequestedAccountTypeLabel } from '../dashboard/profileLabels';
 import PlatformShell from '../dashboard/PlatformShell';
 import { getReadinessLabel, personalProfileFieldLabels } from '../authorization/readinessLabels';
@@ -11,16 +11,17 @@ type ProfileViewProps = {
   user: CurrentUser;
   profile: ProfileSummary;
   organizationContext: OrganizationContextSummary;
+  permissions: PermissionCode[];
   readiness: OperationalReadiness;
 };
 
-export default function ProfileView({ user, profile, organizationContext, readiness }: ProfileViewProps) {
+export default function ProfileView({ user, profile, organizationContext, permissions, readiness }: ProfileViewProps) {
   const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Profilo BBW';
   const missingFields = readiness.personal_profile.missing_fields;
   const personalProfileComplete = readiness.personal_profile.complete;
 
   return (
-    <PlatformShell user={user} profile={profile} activePath="/profilo" organizationContext={organizationContext}>
+    <PlatformShell user={user} profile={profile} activePath="/profilo" organizationContext={organizationContext} permissions={permissions}>
       <section className={styles.page} aria-labelledby="profile-title">
         <div className={styles.intro}>
           <p className={styles.eyebrow}>Account</p>

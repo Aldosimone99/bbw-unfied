@@ -1,4 +1,4 @@
-import type { CurrentUser, OrganizationContextSummary, ProfileSummary } from "../../types/authorization";
+import type { CurrentUser, OrganizationContextSummary, PermissionCode, ProfileSummary } from "../../types/authorization";
 import PlatformIcon, { type PlatformIconName } from "./PlatformIcon";
 import PlatformShell from "./PlatformShell";
 import styles from "./Dashboard.module.css";
@@ -11,6 +11,7 @@ type PlatformPlaceholderProps = {
   title: string;
   description: string;
   organizationContext: OrganizationContextSummary;
+  permissions: PermissionCode[];
 };
 
 export default function PlatformPlaceholder({
@@ -20,7 +21,8 @@ export default function PlatformPlaceholder({
   eyebrow,
   title,
   description,
-  organizationContext
+  organizationContext,
+  permissions,
 }: PlatformPlaceholderProps) {
   const iconByPath: Record<string, PlatformIconName> = {
     "/catalogo": "catalog",
@@ -40,7 +42,7 @@ export default function PlatformPlaceholder({
   };
 
   return (
-    <PlatformShell user={user} profile={profile} activePath={activePath} organizationContext={organizationContext}>
+    <PlatformShell user={user} profile={profile} activePath={activePath} organizationContext={organizationContext} permissions={permissions}>
       <section className={styles.placeholderPage} aria-labelledby="placeholder-title">
         <div className={styles.placeholderIntro}>
           <p className={styles.eyebrow}>{eyebrow}</p>

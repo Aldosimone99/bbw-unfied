@@ -3,8 +3,7 @@ import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 
 import { logoutAction } from "../auth/actions";
-import type { CurrentUser, OrganizationContextSummary, ProfileSummary } from "../../types/authorization";
-import ContextSwitcher from "../organizations/ContextSwitcher";
+import type { CurrentUser, OrganizationContextSummary, PermissionCode, ProfileSummary } from "../../types/authorization";
 import { getRequestedAccountTypeLabel } from "./profileLabels";
 import PlatformIcon, { type PlatformIconName } from "./PlatformIcon";
 import { getDashboardNavItems } from "./transitionNavigation";
@@ -15,6 +14,7 @@ type PlatformShellProps = {
   profile: ProfileSummary;
   activePath: string;
   organizationContext: OrganizationContextSummary;
+  permissions: PermissionCode[];
   children: ReactNode;
 };
 
@@ -39,12 +39,23 @@ function NavigationGroup({ label, items, activePath }: { label: string; items: A
   );
 }
 
-export default function PlatformShell({ user, profile, activePath, organizationContext, children }: PlatformShellProps) {
+export default function PlatformShell({ user, profile, activePath, organizationContext, permissions, children }: PlatformShellProps) {
   const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Profilo BBW";
   const accountTypeLabel = getRequestedAccountTypeLabel(profile.requestedAccountType);
   const navItems = getDashboardNavItems(profile);
   const accountItems = navItems.filter((item) => item.href === "/profilo" || item.href === "/impostazioni");
-  const experienceItems = navItems.filter((item) => !accountItems.includes(item));
+  const canManageOrganization = Boolean(
+    organizationContext.activeOrganization
+      && permissions?.includes("organization.update"),
+  );
+  const organizationProfileItem: { href: string; label: string; icon: PlatformIconName } = {
+    href: "/organizzazione",
+    label: "Profilo struttura",
+    icon: "organization",
+  };
+  if (canManageOrganization) accountItems.push(organizationProfileItem);
+  const experienceItems = navItems.filter((item) => !accountItems.some((accountItem) => accountItem.href === item.href));
+  const mobileNavItems = canManageOrganization ? [...navItems, organizationProfileItem] : navItems;
   const initials = fullName
     .split(" ")
     .filter(Boolean)
@@ -54,40 +65,41 @@ export default function PlatformShell({ user, profile, activePath, organizationC
 
   return (
     <div className={styles.page}>
-      <aside className={styles.sidebar} aria-label="Navigazione area personale">
+      <aside className={styles.sidebar} aria-label="Navigazione area operativa">
         <Link className={styles.brand} href="/" aria-label="Beauty Broker World, home">
           <img src="/images/brand/logo-flat-dark-bronze.png" alt="" />
           <span>Beauty Broker <strong>World</strong></span>
         </Link>
 
         <div className={styles.sidebarNav}>
-          <ContextSwitcher {...organizationContext} />
           <NavigationGroup label="Esperienza" items={experienceItems} activePath={activePath} />
           <NavigationGroup label="Account" items={accountItems} activePath={activePath} />
         </div>
 
-        <details className={styles.sidebarUser}>
-          <summary className={styles.sidebarUserSummary}>
-            <span className={styles.avatarSmall} aria-hidden="true">{initials}</span>
-            <span className={styles.sidebarUserName}>
-              <strong>{fullName}</strong>
-              <span>{accountTypeLabel}</span>
-            </span>
-            <ChevronDown className={styles.userArrow} size={18} strokeWidth={1.75} aria-hidden="true" focusable="false" />
-          </summary>
-          <div className={styles.sidebarAccountMenu}>
-            <a href="/profilo">Profilo account</a>
-            <a href="/impostazioni">Impostazioni</a>
-            <form action={logoutAction}>
-              <button type="submit">Esci dall’account</button>
-            </form>
-          </div>
-        </details>
+        <div className={styles.sidebarBottom}>
+          <details className={styles.sidebarUser}>
+            <summary className={styles.sidebarUserSummary}>
+              <span className={styles.avatarSmall} aria-hidden="true">{initials}</span>
+              <span className={styles.sidebarUserName}>
+                <strong>{fullName}</strong>
+                <span>{accountTypeLabel}</span>
+              </span>
+              <ChevronDown className={styles.userArrow} size={18} strokeWidth={1.75} aria-hidden="true" focusable="false" />
+            </summary>
+            <div className={styles.sidebarAccountMenu}>
+              <a href="/profilo">Profilo personale</a>
+              <a href="/impostazioni">Impostazioni</a>
+              <form action={logoutAction}>
+                <button type="submit">Esci dall’account</button>
+              </form>
+            </div>
+          </details>
+        </div>
       </aside>
 
       <div className={styles.mainColumn}>
         <div className={styles.mobileNav}>
-          {navItems.map((item) => (
+          {mobileNavItems.map((item) => (
             <a
               className={`${styles.mobileNavItem} ${activePath === item.href ? styles.mobileNavItemActive : ""}`}
               href={item.href}

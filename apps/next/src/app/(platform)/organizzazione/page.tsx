@@ -15,6 +15,7 @@ export default async function OrganizationPage() {
       user={context.user}
       profile={context.profile}
       organizationContext={context}
+      permissions={context.permissions}
       readiness={context.readiness!}
       organization={organization}
     />

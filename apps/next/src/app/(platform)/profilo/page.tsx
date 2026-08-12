@@ -8,6 +8,7 @@ export default async function ProfilePage() {
       user={context.user}
       profile={context.profile}
       organizationContext={context}
+      permissions={context.permissions}
       readiness={context.readiness!}
     />
   );
