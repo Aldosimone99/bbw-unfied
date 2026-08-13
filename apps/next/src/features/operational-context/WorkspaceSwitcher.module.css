@@ -1,0 +1,220 @@
+.switcher,
+.staticState,
+.emptyState {
+  position: relative;
+  width: 100%;
+}
+
+.trigger,
+.staticState,
+.emptyState {
+  display: grid;
+  gap: 9px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(200, 162, 90, .22);
+  border-radius: 10px;
+  background: rgba(255, 252, 248, .72);
+  color: #4b3a2e;
+  text-align: left;
+}
+
+.trigger {
+  cursor: pointer;
+  font: inherit;
+  transition: border-color .2s ease-out, background .2s ease-out, box-shadow .2s ease-out;
+}
+
+.trigger:hover {
+  border-color: rgba(127, 90, 52, .32);
+  background: rgba(248, 239, 229, .84);
+}
+
+.trigger:focus-visible,
+.workspaceOption:focus-visible,
+.manageLink:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.switcherLabel {
+  color: rgba(126, 91, 35, .75);
+  font-size: .62rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.workspaceRow {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.staticState .workspaceRow {
+  grid-template-columns: 30px minmax(0, 1fr);
+}
+
+.workspaceIcon {
+  display: inline-grid;
+  flex: 0 0 30px;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(200, 162, 90, .14);
+  border-radius: 50%;
+  background: rgba(200, 162, 90, .08);
+  color: #b38845;
+}
+
+.workspaceCopy {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 3px;
+}
+
+.workspaceCopy strong,
+.workspaceCopy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceCopy strong {
+  color: #4b3a2e;
+  font-size: .79rem;
+  font-weight: 520;
+}
+
+.workspaceCopy small {
+  color: var(--dashboard-muted, rgba(74, 58, 47, .64));
+  font-size: .67rem;
+}
+
+.chevron {
+  color: #805b35;
+}
+
+.popover {
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  bottom: calc(100% + 10px);
+  width: min(294px, 100%);
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid rgba(200, 162, 90, .26);
+  border-radius: 12px;
+  background: #fffaf5;
+  box-shadow: 0 18px 42px rgba(76, 56, 43, .12);
+}
+
+.popoverTitle {
+  margin: 2px 8px 8px;
+  color: rgba(126, 91, 35, .75);
+  font-size: .62rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.workspaceList {
+  display: grid;
+  gap: 3px;
+}
+
+.workspaceForm {
+  margin: 0;
+}
+
+.workspaceOptionIdentity {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.workspaceOption {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 56px;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--brown);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: border-color .2s ease-out, background .2s ease-out;
+}
+
+.workspaceOption:hover,
+.workspaceOption[aria-checked="true"] {
+  border-color: rgba(200, 162, 90, .16);
+  background: rgba(200, 162, 90, .08);
+}
+
+.workspaceOption:disabled {
+  cursor: wait;
+  opacity: .6;
+}
+
+.checkmark {
+  display: inline-grid;
+  flex: 0 0 20px;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  color: var(--gold);
+}
+
+.separator {
+  height: 1px;
+  margin: 10px 4px;
+  background: rgba(127, 90, 52, .13);
+}
+
+.manageLink {
+  display: block;
+  padding: 8px;
+  border-radius: 6px;
+  color: #71491f;
+  font-size: .76rem;
+  text-decoration: none;
+}
+
+.manageLink:hover {
+  background: rgba(200, 162, 90, .08);
+}
+
+.error {
+  margin: 9px 8px 2px;
+  color: #9b432e;
+  font-size: .72rem;
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .workspaceOption { transition: none; }
+}
+
+@media (max-width: 760px) {
+  .popover {
+    top: calc(100% + 10px);
+    left: 0;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+  }
+}

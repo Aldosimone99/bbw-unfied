@@ -2,24 +2,22 @@ import type { OperationalContext } from '@bbw/interfaces';
 import { ArrowRight } from 'lucide-react';
 
 import { getOperationalContextRoleLabel, getOperationalContextTypeLabel } from '../operational-context/labels';
-import ContextSwitcher from '../operational-context/ContextSwitcher';
 import PlatformIcon from './PlatformIcon';
 import styles from './Dashboard.module.css';
 
 type OrganizationSummaryProps = {
   context: OperationalContext | null;
-  contexts: OperationalContext[];
   canManage: boolean;
 };
 
-export default function OrganizationSummary({ context, contexts, canManage }: OrganizationSummaryProps) {
+export default function OrganizationSummary({ context, canManage }: OrganizationSummaryProps) {
   if (!context) {
     return (
       <section className={`${styles.surfaceCard} ${styles.organizationSummary}`} aria-labelledby="context-card-title">
         <span className={styles.cardMark}><PlatformIcon name="organization" size={20} /></span>
         <p className={styles.cardLabel}>Contesto operativo</p>
         <h2 id="context-card-title">Nessun contesto attivo</h2>
-        <p className={styles.cardDescription}>Completa il setup oppure scegli un workspace per visualizzare le attività operative.</p>
+        <p className={styles.cardDescription}>Completa il setup oppure scegli uno spazio di lavoro per visualizzare le attività operative.</p>
       </section>
     );
   }
@@ -32,14 +30,10 @@ export default function OrganizationSummary({ context, contexts, canManage }: Or
       <span className={styles.cardMark}><PlatformIcon name={isOrganization ? 'organization' : 'professionals'} size={20} /></span>
       <p className={styles.cardLabel}>{getOperationalContextTypeLabel(context)}</p>
       <h2 id="context-card-title">{context.label}</h2>
-      {contexts.length > 1 ? (
-        <ContextSwitcher contexts={contexts} activeContext={context} />
-      ) : (
-        <div className={styles.organizationMeta}>
-          {roleLabel ? <span>{roleLabel}</span> : null}
-          <span>{isOrganization ? 'Organizzazione attiva' : 'Workspace professionale personale'}</span>
-        </div>
-      )}
+      <div className={styles.organizationMeta}>
+        {roleLabel ? <span className={styles.organizationRole}>{roleLabel}</span> : null}
+        <span className={styles.organizationState}>{isOrganization ? 'Organizzazione attiva' : 'Profilo professionale attivo'}</span>
+      </div>
       {canManage ? (
         <a className={styles.textLink} href="/organizzazione">
           Gestisci struttura

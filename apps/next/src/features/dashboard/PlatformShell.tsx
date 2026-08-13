@@ -3,8 +3,8 @@ import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 
 import { logoutAction } from '../auth/actions';
-import { getOperationalContextTypeLabel } from '../operational-context/labels';
 import type { CurrentUser, OperationalContextSummary, PermissionCode, ProfileSummary } from '../../types/authorization';
+import WorkspaceSwitcher from '../operational-context/WorkspaceSwitcher';
 import PlatformIcon, { type PlatformIconName } from './PlatformIcon';
 import { getDashboardNavItems } from './transitionNavigation';
 import styles from './Dashboard.module.css';
@@ -44,7 +44,6 @@ type DashboardNavItem = { href: string; label: string; icon: PlatformIconName };
 export default function PlatformShell({ user, profile, activePath, operationalContext, permissions, children }: PlatformShellProps) {
   const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Profilo BBW';
   const activeContext = operationalContext.activeOperationalContext;
-  const contextLabel = activeContext ? getOperationalContextTypeLabel(activeContext) : 'Setup account';
   const navItems = getDashboardNavItems(activeContext, permissions);
   const accountItems = navItems.filter((item) => item.href === '/profilo' || item.href === '/impostazioni');
   const canManageOrganization = activeContext?.kind === 'organization' && permissions.includes('organization.update');
@@ -77,23 +76,34 @@ export default function PlatformShell({ user, profile, activePath, operationalCo
         </div>
 
         <div className={styles.sidebarBottom}>
-          <details className={styles.sidebarUser}>
-            <summary className={styles.sidebarUserSummary}>
-              <span className={styles.avatarSmall} aria-hidden="true">{initials}</span>
-              <span className={styles.sidebarUserName}>
-                <strong>{fullName}</strong>
-                <span>{contextLabel}</span>
-              </span>
-              <ChevronDown className={styles.userArrow} size={18} strokeWidth={1.75} aria-hidden="true" focusable="false" />
-            </summary>
-            <div className={styles.sidebarAccountMenu}>
-              <a href="/profilo">Profilo personale</a>
-              <a href="/impostazioni">Impostazioni</a>
-              <form action={logoutAction}>
-                <button type="submit">Esci dall’account</button>
-              </form>
-            </div>
-          </details>
+          <div className={styles.sidebarBlock}>
+            <WorkspaceSwitcher
+              contexts={operationalContext.availableOperationalContexts}
+              activeContext={activeContext}
+              canManageOrganization={canManageOrganization}
+            />
+          </div>
+
+          <div className={styles.sidebarBlock}>
+            <details className={styles.sidebarUser}>
+              <summary className={styles.sidebarUserSummary}>
+                <span className={styles.sidebarUserLabel}>Account</span>
+                <span className={styles.avatarSmall} aria-hidden="true">{initials}</span>
+                <span className={styles.sidebarUserName}>
+                  <strong>{fullName}</strong>
+                  <span>Account personale</span>
+                </span>
+                <ChevronDown className={styles.userArrow} size={18} strokeWidth={1.75} aria-hidden="true" focusable="false" />
+              </summary>
+              <div className={styles.sidebarAccountMenu}>
+                <a href="/profilo">Profilo personale</a>
+                <a href="/impostazioni">Impostazioni</a>
+                <form action={logoutAction}>
+                  <button type="submit">Esci dall’account</button>
+                </form>
+              </div>
+            </details>
+          </div>
         </div>
       </aside>
 

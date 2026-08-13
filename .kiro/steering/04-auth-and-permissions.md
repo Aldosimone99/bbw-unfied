@@ -57,3 +57,9 @@ Il seed e le migration prevedono il ruolo platform `platform_admin` e la permiss
 ## Prevenzione escalation
 
 Il client non può scegliere permission arbitrarie, organizzazione arbitraria o ruolo superiore. Il server confronta l’autorità dell’attore con quella assegnata, limita gli scope e applica invarianti in transazione. Mai derivare privilegi da claim non verificati, testo del form, pathname o nome visualizzato.
+
+## Workspace switcher globale
+
+Il cambio workspace è esposto dalla navigation globale, ma resta un'operazione server-authoritative. Il componente client può mostrare `availableOperationalContexts` e inviare `{ kind, id }`; il server deve riverificare sessione, ownership del professional profile oppure membership attiva, stato dell'organizzazione e permission prima di aggiornare il cookie HttpOnly.
+
+Dopo una selezione valida il contesto, i ruoli e le permission operative vengono ricalcolati e la pagina viene riportata alla dashboard del nuovo workspace. Un riferimento manipolato, una membership revocata o un contesto non più disponibile non cambia il workspace attivo precedente e produce un errore user-facing. Il workspace attivo non è l'account e non è una prova di autorizzazione.
