@@ -1,5 +1,13 @@
 .pageHeader {
-  max-width: 760px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  max-width: 1040px;
+}
+
+.pageHeader > div {
+  min-width: 0;
 }
 
 .eyebrow,
@@ -22,16 +30,110 @@
   line-height: .9;
 }
 
-.pageHeader > p:last-child {
+.pageHeader > div > p:last-child {
   margin: 14px 0 0;
   color: rgba(74, 58, 47, .64);
   font-size: 1.06rem;
   line-height: 1.5;
 }
 
-.relationshipSection {
+.invitationSection,
+.linkPanel {
   width: min(100%, 1040px);
-  margin-top: 54px;
+  margin-top: 28px;
+}
+
+.linkPanel {
+  display: grid;
+  gap: 16px;
+  padding: 22px 24px;
+  border: 1px solid rgba(127, 90, 52, .15);
+  border-radius: 11px;
+  background: rgba(249, 242, 233, .46);
+}
+
+.linkPanel h2,
+.dialog h2 {
+  margin: 8px 0 0;
+  color: var(--brown);
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.linkPanel p,
+.dialog > p {
+  margin: 7px 0 0;
+  color: rgba(74, 58, 47, .64);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.invitationRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 0;
+  border-bottom: 1px solid rgba(127, 90, 52, .13);
+}
+
+.invitationRow .identity {
+  min-width: 0;
+}
+
+.invitationRow .identity strong {
+  overflow-wrap: anywhere;
+  color: var(--brown);
+  font-size: .88rem;
+  font-weight: 550;
+}
+
+.dialogBackdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(48, 39, 32, .32);
+}
+
+.dialog {
+  width: min(100%, 460px);
+  padding: 28px;
+  border: 1px solid rgba(127, 90, 52, .2);
+  border-radius: 14px;
+  background: #fffdf9;
+  box-shadow: 0 24px 60px rgba(48, 39, 32, .2);
+}
+
+.dialog .inviteForm {
+  display: grid;
+  gap: 9px;
+  margin-top: 24px;
+}
+
+.dialog .inviteForm > label {
+  color: rgba(74, 58, 47, .76);
+  font-size: .78rem;
+}
+
+.dialog input {
+  min-height: 44px;
+  width: 100%;
+  padding: 0 13px;
+  border: 1px solid rgba(127, 90, 52, .2);
+  border-radius: 8px;
+  background: rgba(255, 253, 250, .7);
+  color: var(--brown);
+  font: inherit;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 18px;
 }
 
 .toolbar {
@@ -266,9 +368,34 @@
 }
 
 @media (max-width: 640px) {
+  .pageHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pageHeader > .primaryButton {
+    width: 100%;
+  }
+
   .relationshipSection {
     margin-top: 42px;
   }
+
+  .invitationRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .invitationRow > :nth-child(2) {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .invitationRow > :nth-child(3) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
 
   .lookupControls {
     align-items: stretch;

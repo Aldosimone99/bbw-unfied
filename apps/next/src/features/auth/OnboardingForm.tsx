@@ -7,9 +7,14 @@ import type { ProfileSummary } from "../../types/authorization";
 import { onboardingAction, type OnboardingActionState } from "./actions";
 import styles from "../../components/forms/AuthPage.module.css";
 
-type OnboardingFormProps = { profile: ProfileSummary };
+type OnboardingFormProps = {
+  profile: ProfileSummary;
+  redirectTo?: string;
+  invitationToken?: string;
+  patientInvitationToken?: string;
+};
 
-export default function OnboardingForm({ profile }: OnboardingFormProps) {
+export default function OnboardingForm({ profile, redirectTo, invitationToken, patientInvitationToken }: OnboardingFormProps) {
   const initialState: OnboardingActionState = {
     status: "idle",
     step: profile.onboardingStatus === "account_type_required" ? "account_type" : "profile"
@@ -35,6 +40,9 @@ export default function OnboardingForm({ profile }: OnboardingFormProps) {
       </div>
 
       <input name="step" type="hidden" value={state.step} readOnly />
+      {redirectTo && <input name="redirectTo" type="hidden" value={redirectTo} readOnly />}
+      {invitationToken && <input name="invitationToken" type="hidden" value={invitationToken} readOnly />}
+      {patientInvitationToken && <input name="patientInvitationToken" type="hidden" value={patientInvitationToken} readOnly />}
 
       {isProfileStep ? (
         <>

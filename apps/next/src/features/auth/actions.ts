@@ -1,6 +1,6 @@
 "use server";
 
-import { companyInviteAcceptSchema } from '@bbw/interfaces';
+import { companyInviteAcceptSchema, patientInvitationAcceptRequestSchema } from '@bbw/interfaces';
 import { redirect } from "next/navigation";
 
 import { getFieldErrors, type FieldErrors } from "../../lib/validation/action-errors";
@@ -63,6 +63,10 @@ export async function loginAction(
   const invitationToken = companyInviteAcceptSchema.safeParse({
     token: typeof rawInvitationToken === 'string' ? rawInvitationToken : '',
   });
+  const rawPatientInvitationToken = getFormValue(formData, "patientInvitationToken");
+  const patientInvitationToken = patientInvitationAcceptRequestSchema.safeParse({
+    token: typeof rawPatientInvitationToken === 'string' ? rawPatientInvitationToken : '',
+  });
   const parsed = loginInputSchema.safeParse({
     email: getFormValue(formData, "email"),
     password: getFormValue(formData, "password"),
@@ -75,9 +79,11 @@ export async function loginAction(
 
   const result = await loginAccount(parsed.data);
   if (result.status === "success") {
-    const requestedRedirect = invitationToken.success
-      ? `/inviti/accetta?${new URLSearchParams({ token: invitationToken.data.token }).toString()}`
-      : parsed.data.redirectTo;
+    const requestedRedirect = patientInvitationToken.success
+      ? `/inviti/paziente/accetta?${new URLSearchParams({ token: patientInvitationToken.data.token }).toString()}`
+      : invitationToken.success
+        ? `/inviti/accetta?${new URLSearchParams({ token: invitationToken.data.token }).toString()}`
+        : parsed.data.redirectTo;
     redirect(await resolvePostLoginDestination(requestedRedirect));
   }
 
@@ -88,6 +94,16 @@ export async function registerAction(
   _previousState: RegisterActionState,
   formData: FormData
 ): Promise<RegisterActionState> {
+  const rawRedirectTo = getFormValue(formData, "redirectTo");
+  const redirectTo = typeof rawRedirectTo === 'string' ? rawRedirectTo : undefined;
+  const rawInvitationToken = getFormValue(formData, "invitationToken");
+  const invitationToken = companyInviteAcceptSchema.safeParse({
+    token: typeof rawInvitationToken === 'string' ? rawInvitationToken : '',
+  });
+  const rawPatientInvitationToken = getFormValue(formData, "patientInvitationToken");
+  const patientInvitationToken = patientInvitationAcceptRequestSchema.safeParse({
+    token: typeof rawPatientInvitationToken === 'string' ? rawPatientInvitationToken : '',
+  });
   const parsed = registerInputSchema.safeParse({
     email: getFormValue(formData, "email"),
     password: getFormValue(formData, "password"),
@@ -101,7 +117,19 @@ export async function registerAction(
   }
 
   const result = await registerAccount(parsed.data);
-  if (result.status === "redirect") redirect(await resolvePostLoginDestination());
+  if (result.status === "redirect") {
+    const onboardingParams = new URLSearchParams();
+    if (redirectTo) onboardingParams.set("redirectTo", redirectTo);
+    if (patientInvitationToken.success) {
+      onboardingParams.set("patientInvitationToken", patientInvitationToken.data.token);
+      redirect(`/onboarding?${onboardingParams.toString()}`);
+    }
+    if (invitationToken.success) {
+      onboardingParams.set("invitationToken", invitationToken.data.token);
+      redirect(`/onboarding?${onboardingParams.toString()}`);
+    }
+    redirect(await resolvePostLoginDestination(redirectTo));
+  }
   return { status: "error", message: result.error.message };
 }
 
@@ -112,6 +140,8 @@ export async function onboardingAction(
   const step = formData.get("step");
 
   if (step === "profile") {
+    const rawRedirectTo = getFormValue(formData, "redirectTo");
+    const redirectTo = typeof rawRedirectTo === 'string' ? rawRedirectTo : undefined;
     const parsed = onboardingProfileInputSchema.safeParse({
       firstName: getFormValue(formData, "firstName"),
       lastName: getFormValue(formData, "lastName"),
@@ -129,6 +159,8 @@ export async function onboardingAction(
     return { status: "success", step: "account_type", message: "Dati personali salvati. Ora scegli come vuoi iniziare." };
   }
 
+  const rawRedirectTo = getFormValue(formData, "redirectTo");
+  const redirectTo = typeof rawRedirectTo === 'string' ? rawRedirectTo : undefined;
   const rawAccountType = getFormValue(formData, "accountType");
   const parsed = onboardingAccountTypeInputSchema.safeParse({
     accountType: typeof rawAccountType === "string"
@@ -145,5 +177,21 @@ export async function onboardingAction(
   if (result.status === "unauthorized") return { status: "error", step: "account_type", message: "La sessione non è valida. Accedi di nuovo." };
   if (result.status === "error") return { status: "error", step: "account_type", message: "Non è stato possibile completare il profilo. Riprova." };
 
-  redirect(await resolvePostLoginDestination());
+  const rawPatientInvitationToken = getFormValue(formData, "patientInvitationToken");
+  const patientInvitationToken = patientInvitationAcceptRequestSchema.safeParse({
+    token: typeof rawPatientInvitationToken === 'string' ? rawPatientInvitationToken : '',
+  });
+  if (patientInvitationToken.success) {
+    redirect(`/inviti/paziente/accetta?${new URLSearchParams({ token: patientInvitationToken.data.token }).toString()}`);
+  }
+
+  const rawInvitationToken = getFormValue(formData, "invitationToken");
+  const invitationToken = companyInviteAcceptSchema.safeParse({
+    token: typeof rawInvitationToken === 'string' ? rawInvitationToken : '',
+  });
+  if (invitationToken.success) {
+    redirect(`/inviti/accetta?${new URLSearchParams({ token: invitationToken.data.token }).toString()}`);
+  }
+
+  redirect(await resolvePostLoginDestination(redirectTo));
 }

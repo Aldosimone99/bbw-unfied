@@ -26,6 +26,7 @@ export const permissionCodes = [
   'organization.members.manage',
   'patients.read',
   'patients.link',
+  'patients.invite',
   'patients.unlink',
   'catalog.read',
   'catalog.offering.read',

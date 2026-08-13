@@ -23,6 +23,9 @@ describe("safe post-login redirects", () => {
     expect(resolveSafePostLoginRedirect('/inviti/accetta?token=valid-token', '/dashboard')).toBe(
       '/inviti/accetta?token=valid-token',
     );
+    expect(resolveSafePostLoginRedirect('/inviti/paziente/accetta?token=valid-token', '/dashboard')).toBe(
+      '/inviti/paziente/accetta?token=valid-token',
+    );
     expect(resolveSafePostLoginRedirect('/inviti/accetta?token=valid-token&next=%2Fadmin', '/dashboard')).toBe('/dashboard');
   });
 

@@ -9,7 +9,20 @@ export const metadata: Metadata = {
   description: "Crea il tuo account Beauty Broker World."
 };
 
-export default function RegisterPage() {
+type RegisterPageProps = {
+  searchParams?: Promise<{
+    redirectTo?: string | string[];
+    invitationToken?: string | string[];
+    patientInvitationToken?: string | string[];
+  }>;
+};
+
+export default async function RegisterPage({ searchParams }: RegisterPageProps) {
+  const params = searchParams ? await searchParams : undefined;
+  const redirectTo = typeof params?.redirectTo === "string" ? params.redirectTo : undefined;
+  const invitationToken = typeof params?.invitationToken === "string" ? params.invitationToken : undefined;
+  const patientInvitationToken = typeof params?.patientInvitationToken === "string" ? params.patientInvitationToken : undefined;
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -35,7 +48,11 @@ export default function RegisterPage() {
           <p>Inizia con un profilo personale. Potrai completare il tuo contesto in un secondo momento.</p>
         </div>
         <div className={styles.formShell} aria-label="Registrazione">
-          <RegisterForm />
+          <RegisterForm
+            redirectTo={redirectTo}
+            invitationToken={invitationToken}
+            patientInvitationToken={patientInvitationToken}
+          />
         </div>
       </section>
     </main>

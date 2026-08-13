@@ -25,8 +25,17 @@ const initialValues: FormValues = {
   acceptPrivacy: false
 };
 
-export default function RegisterForm() {
+export default function RegisterForm({
+  redirectTo,
+  invitationToken,
+  patientInvitationToken,
+}: Readonly<{ redirectTo?: string; invitationToken?: string; patientInvitationToken?: string }>) {
   const [state, formAction, pending] = useActionState(registerAction, initialState);
+  const loginParams = new URLSearchParams();
+  if (redirectTo) loginParams.set("redirectTo", redirectTo);
+  if (invitationToken) loginParams.set("invitationToken", invitationToken);
+  if (patientInvitationToken) loginParams.set("patientInvitationToken", patientInvitationToken);
+  const loginHref = loginParams.toString() ? `/accedi?${loginParams.toString()}` : "/accedi";
   const [values, setValues] = useState<FormValues>(initialValues);
   const errorFor = (field: keyof FormValues) =>
     state.fieldErrors?.[field]?.map((error) => <span className={styles.fieldError} key={error}>{error}</span>);
@@ -36,6 +45,9 @@ export default function RegisterForm() {
 
   return (
     <form className={styles.panel} action={formAction} noValidate>
+      {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
+      {invitationToken && <input type="hidden" name="invitationToken" value={invitationToken} />}
+      {patientInvitationToken && <input type="hidden" name="patientInvitationToken" value={patientInvitationToken} />}
       <div className={styles.panelHead}>
         <h2>Crea account</h2>
         <p className={styles.formMessage} aria-live="polite">{state.message}</p>
@@ -86,7 +98,7 @@ export default function RegisterForm() {
         {pending ? "Creazione in corso…" : "Crea il mio account"}
       </button>
 
-      <p className={styles.switchText}>Hai già un account? <Link href="/accedi">Accedi</Link></p>
+      <p className={styles.switchText}>Hai già un account? <Link href={loginHref}>Accedi</Link></p>
     </form>
   );
 }

@@ -1,5 +1,5 @@
-import { createHash, randomBytes } from 'node:crypto';
 import type { SupabaseLike } from '../db/supabase';
+import { buildInvitationLink, createInvitationToken, hashInvitationToken } from './invitation-token-service';
 
 export class CompanyInviteError extends Error {
   constructor(public readonly code: string, public readonly status = 422) {
@@ -65,17 +65,15 @@ type CreateCompanyInviteOptions = {
 };
 
 function buildCompanyAcceptLink(token: string): string {
-  const base = process.env.FRONTEND_URL ?? 'http://localhost:3000';
-  const query = new URLSearchParams({ token });
-  return `${base.replace(/\/$/, '')}/inviti/accetta?${query.toString()}`;
+  return buildInvitationLink('/inviti/accetta', token);
 }
 
 function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
+  return hashInvitationToken(token);
 }
 
 function makeToken(): string {
-  return randomBytes(32).toString('base64url');
+  return createInvitationToken();
 }
 
 function oneRole(value: RoleRecord | RoleRecord[] | null): RoleRecord | null {
@@ -139,6 +137,7 @@ async function getInviteByToken(db: SupabaseLike, token: string): Promise<Invita
     .from('invitations')
     .select('id,organization_id,email,role_id,status,expires_at,created_at,invited_by,accepted_at,revoked_at,roles(id,code,display_name)')
     .eq('token_hash', hashToken(token))
+    .eq('invitation_type', 'organization_member')
     .maybeSingle();
   if (error) throw new CompanyInviteError('INVITATION_LOOKUP_FAILED', 500);
   return invitationFailure(data as unknown as InvitationRecord | null);
@@ -219,6 +218,7 @@ async function expirePendingCompanyInvites(
     .from('invitations')
     .update({ status: 'expired' })
     .eq('organization_id', organizationId)
+    .eq('invitation_type', 'organization_member')
     .eq('status', 'pending')
     .lte('expires_at', now.toISOString());
   if (email) query = query.ilike('email', email);
@@ -291,6 +291,7 @@ export async function createCompanyInvite(
     .from('invitations')
     .select('id')
     .eq('organization_id', payload.organizationId)
+    .eq('invitation_type', 'organization_member')
     .ilike('email', email)
     .eq('status', 'pending')
     .maybeSingle();
@@ -305,6 +306,7 @@ export async function createCompanyInvite(
     .from('invitations')
     .insert({
       organization_id: payload.organizationId,
+      invitation_type: 'organization_member',
       email,
       role_id: role.id,
       invited_by: payload.inviterId,
@@ -348,6 +350,7 @@ export async function listCompanyInvites(
     .from('invitations')
     .select('id,organization_id,email,role_id,status,expires_at,created_at,invited_by,accepted_at,revoked_at,roles(id,code,display_name)', { count: 'exact' })
     .eq('organization_id', organizationId)
+    .eq('invitation_type', 'organization_member')
     .is('hidden_from_history_at', null)
     .order('created_at', { ascending: false })
     .range(from, to);
@@ -373,6 +376,7 @@ export async function revokeCompanyInvite(
     .select('id,status')
     .eq('id', inviteId)
     .eq('organization_id', organizationId)
+    .eq('invitation_type', 'organization_member')
     .maybeSingle();
   const invite = data as unknown as { id?: string; status?: string } | null;
   if (lookupError) throw new CompanyInviteError('INVITATION_LOOKUP_FAILED', 500);
@@ -447,6 +451,7 @@ export async function resendCompanyInvite(
     .select('id,organization_id,email,role_id,status,expires_at,created_at,invited_by,accepted_at,revoked_at,roles(id,code,display_name)')
     .eq('id', inviteId)
     .eq('organization_id', organizationId)
+    .eq('invitation_type', 'organization_member')
     .maybeSingle();
   if (error) throw new CompanyInviteError('INVITATION_LOOKUP_FAILED', 500);
   const invite = invitationFailure(data as unknown as InvitationRecord | null);

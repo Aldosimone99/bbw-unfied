@@ -51,7 +51,7 @@ export default function PatientDetail({ relationshipId }: Readonly<{ relationshi
 
   return (
     <OrganizationPageShell>
-      <Link className={styles.backLink} href="/clienti">← Torna ai clienti</Link>
+      <Link className={styles.backLink} href="/pazienti">← Torna ai clienti</Link>
       {loading ? <OrganizationLoadingState label="Caricamento dettaglio…" /> : null}
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
       {!loading && !error && !patient ? <OrganizationEmptyState icon="clients" title="Paziente non disponibile." description="La relazione potrebbe essere stata rimossa o appartenere a un altro contesto." /> : null}

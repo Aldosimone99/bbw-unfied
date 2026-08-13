@@ -69,6 +69,43 @@ export const companyInviteListResponseSchema = z.object({
   pages: z.number(),
 }).strict();
 
+export const patientInvitationTypeSchema = z.literal('patient_relationship');
+
+export const createPatientInvitationRequestSchema = z.object({
+  email: z.string().trim().email(),
+  expiresInDays: z.number().int().min(1).max(30).optional(),
+}).strict();
+
+export const patientInvitationSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  status: z.enum(['pending', 'accepted', 'revoked', 'expired']),
+  createdAt: z.string(),
+  expiresAt: z.string(),
+  acceptedAt: z.string().nullable(),
+  revokedAt: z.string().nullable(),
+}).strict();
+
+export const patientInvitationListResponseSchema = z.object({
+  items: z.array(patientInvitationSchema),
+  total: z.number().int().nonnegative(),
+}).strict();
+
+export const patientInvitationLookupResponseSchema = z.object({
+  organizationName: z.string().min(1),
+  expiresAt: z.string(),
+  status: z.literal('pending'),
+}).strict();
+
+export const patientInvitationAcceptRequestSchema = z.object({
+  token: z.string().trim().min(1).max(512),
+}).strict();
+
+export const patientInvitationAcceptResponseSchema = z.object({
+  organizationName: z.string().min(1),
+  relationshipId: z.string().uuid(),
+  relationshipReactivated: z.boolean(),
+}).strict();
 export const referralContextQuerySchema = z.object({
   ref: z.string().trim().optional(),
   medico: z.string().trim().optional(),
@@ -117,7 +154,15 @@ export type CompanyInviteLookupResponse = z.infer<typeof companyInviteLookupResp
 export type CompanyInviteAccept = z.infer<typeof companyInviteAcceptSchema>;
 export type InviteRegistrationFields = z.infer<typeof inviteRegistrationFieldsSchema>;
 export type InviteLookupResponse = z.infer<typeof inviteLookupResponseSchema>;
+export type PatientInvitationType = z.infer<typeof patientInvitationTypeSchema>;
+export type CreatePatientInvitationRequest = z.infer<typeof createPatientInvitationRequestSchema>;
+export type PatientInvitation = z.infer<typeof patientInvitationSchema>;
+export type PatientInvitationListResponse = z.infer<typeof patientInvitationListResponseSchema>;
+export type PatientInvitationLookupResponse = z.infer<typeof patientInvitationLookupResponseSchema>;
+export type PatientInvitationAcceptRequest = z.infer<typeof patientInvitationAcceptRequestSchema>;
+export type PatientInvitationAcceptResponse = z.infer<typeof patientInvitationAcceptResponseSchema>;
 export type ReferralContextQuery = z.infer<typeof referralContextQuerySchema>;
+
 export type CreateInviteRequest = z.infer<typeof createInviteRequestSchema>;
 export type InviteRow = z.infer<typeof inviteRowSchema>;
 export type InviteListResponse = z.infer<typeof inviteListResponseSchema>;

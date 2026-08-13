@@ -15,7 +15,7 @@ const commonAccountItems: DashboardNavItem[] = [
 const personalProfessionalItems: DashboardNavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'home' },
   { href: '/calendario', label: 'Agenda', icon: 'calendar' },
-  { href: '/clienti', label: 'Clienti', icon: 'clients' },
+  { href: '/pazienti', label: 'Pazienti', icon: 'clients' },
   { href: '/catalogo', label: 'Catalogo', icon: 'catalog' },
   { href: '/disponibilita', label: 'Disponibilità', icon: 'availability' },
   { href: '/consensi', label: 'Consensi', icon: 'consents' },
@@ -24,11 +24,15 @@ const personalProfessionalItems: DashboardNavItem[] = [
 const organizationItems: DashboardNavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'home' },
   { href: '/calendario', label: 'Agenda', icon: 'calendar' },
-  { href: '/clienti', label: 'Clienti', icon: 'clients' },
+  { href: '/pazienti', label: 'Pazienti', icon: 'clients' },
   { href: '/catalogo', label: 'Catalogo', icon: 'catalog' },
   { href: '/disponibilita', label: 'Disponibilità', icon: 'availability' },
   { href: '/consensi', label: 'Consensi', icon: 'consents' },
 ];
+
+export function isDashboardNavItemActive(activePath: string, item: DashboardNavItem): boolean {
+  return activePath === item.href;
+}
 
 function includesAnyPermission(permissions: readonly PermissionCode[], required: readonly PermissionCode[]): boolean {
   return required.some((permission) => permissions.includes(permission));
@@ -46,7 +50,7 @@ export function getDashboardNavItems(
       : personalProfessionalItems.filter((item) => item.href !== '/catalogo');
     const patientsVisible = permissions.includes('patients.read')
       ? visibleItems
-      : visibleItems.filter((item) => item.href !== '/clienti');
+      : visibleItems.filter((item) => item.href !== '/pazienti');
     return [...patientsVisible, ...commonAccountItems];
   }
 
@@ -63,6 +67,6 @@ export function getDashboardNavItems(
     : organizationItems.filter((item) => item.href !== '/catalogo');
   const patientsVisibleOrganizationItems = permissions.includes('patients.read')
     ? visibleOrganizationItems
-    : visibleOrganizationItems.filter((item) => item.href !== '/clienti');
+    : visibleOrganizationItems.filter((item) => item.href !== '/pazienti');
   return [...patientsVisibleOrganizationItems, ...membershipItems, ...commonAccountItems];
 }

@@ -12,12 +12,11 @@ const redirectOrigin = 'https://bbw.local';
 const allowedRedirectPaths = new Set<string>(postLoginRedirectPaths);
 
 function isSafeInvitationAcceptanceRedirect(requestedUrl: URL): boolean {
-  if (requestedUrl.pathname !== '/inviti/accetta') return false;
-  const token = requestedUrl.searchParams.get('token');
-  return typeof token === 'string'
-    && token.length > 0
+  return (requestedUrl.pathname === '/inviti/accetta' || requestedUrl.pathname === '/inviti/paziente/accetta')
+    && requestedUrl.searchParams.has('token')
     && requestedUrl.searchParams.size === 1
-    && token.length <= 512;
+    && (requestedUrl.searchParams.get('token')?.length ?? 0) > 0
+    && (requestedUrl.searchParams.get('token')?.length ?? 0) <= 512;
 }
 
 export function resolveSafePostLoginRedirect(

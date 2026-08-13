@@ -11,13 +11,20 @@ const initialState: LoginActionState = { status: "idle" };
 export default function LoginForm({
   redirectTo,
   invitationToken,
-}: Readonly<{ redirectTo?: string; invitationToken?: string }>) {
+  patientInvitationToken,
+}: Readonly<{ redirectTo?: string; invitationToken?: string; patientInvitationToken?: string }>) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
+  const registrationParams = new URLSearchParams();
+  if (redirectTo) registrationParams.set("redirectTo", redirectTo);
+  if (invitationToken) registrationParams.set("invitationToken", invitationToken);
+  if (patientInvitationToken) registrationParams.set("patientInvitationToken", patientInvitationToken);
+  const registrationHref = registrationParams.toString() ? `/registrati?${registrationParams.toString()}` : "/registrati";
 
   return (
     <form className={styles.panel} action={formAction} noValidate>
       {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
       {invitationToken && <input type="hidden" name="invitationToken" value={invitationToken} />}
+      {patientInvitationToken && <input type="hidden" name="patientInvitationToken" value={patientInvitationToken} />}
       <div className={styles.panelHead}>
         <h2>Login</h2>
         <p className={styles.formMessage} aria-live="polite">
@@ -72,7 +79,7 @@ export default function LoginForm({
       </button>
 
       <p className={styles.switchText}>
-        Non hai un account? <Link href="/registrati">Registrati</Link>
+        Non hai un account? <Link href={registrationHref}>Registrati</Link>
       </p>
     </form>
   );

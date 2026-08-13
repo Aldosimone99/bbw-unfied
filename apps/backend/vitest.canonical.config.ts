@@ -9,6 +9,7 @@ export default defineConfig({
     include: [
       'src/__tests__/canonical/**/*.test.ts',
       'src/__tests__/db/foundation-schema.test.ts',
+      'src/__tests__/db/patient-permissions-schema.test.ts',
       'src/__tests__/routes/foundation-app-routes.test.ts',
       'src/__tests__/routes/organization-members-routes.test.ts',
       'src/__tests__/services/company-invite-service.test.ts',

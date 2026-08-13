@@ -497,7 +497,9 @@ for update to authenticated using (
       and professional_type.is_active
       and professional.verification_status not in ('rejected', 'suspended')
       and (not professional_type.verification_required or professional.verification_status = 'verified')
-  ) with check (
+  )
+)
+with check (
     exists (
       select 1 from public.professional_profiles professional
       join public.professional_types professional_type on professional_type.id = professional.professional_type_id

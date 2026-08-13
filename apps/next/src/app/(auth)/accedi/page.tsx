@@ -9,13 +9,18 @@ export const metadata: Metadata = {
 };
 
 type AccediPageProps = {
-  searchParams?: Promise<{ redirectTo?: string | string[]; invitationToken?: string | string[] }>;
+  searchParams?: Promise<{
+    redirectTo?: string | string[];
+    invitationToken?: string | string[];
+    patientInvitationToken?: string | string[];
+  }>;
 };
 
 export default async function AccediPage({ searchParams }: AccediPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const redirectTo = typeof params?.redirectTo === "string" ? params.redirectTo : undefined;
   const invitationToken = typeof params?.invitationToken === "string" ? params.invitationToken : undefined;
+  const patientInvitationToken = typeof params?.patientInvitationToken === "string" ? params.patientInvitationToken : undefined;
 
   return (
     <main className={styles.page}>
@@ -47,7 +52,11 @@ export default async function AccediPage({ searchParams }: AccediPageProps) {
         </div>
 
         <div className={styles.formShell} aria-label="Accesso">
-          <LoginForm redirectTo={redirectTo} invitationToken={invitationToken} />
+          <LoginForm
+            redirectTo={redirectTo}
+            invitationToken={invitationToken}
+            patientInvitationToken={patientInvitationToken}
+          />
         </div>
       </section>
     </main>

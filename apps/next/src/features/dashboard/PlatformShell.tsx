@@ -6,7 +6,7 @@ import type { CurrentUser, OperationalContextSummary, PermissionCode, ProfileSum
 import WorkspaceSwitcher from '../operational-context/WorkspaceSwitcher';
 import { getOperationalContextUserRoleLabel } from '../operational-context/labels';
 import PlatformIcon, { type PlatformIconName } from './PlatformIcon';
-import { getDashboardNavItems } from './transitionNavigation';
+import { getDashboardNavItems, isDashboardNavItemActive } from './transitionNavigation';
 import styles from './Dashboard.module.css';
 
 type PlatformShellProps = {
@@ -23,17 +23,20 @@ function NavigationGroup({ label, items, activePath }: { label: string; items: D
     <div className={styles.navGroup}>
       <p className={styles.navLabel}>{label}</p>
       <nav aria-label={label} className={styles.navList}>
-        {items.map((item) => (
-          <a
-            className={`${styles.navItem} ${activePath === item.href ? styles.navItemActive : ''}`}
-            href={item.href}
-            key={item.href}
-            aria-current={activePath === item.href ? 'page' : undefined}
-          >
-            <PlatformIcon name={item.icon} className={styles.navIcon} />
-            <span>{item.label}</span>
-          </a>
-        ))}
+        {items.map((item) => {
+          const isActive = isDashboardNavItemActive(activePath, item);
+          return (
+            <a
+              className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
+              href={item.href}
+              key={item.href}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              <PlatformIcon name={item.icon} className={styles.navIcon} />
+              <span>{item.label}</span>
+            </a>
+          );
+        })}
       </nav>
     </div>
   );
@@ -112,17 +115,20 @@ export default function PlatformShell({ user, profile, activePath, operationalCo
 
       <div className={styles.mainColumn}>
         <div className={styles.mobileNav}>
-          {mobileNavItems.map((item) => (
-            <a
-              className={`${styles.mobileNavItem} ${activePath === item.href ? styles.mobileNavItemActive : ''}`}
-              href={item.href}
-              key={item.href}
-              aria-current={activePath === item.href ? 'page' : undefined}
-            >
-              <PlatformIcon name={item.icon} className={styles.navIcon} />
-              {item.label}
-            </a>
-          ))}
+          {mobileNavItems.map((item) => {
+            const isActive = isDashboardNavItemActive(activePath, item);
+            return (
+              <a
+                className={`${styles.mobileNavItem} ${isActive ? styles.mobileNavItemActive : ''}`}
+                href={item.href}
+                key={item.href}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <PlatformIcon name={item.icon} className={styles.navIcon} />
+                {item.label}
+              </a>
+            );
+          })}
         </div>
 
         <main className={styles.mainContent}>{children}</main>
