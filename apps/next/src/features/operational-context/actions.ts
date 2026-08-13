@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { AppError } from '../../lib/errors/app-error';
+import { resolveSafePostLoginRedirect } from '../../server/security/redirects';
 import { setActiveOperationalContext } from '../../server/services/operational-context-service';
 
 export type SetOperationalContextActionState = {
@@ -35,5 +36,9 @@ export async function setOperationalContextAction(
   }
 
   revalidatePath('/', 'layout');
-  redirect('/dashboard');
+  const requestedNext = formData.get('nextDestination');
+  redirect(resolveSafePostLoginRedirect(
+    typeof requestedNext === 'string' ? requestedNext : undefined,
+    '/dashboard',
+  ));
 }

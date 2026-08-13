@@ -4,14 +4,25 @@ import { redirect } from 'next/navigation';
 import OperationalContextCard from '../../../features/operational-context/OperationalContextCard';
 import { getOperationalContextKey } from '../../../features/operational-context/labels';
 import styles from '../../../features/operational-context/ContextSelection.module.css';
+import { resolveSafePostLoginRedirect } from '../../../server/security/redirects';
 import { getPostLoginContext } from '../../../server/services/post-login-service';
 
-export default async function SelectOperationalContextPage() {
+type SelectOperationalContextPageProps = {
+  searchParams: Promise<{ next?: string | string[] }>;
+};
+
+export default async function SelectOperationalContextPage({ searchParams }: SelectOperationalContextPageProps) {
   const context = await getPostLoginContext();
   if (!context.user) redirect('/login');
   if (context.profile?.onboardingStatus !== 'completed') redirect('/onboarding');
   if (context.availableOperationalContexts.length === 0) redirect('/dashboard');
   if (context.availableOperationalContexts.length === 1) redirect('/dashboard');
+
+  const requestedNext = (await searchParams).next;
+  const nextDestination = resolveSafePostLoginRedirect(
+    typeof requestedNext === 'string' ? requestedNext : undefined,
+    '/dashboard',
+  );
 
   return (
     <main className={styles.page}>
@@ -27,7 +38,11 @@ export default async function SelectOperationalContextPage() {
         ) : null}
         <div className={styles.contexts}>
           {context.availableOperationalContexts.map((operationalContext) => (
-            <OperationalContextCard context={operationalContext} key={getOperationalContextKey(operationalContext)} />
+            <OperationalContextCard
+              context={operationalContext}
+              key={getOperationalContextKey(operationalContext)}
+              nextDestination={nextDestination}
+            />
           ))}
         </div>
       </section>

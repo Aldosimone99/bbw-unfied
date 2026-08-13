@@ -12,6 +12,9 @@ const invitationAcceptance = readFileSync(resolve(migrationRoot, '20260812000500
 const readiness = readFileSync(resolve(migrationRoot, '20260812000600_operational_readiness_profile_data.sql'), 'utf8');
 const readinessAuditTransactions = readFileSync(resolve(migrationRoot, '20260812000700_profile_update_audit_transactions.sql'), 'utf8');
 const invitationHardening = readFileSync(resolve(migrationRoot, '20260812000800_organization_invitation_hardening.sql'), 'utf8');
+const medicalInvitationsAndMemberships = readFileSync(resolve(migrationRoot, '20260812000900_medical_invitations_and_memberships.sql'), 'utf8');
+const memberReactivationAndInvitationHistory = readFileSync(resolve(migrationRoot, '20260812001000_member_reactivation_and_invitation_history.sql'), 'utf8');
+const professionalOnboardingType = readFileSync(resolve(migrationRoot, '20260813000100_preserve_professional_onboarding_type.sql'), 'utf8');
 const seed = readFileSync(resolve(process.cwd(), 'supabase/seed.sql'), 'utf8');
 
 describe('canonical foundation schema', () => {
@@ -103,5 +106,39 @@ describe('canonical foundation schema', () => {
     expect(invitationAcceptance).toContain('insert into public.member_roles');
     expect(invitationAcceptance).toContain('INVITATION_EMAIL_MISMATCH');
     expect(invitationAcceptance).toContain('revoke all on function public.accept_organization_invitation');
+  });
+
+  it('limits organization invitations to configured physicians and protects membership revocation in service-role RPCs', () => {
+    expect(medicalInvitationsAndMemberships).toContain('enforce_medical_organization_invitation_acceptance');
+    expect(medicalInvitationsAndMemberships).toContain("invitation_role_code is distinct from 'practitioner'");
+    expect(medicalInvitationsAndMemberships).toContain("professional_type.code = 'physician'");
+    expect(professionalOnboardingType).toContain("verification_status in ('draft', 'pending', 'verified')");
+    expect(professionalOnboardingType).toContain("when 'healthcare_professional' then 'physician'");
+    expect(professionalOnboardingType).toContain("when 'beauty_professional' then 'beauty_professional'");
+    expect(professionalOnboardingType).toContain('insert into public.professional_profiles');
+    expect(professionalOnboardingType).toContain("profile.onboarding_intent = 'professional'");
+    expect(medicalInvitationsAndMemberships).toContain('list_organization_members');
+    expect(medicalInvitationsAndMemberships).toContain('account.email::text');
+    expect(medicalInvitationsAndMemberships).toContain('remove_organization_member');
+    expect(medicalInvitationsAndMemberships).toContain('and organization_id = p_organization_id');
+    expect(medicalInvitationsAndMemberships).toContain('ORGANIZATION_MEMBER_SELF_REMOVAL_NOT_ALLOWED');
+    expect(medicalInvitationsAndMemberships).toContain('ORGANIZATION_LAST_OWNER_REMOVAL_NOT_ALLOWED');
+    expect(medicalInvitationsAndMemberships).toContain('for update of owner_membership');
+    expect(medicalInvitationsAndMemberships).toContain('pg_advisory_xact_lock(hashtextextended(p_organization_id::text, 0))');
+    expect(medicalInvitationsAndMemberships).toContain("'organization.membership.revoked'");
+    expect(medicalInvitationsAndMemberships).toContain('grant execute on function public.remove_organization_member(uuid, uuid, uuid) to service_role');
+  });
+
+  it('reactivates a revoked membership without duplicates and keeps invitation history scoped', () => {
+    expect(memberReactivationAndInvitationHistory).toContain("elsif membership_status = 'revoked'");
+    expect(memberReactivationAndInvitationHistory).toContain("set status = 'active', joined_at = timezone('utc', now())");
+    expect(memberReactivationAndInvitationHistory).toContain('delete from public.member_roles where organization_member_id = membership_id');
+    expect(memberReactivationAndInvitationHistory).toContain('on conflict (organization_member_id, role_id) do nothing');
+    expect(memberReactivationAndInvitationHistory).toContain("'organization.membership.reactivated'");
+    expect(memberReactivationAndInvitationHistory).toContain('hidden_from_history_at');
+    expect(memberReactivationAndInvitationHistory).toContain("if invitation_status = 'pending'");
+    expect(memberReactivationAndInvitationHistory).toContain("status in ('accepted', 'revoked', 'expired')");
+    expect(memberReactivationAndInvitationHistory).toContain('organization_members_select_own_active');
+    expect(memberReactivationAndInvitationHistory).toContain('member_roles_select_own_active');
   });
 });

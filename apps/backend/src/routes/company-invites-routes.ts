@@ -8,9 +8,10 @@ import {
 import { resolveUser } from '../middleware/resolve-user-middleware';
 import { requireCompanyPermission } from '../middleware/require-company-permission-middleware';
 import {
+  clearCompanyInviteHistoryHandler,
   createCompanyInviteHandler,
   handleCompanyInviteError,
-  listAssignableCompanyInviteRolesHandler,
+  hideCompanyInviteFromHistoryHandler,
   listCompanyInvitesHandler,
   resendCompanyInviteHandler,
   revokeCompanyInviteHandler,
@@ -27,9 +28,10 @@ export function createCompanyInvitesRouter(db: SupabaseLike, options: CompanyInv
 
   router.post('/lookup', createCompanyInviteLookupHandler(db));
   router.post('/accept', requireUser, createCompanyInviteAcceptHandler(db));
-  router.get('/assignable-roles', requireUser, requireInvitationPermission, listAssignableCompanyInviteRolesHandler(db));
   router.post('/', requireUser, requireInvitationPermission, createCompanyInviteHandler(db));
   router.get('/', requireUser, requireInvitationPermission, listCompanyInvitesHandler(db));
+  router.post('/history/clear', requireUser, requireInvitationPermission, clearCompanyInviteHistoryHandler(db));
+  router.delete('/:id/history', requireUser, requireInvitationPermission, hideCompanyInviteFromHistoryHandler(db));
   router.delete('/:id', requireUser, requireInvitationPermission, revokeCompanyInviteHandler(db));
   router.post('/:id/resend', requireUser, requireInvitationPermission, resendCompanyInviteHandler(db));
   return router;

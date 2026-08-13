@@ -1,3 +1,4 @@
+import { clearActiveOperationalContext } from './operational-context-cookie';
 import { createClient } from "../../lib/supabase/server";
 import { mapAuthError, type AuthApplicationError } from "../../features/auth/errors/map-auth-error";
 import type {
@@ -104,6 +105,7 @@ async function setSupabaseSession(accessToken: string, refreshToken: string): Pr
 export async function logoutAccount(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  await clearActiveOperationalContext();
 }
 
 export type OnboardingResult =

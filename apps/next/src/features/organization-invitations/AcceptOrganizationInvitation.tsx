@@ -27,6 +27,8 @@ function errorMessage(code: string | null): string {
     INVITATION_EMAIL_MISMATCH: 'Questo invito è destinato a un altro account.',
     MEMBERSHIP_ALREADY_EXISTS: 'Questo account appartiene già a questa organizzazione.',
     MEMBERSHIP_NOT_ACTIVE: 'La membership esistente non è attiva. Contatta l’organizzazione.',
+    INVITATION_ROLE_NOT_MEDICAL: 'Questo invito non è configurato per un medico.',
+    INVITATION_RECIPIENT_NOT_PHYSICIAN: 'L’account destinatario non risulta configurato come medico.',
     FORBIDDEN: 'Non puoi accettare questo invito.',
   };
   return code ? messages[code] ?? 'Non è stato possibile verificare l’invito.' : 'Non è stato possibile verificare l’invito.';
@@ -46,14 +48,22 @@ function formatDate(value: string): string {
 export default function AcceptOrganizationInvitation({ token }: Readonly<{ token: string }>) {
   const parsedToken = companyInviteAcceptSchema.safeParse({ token });
   const invitationToken = parsedToken.success ? parsedToken.data?.token ?? null : null;
+  const [lookupToken, setLookupToken] = useState<string | null>(invitationToken);
   const [invite, setInvite] = useState<CompanyInviteLookupResponse | null>(null);
   const [error, setError] = useState<string | null>(() => invitationToken ? null : 'Questo invito non è valido.');
   const [loading, setLoading] = useState(() => Boolean(invitationToken));
   const [accepting, setAccepting] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const isCurrentLookup = lookupToken === invitationToken;
+  const visibleInvite = isCurrentLookup ? invite : null;
+  const visibleError = invitationToken ? (isCurrentLookup ? error : null) : 'Questo invito non è valido.';
+  const visibleLoading = invitationToken ? (isCurrentLookup ? loading : true) : false;
+  const visibleAccepted = isCurrentLookup && accepted;
 
   useEffect(() => {
     if (!invitationToken) return;
+
+    let cancelled = false;
 
     async function lookup(verifiedToken: string) {
       try {
@@ -65,15 +75,26 @@ export default function AcceptOrganizationInvitation({ token }: Readonly<{ token
         });
         const envelope = await readEnvelope(response);
         if (!response.ok || !envelope.success) throw new Error(errorMessage(codeFrom(envelope)));
-        setInvite(companyInviteLookupResponseSchema.parse(envelope.data));
+        const parsedInvite = companyInviteLookupResponseSchema.parse(envelope.data);
+        if (cancelled) return;
+        setLookupToken(verifiedToken);
+        setInvite(parsedInvite);
+        setError(null);
+        setAccepted(false);
       } catch (lookupError) {
+        if (cancelled) return;
+        setLookupToken(verifiedToken);
+        setInvite(null);
         setError(lookupError instanceof Error ? lookupError.message : 'Non è stato possibile verificare l’invito.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     void lookup(invitationToken);
+    return () => {
+      cancelled = true;
+    };
   }, [invitationToken]);
 
   async function accept() {
@@ -83,7 +104,7 @@ export default function AcceptOrganizationInvitation({ token }: Readonly<{ token
       const response = await fetch('/api/backend/company/invites/accept', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token: invitationToken }),
       });
       const envelope = await readEnvelope(response);
       if (!response.ok || !envelope.success) throw new Error(errorMessage(codeFrom(envelope)));
@@ -99,24 +120,24 @@ export default function AcceptOrganizationInvitation({ token }: Readonly<{ token
     <main className={styles.page}>
       <section className={styles.panel} aria-labelledby="accept-organization-invitation-title">
         <p className={styles.eyebrow}>Beauty Broker World</p>
-        {loading ? <p role="status">Verifica invito in corso…</p> : null}
-        {!loading && error ? <><h1 id="accept-organization-invitation-title">Invito non disponibile</h1><p className={styles.error} role="alert">{error}</p></> : null}
-        {!loading && invite && !accepted ? (
+        {visibleLoading ? <p role="status">Verifica invito in corso…</p> : null}
+        {!visibleLoading && visibleError ? <><h1 id="accept-organization-invitation-title">Invito non disponibile</h1><p className={styles.error} role="alert">{visibleError}</p></> : null}
+        {!visibleLoading && visibleInvite && !visibleAccepted ? (
           <>
-            <h1 id="accept-organization-invitation-title">{invite.organizationName} ti ha invitato</h1>
+            <h1 id="accept-organization-invitation-title">{visibleInvite.organizationName} ti ha invitato</h1>
             <dl>
-              <div><dt>Ruolo</dt><dd>{invite.role}</dd></div>
-              <div><dt>Invito valido fino al</dt><dd>{formatDate(invite.expiresAt)}</dd></div>
+              <div><dt>Ruolo</dt><dd>{visibleInvite.role}</dd></div>
+              <div><dt>Invito valido fino al</dt><dd>{formatDate(visibleInvite.expiresAt)}</dd></div>
             </dl>
             <button type="button" onClick={() => void accept()} disabled={accepting}>
               {accepting ? 'Accettazione…' : 'Accetta invito'}
             </button>
           </>
         ) : null}
-        {accepted && invite ? (
+        {visibleAccepted && visibleInvite ? (
           <>
             <h1 id="accept-organization-invitation-title">Invito accettato</h1>
-            <p>Ora puoi accedere a <strong>{invite.organizationName}</strong>. Il tuo Studio personale resta separato e il contesto non è stato cambiato automaticamente.</p>
+            <p>Ora puoi accedere a <strong>{visibleInvite.organizationName}</strong>. Il tuo Studio personale resta separato e il contesto non è stato cambiato automaticamente.</p>
             <div className={styles.actions}>
               <Link href="/seleziona-contesto">Entra nella clinica</Link>
               <Link href="/dashboard">Resta nello Studio personale</Link>

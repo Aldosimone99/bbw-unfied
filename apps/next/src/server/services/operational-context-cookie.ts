@@ -18,6 +18,10 @@ export async function getRequestedOperationalContext(): Promise<OperationalConte
   return parseOperationalContextCookie((await cookies()).get(activeOperationalContextCookieName)?.value);
 }
 
+export async function clearActiveOperationalContext(): Promise<void> {
+  (await cookies()).delete(activeOperationalContextCookieName);
+}
+
 export async function setOperationalContextCookie(context: OperationalContextReference): Promise<void> {
   const parsed = operationalContextReferenceSchema.safeParse(context);
   if (!parsed.success) throw new Error('INVALID_OPERATIONAL_CONTEXT');

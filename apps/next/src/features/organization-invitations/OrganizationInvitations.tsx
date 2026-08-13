@@ -1,21 +1,16 @@
 'use client';
 
-import {
-  companyInviteListResponseSchema,
-  organizationInvitationRoleSchema,
-  type CompanyInviteRow,
-  type OrganizationInvitationRole,
-} from '@bbw/interfaces';
+import { companyInviteListResponseSchema, type CompanyInviteRow } from '@bbw/interfaces';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import styles from './OrganizationInvitations.module.css';
 
-type ApiFailure = { code?: string };
 type ApiEnvelope = { success?: boolean; data?: unknown; code?: unknown };
+type HistoryDialog = { kind: 'clear' } | { kind: 'hide'; invitation: CompanyInviteRow } | null;
 
 function errorCode(payload: unknown): string | null {
   if (!payload || typeof payload !== 'object') return null;
-  const code = (payload as ApiFailure).code;
+  const code = (payload as { code?: unknown }).code;
   return typeof code === 'string' ? code : null;
 }
 
@@ -26,57 +21,42 @@ async function readEnvelope(response: Response): Promise<ApiEnvelope> {
 function invitationErrorMessage(code: string | null): string {
   const messages: Record<string, string> = {
     FORBIDDEN: 'Non hai i permessi necessari per gestire gli inviti in questo contesto.',
-    INVITATION_ROLE_NOT_ASSIGNABLE: 'Non puoi assegnare il ruolo selezionato.',
     INVITATION_ALREADY_PENDING: 'Esiste già un invito in attesa per questo indirizzo email.',
     INVITATION_NOT_FOUND: 'L’invito non è più disponibile.',
     INVITATION_NOT_PENDING: 'Questo invito non può più essere modificato.',
+    INVITATION_PENDING_HISTORY_HIDE_NOT_ALLOWED: 'Un invito in attesa deve essere prima revocato.',
   };
   return code ? messages[code] ?? 'Non è stato possibile completare l’operazione.' : 'Non è stato possibile completare l’operazione.';
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('it-IT', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).format(new Date(value));
+  return new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value));
+}
+
+function statusLabel(status: CompanyInviteRow['status']): string {
+  return ({ pending: 'In attesa', accepted: 'Accettato', revoked: 'Revocato', expired: 'Scaduto' })[status];
 }
 
 export default function OrganizationInvitations({ organizationName }: Readonly<{ organizationName: string }>) {
-  const [roles, setRoles] = useState<OrganizationInvitationRole[]>([]);
   const [invitations, setInvitations] = useState<CompanyInviteRow[]>([]);
-  const [selectedRoleId, setSelectedRoleId] = useState('');
   const [email, setEmail] = useState('');
   const [latestLink, setLatestLink] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [historyDialog, setHistoryDialog] = useState<HistoryDialog>(null);
+  const [mutating, setMutating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [rolesResponse, invitationsResponse] = await Promise.all([
-        fetch('/api/backend/company/invites/assignable-roles', { cache: 'no-store' }),
-        fetch('/api/backend/company/invites', { cache: 'no-store' }),
-      ]);
-      const [rolesEnvelope, invitationsEnvelope] = await Promise.all([
-        readEnvelope(rolesResponse),
-        readEnvelope(invitationsResponse),
-      ]);
-      if (!rolesResponse.ok || !rolesEnvelope.success) throw new Error(invitationErrorMessage(errorCode(rolesEnvelope)));
-      if (!invitationsResponse.ok || !invitationsEnvelope.success) throw new Error(invitationErrorMessage(errorCode(invitationsEnvelope)));
-
-      const availableRoles = organizationInvitationRoleSchema.array().parse(rolesEnvelope.data);
-      const invitationList = companyInviteListResponseSchema.parse(invitationsEnvelope.data);
-      setRoles(availableRoles);
-      setInvitations(invitationList.data);
-      setSelectedRoleId((current) => availableRoles.some((role) => role.id === current) ? current : availableRoles[0]?.id ?? '');
+      const response = await fetch('/api/backend/company/invites', { cache: 'no-store' });
+      const envelope = await readEnvelope(response);
+      if (!response.ok || !envelope.success) throw new Error(invitationErrorMessage(errorCode(envelope)));
+      setInvitations(companyInviteListResponseSchema.parse(envelope.data).data);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Non è stato possibile caricare gli inviti.');
     } finally {
@@ -85,16 +65,12 @@ export default function OrganizationInvitations({ organizationName }: Readonly<{
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void load();
-    }, 0);
+    const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
 
-  const selectedRole = useMemo(
-    () => roles.find((role) => role.id === selectedRoleId) ?? null,
-    [roles, selectedRoleId],
-  );
+  const pendingInvitations = useMemo(() => invitations.filter((invitation) => invitation.status === 'pending'), [invitations]);
+  const completedInvitations = useMemo(() => invitations.filter((invitation) => invitation.status !== 'pending'), [invitations]);
 
   async function copyLink() {
     if (!latestLink) return;
@@ -108,26 +84,21 @@ export default function OrganizationInvitations({ organizationName }: Readonly<{
 
   async function createInvitation(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedRole) return;
-
     setSubmitting(true);
     setError(null);
     setNotice(null);
     setLatestLink(null);
     try {
       const response = await fetch('/api/backend/company/invites', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email, roleId: selectedRole.id }),
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }),
       });
       const envelope = await readEnvelope(response);
       if (!response.ok || !envelope.success) throw new Error(invitationErrorMessage(errorCode(envelope)));
       const data = envelope.data as { acceptLink?: unknown };
       if (typeof data.acceptLink !== 'string') throw new Error('Il link invito non è disponibile. Riprova.');
-
       setLatestLink(data.acceptLink);
       setEmail('');
-      setNotice(`Invito creato per il ruolo ${selectedRole.displayName}. Copia il link ora: non viene conservato nel database.`);
+      setNotice('Invito medico creato. Copia il link ora: non viene conservato nel database.');
       await load();
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : 'Non è stato possibile creare l’invito.');
@@ -137,23 +108,27 @@ export default function OrganizationInvitations({ organizationName }: Readonly<{
   }
 
   async function revokeInvitation(invitationId: string) {
+    if (mutating) return;
+    setMutating(true);
     setError(null);
-    setNotice(null);
     try {
       const response = await fetch(`/api/backend/company/invites/${encodeURIComponent(invitationId)}`, { method: 'DELETE' });
       const envelope = await readEnvelope(response);
       if (!response.ok || !envelope.success) throw new Error(invitationErrorMessage(errorCode(envelope)));
-      setRevokingId(null);
+      setActionId(null);
       setNotice('Invito revocato. Il link non è più utilizzabile.');
       await load();
     } catch (revokeError) {
       setError(revokeError instanceof Error ? revokeError.message : 'Non è stato possibile revocare l’invito.');
+    } finally {
+      setMutating(false);
     }
   }
 
   async function rotateInvitationLink(invitationId: string) {
+    if (mutating) return;
+    setMutating(true);
     setError(null);
-    setNotice(null);
     setLatestLink(null);
     try {
       const response = await fetch(`/api/backend/company/invites/${encodeURIComponent(invitationId)}/resend`, { method: 'POST' });
@@ -162,96 +137,75 @@ export default function OrganizationInvitations({ organizationName }: Readonly<{
       const data = envelope.data as { acceptLink?: unknown };
       if (typeof data.acceptLink !== 'string') throw new Error('Il nuovo link non è disponibile. Riprova.');
       setLatestLink(data.acceptLink);
-      setNotice('È stato generato un nuovo link. Il precedente è stato invalidato e non viene inviata alcuna email.');
+      setActionId(null);
+      setNotice('Nuovo link medico generato. Il precedente è stato invalidato.');
       await load();
     } catch (resendError) {
       setError(resendError instanceof Error ? resendError.message : 'Non è stato possibile generare un nuovo link.');
+    } finally {
+      setMutating(false);
+    }
+  }
+
+  async function confirmHistoryAction() {
+    if (!historyDialog || mutating) return;
+    setMutating(true);
+    setError(null);
+    try {
+      const endpoint = historyDialog.kind === 'clear'
+        ? '/api/backend/company/invites/history/clear'
+        : `/api/backend/company/invites/${encodeURIComponent(historyDialog.invitation.id)}/history`;
+      const response = await fetch(endpoint, { method: historyDialog.kind === 'clear' ? 'POST' : 'DELETE' });
+      const envelope = await readEnvelope(response);
+      if (!response.ok || !envelope.success) throw new Error(invitationErrorMessage(errorCode(envelope)));
+      const hiddenCount = historyDialog.kind === 'clear' && typeof (envelope.data as { hiddenCount?: unknown } | undefined)?.hiddenCount === 'number'
+        ? (envelope.data as { hiddenCount: number }).hiddenCount
+        : null;
+      setHistoryDialog(null);
+      setActionId(null);
+      setNotice(hiddenCount === null ? 'Invito rimosso dalla cronologia.' : `${hiddenCount} inviti conclusi rimossi dalla cronologia.`);
+      await load();
+    } catch (historyError) {
+      setError(historyError instanceof Error ? historyError.message : 'Non è stato possibile aggiornare la cronologia.');
+    } finally {
+      setMutating(false);
     }
   }
 
   return (
-    <main className={styles.page}>
-      <section className={styles.content} aria-labelledby="organization-invitations-title">
-        <p className={styles.eyebrow}>{organizationName}</p>
-        <h1 id="organization-invitations-title">Invita un membro</h1>
-        <p className={styles.intro}>Crea un link monouso per un nuovo membro dell’organizzazione. Il ruolo viene verificato dal server prima della creazione.</p>
+    <section className={styles.content} aria-labelledby="organization-invitations-title">
+      <header className={styles.intro}>
+        <p className={styles.eyebrow}>Struttura</p>
+        <h1 id="organization-invitations-title">Inviti</h1>
+        <p>Invita un medico a collaborare con la struttura.</p>
+      </header>
 
-        <form className={styles.form} onSubmit={createInvitation}>
-          <label>
-            <span>Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              placeholder="medico@example.com"
-              required
-              disabled={submitting || loading || roles.length === 0}
-            />
-          </label>
-          <label>
-            <span>Ruolo</span>
-            <select
-              value={selectedRoleId}
-              onChange={(event) => setSelectedRoleId(event.target.value)}
-              disabled={submitting || loading || roles.length === 0}
-            >
-              {roles.map((role) => <option value={role.id} key={role.id}>{role.displayName}</option>)}
-            </select>
-          </label>
-          <button type="submit" disabled={submitting || loading || !selectedRole}>
-            {submitting ? 'Creazione…' : 'Crea invito'}
-          </button>
-        </form>
+      <form className={styles.composer} onSubmit={createInvitation}>
+        <label htmlFor="medical-invitation-email">Email del medico</label>
+        <div>
+          <input id="medical-invitation-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="medico@example.com" required disabled={submitting || loading} />
+          <button type="submit" disabled={submitting || loading}>{submitting ? 'Invio…' : 'Invia invito'}</button>
+        </div>
+      </form>
 
-        {roles.length === 0 && !loading ? <p className={styles.warning}>Non hai ruoli assegnabili in questo contesto.</p> : null}
-        {error ? <p className={styles.error} role="alert">{error}</p> : null}
-        {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
-        {latestLink ? (
-          <section className={styles.linkPanel} aria-label="Link invito appena generato">
-            <label htmlFor="latest-invitation-link">Link invito</label>
-            <div>
-              <input id="latest-invitation-link" value={latestLink} readOnly />
-              <button type="button" onClick={() => void copyLink()}>Copia link</button>
-            </div>
-          </section>
-        ) : null}
+      {error ? <p className={styles.error} role="alert">{error}</p> : null}
+      {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
+      {latestLink ? <section className={styles.linkPanel} aria-label="Link invito medico appena generato"><label htmlFor="latest-invitation-link">Link invito</label><div><input id="latest-invitation-link" value={latestLink} readOnly /><button type="button" onClick={() => void copyLink()}>Copia link</button></div></section> : null}
 
-        <section className={styles.list} aria-labelledby="organization-invitations-list-title">
-          <div className={styles.listHeading}>
-            <h2 id="organization-invitations-list-title">Inviti esistenti</h2>
-            <button type="button" onClick={() => void load()} disabled={loading}>Aggiorna</button>
-          </div>
-          {loading ? <p>Caricamento inviti…</p> : null}
-          {!loading && invitations.length === 0 ? <p>Nessun invito creato in questo contesto.</p> : null}
-          {!loading && invitations.length > 0 ? (
-            <ul>
-              {invitations.map((invitation) => (
-                <li key={invitation.id}>
-                  <div>
-                    <strong>{invitation.email}</strong>
-                    <span>{invitation.role.displayName}</span>
-                    <span>Stato: {invitation.status}</span>
-                    <span>Scade: {formatDate(invitation.expiresAt)}</span>
-                  </div>
-                  {invitation.status === 'pending' ? (
-                    <div className={styles.actions}>
-                      <button type="button" onClick={() => void rotateInvitationLink(invitation.id)}>Genera nuovo link</button>
-                      {revokingId === invitation.id ? (
-                        <span className={styles.confirmation}>
-                          Revocare questo invito?
-                          <button type="button" onClick={() => void revokeInvitation(invitation.id)}>Conferma revoca</button>
-                          <button type="button" onClick={() => setRevokingId(null)}>Annulla</button>
-                        </span>
-                      ) : <button type="button" onClick={() => setRevokingId(invitation.id)}>Revoca</button>}
-                    </div>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </section>
+      <section className={styles.invitationSection} aria-labelledby="pending-invitations-title">
+        <div className={styles.sectionHeading}><h2 id="pending-invitations-title">Inviti in attesa</h2><span>{pendingInvitations.length}</span></div>
+        {loading ? <p className={styles.empty}>Caricamento inviti…</p> : null}
+        {!loading && pendingInvitations.length === 0 ? <p className={styles.empty}>Nessun invito in attesa.</p> : null}
+        {!loading && pendingInvitations.length > 0 ? <ul className={styles.list}>{pendingInvitations.map((invitation) => <li className={styles.invitation} key={invitation.id}><div className={styles.identity}><strong>{invitation.email}</strong><span>Medico · Scade il {formatDate(invitation.expiresAt)}</span></div><div className={styles.actionArea}><button aria-expanded={actionId === invitation.id} aria-haspopup="menu" aria-label={`Azioni per ${invitation.email}`} className={styles.menuTrigger} onClick={() => setActionId((current) => current === invitation.id ? null : invitation.id)} type="button">•••</button>{actionId === invitation.id ? <div className={styles.menu} role="menu"><button disabled={mutating} onClick={() => void rotateInvitationLink(invitation.id)} role="menuitem" type="button">Genera nuovo link</button><button disabled={mutating} onClick={() => void revokeInvitation(invitation.id)} role="menuitem" type="button">Revoca invito</button></div> : null}</div></li>)}</ul> : null}
       </section>
-    </main>
+
+      <section className={styles.invitationSection} aria-labelledby="invitation-history-title">
+        <div className={styles.sectionHeading}><h2 id="invitation-history-title">Cronologia</h2>{completedInvitations.length > 0 ? <button className={styles.historyClear} onClick={() => setHistoryDialog({ kind: 'clear' })} type="button">Pulisci cronologia</button> : null}</div>
+        {!loading && completedInvitations.length === 0 ? <p className={styles.empty}>Nessun invito concluso da mostrare.</p> : null}
+        {!loading && completedInvitations.length > 0 ? <ul className={styles.list}>{completedInvitations.map((invitation) => <li className={styles.invitation} key={invitation.id}><div className={styles.identity}><strong>{invitation.email}</strong><span>Medico · {statusLabel(invitation.status)} · Creato il {formatDate(invitation.createdAt)}</span></div><div className={styles.actionArea}><button aria-expanded={actionId === invitation.id} aria-haspopup="menu" aria-label={`Azioni per ${invitation.email}`} className={styles.menuTrigger} onClick={() => setActionId((current) => current === invitation.id ? null : invitation.id)} type="button">•••</button>{actionId === invitation.id ? <div className={styles.menu} role="menu"><button disabled={mutating} onClick={() => setHistoryDialog({ kind: 'hide', invitation })} role="menuitem" type="button">Rimuovi dalla cronologia</button></div> : null}</div></li>)}</ul> : null}
+      </section>
+
+      {historyDialog ? <div className={styles.dialogBackdrop} role="presentation"><section aria-modal="true" className={styles.dialog} role="dialog"><p className={styles.eyebrow}>Conferma</p><h2>{historyDialog.kind === 'clear' ? 'Rimuovere gli inviti conclusi dalla cronologia?' : `Rimuovere l’invito per ${historyDialog.invitation.email} dalla cronologia?`}</h2><p>{historyDialog.kind === 'clear' ? 'Gli inviti accettati, revocati o scaduti non saranno più visualizzati. Gli inviti in attesa resteranno invariati.' : 'L’invito resterà conservato per audit, ma non verrà più visualizzato in questa pagina.'}</p><div className={styles.dialogActions}><button disabled={mutating} onClick={() => setHistoryDialog(null)} type="button">Annulla</button><button disabled={mutating} onClick={() => void confirmHistoryAction()} type="button">{mutating ? 'Aggiornamento…' : historyDialog.kind === 'clear' ? 'Pulisci cronologia' : 'Rimuovi'}</button></div></section></div> : null}
+    </section>
   );
 }

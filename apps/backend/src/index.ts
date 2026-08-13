@@ -23,6 +23,7 @@ import { createConsentDocumentsRouter } from './routes/consent-documents-routes'
 import { createUsersRouter } from './routes/users-routes';
 import { createProfessionalProfileRouter } from './routes/professional-profile-routes';
 import { createOrganizationProfileRouter } from './routes/organization-profile-routes';
+import { createOrganizationMembersRouter } from './routes/organization-members-routes';
 import { resolveCompanyContext } from './middleware/resolve-company-context-middleware';
 import { resolveUser } from './middleware/resolve-user-middleware';
 
@@ -70,6 +71,7 @@ export function createApp(db = createSupabaseServerClient()) {
   app.use('/company/invites', createCompanyInvitesRouter(db));
   app.use('/professional-profile', createProfessionalProfileRouter(db));
   app.use('/organizations', createOrganizationProfileRouter(db));
+  app.use('/organization/members', createOrganizationMembersRouter(db));
 
   if (enableLegacyRoutes) {
     app.use('/invites', createInvitesRouter(db));

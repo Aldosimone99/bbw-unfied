@@ -9,7 +9,12 @@ import styles from './ContextSelection.module.css';
 
 const initialState: SetOperationalContextActionState = { status: 'idle' };
 
-export default function OperationalContextCard({ context }: { context: OperationalContext }) {
+type OperationalContextCardProps = {
+  context: OperationalContext;
+  nextDestination: string;
+};
+
+export default function OperationalContextCard({ context, nextDestination }: OperationalContextCardProps) {
   const [state, formAction, pending] = useActionState(setOperationalContextAction, initialState);
   const roleLabel = getOperationalContextRoleLabel(context);
 
@@ -17,6 +22,7 @@ export default function OperationalContextCard({ context }: { context: Operation
     <form className={styles.card} action={formAction}>
       <input type="hidden" name="contextKind" value={context.kind} />
       <input type="hidden" name="contextId" value={getOperationalContextId(context)} />
+      <input type="hidden" name="nextDestination" value={nextDestination} />
       <p className={styles.type}>{getOperationalContextTypeLabel(context)}</p>
       <h2>{context.label}</h2>
       {roleLabel ? <p className={styles.role}>{roleLabel}</p> : <p className={styles.role}>Contesto operativo personale</p>}

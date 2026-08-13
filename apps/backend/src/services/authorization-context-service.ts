@@ -109,6 +109,17 @@ function asAddress(value: unknown): AddressInput | null {
   return parsed.success ? parsed.data : null;
 }
 
+function isSelectableProfessionalProfile(profile: ProfessionalProfileRow): boolean {
+  const verificationStatus = professionalVerificationStatusSchema.safeParse(profile.verification_status);
+  const type = profile.professional_types;
+  return Boolean(
+    type?.is_active
+    && verificationStatus.success
+    && verificationStatus.data !== 'rejected'
+    && verificationStatus.data !== 'suspended',
+  );
+}
+
 function isOperationalProfessionalProfile(profile: ProfessionalProfileRow): boolean {
   const verificationStatus = professionalVerificationStatusSchema.safeParse(profile.verification_status);
   const type = profile.professional_types;
@@ -152,7 +163,7 @@ export function getAvailableOperationalContexts(
   input: OperationalContextResolutionInput,
 ): OperationalContext[] {
   const personalContexts = input.professionalProfiles
-    .filter((profile) => profile.user_id === userId && isOperationalProfessionalProfile(profile))
+    .filter((profile) => profile.user_id === userId && isSelectableProfessionalProfile(profile))
     .flatMap((profile): OperationalContext[] => {
       const type = profile.professional_types;
       if (!type) return [];
@@ -200,10 +211,11 @@ export function resolveOperationalContext(
   requestedContext: OperationalContextReference | undefined,
 ): OperationalContext | null {
   if (requestedContext) {
-    return contexts.find((context) => (
+    const matchingContext = contexts.find((context) => (
       context.kind === requestedContext.kind
       && getOperationalContextId(context) === requestedContext.id
-    )) ?? null;
+    ));
+    return matchingContext ?? (contexts.length === 1 ? contexts[0] ?? null : null);
   }
 
   return contexts.length === 1 ? contexts[0] ?? null : null;

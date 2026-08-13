@@ -2,8 +2,10 @@ import type { Request, Response } from 'express';
 import { createCompanyInviteRequestSchema } from '@bbw/interfaces';
 import type { SupabaseLike } from '../db/supabase';
 import {
+  clearCompanyInviteHistory,
   CompanyInviteError,
   createCompanyInvite,
+  hideCompanyInviteFromHistory,
   listAssignableOrganizationInvitationRoles,
   listCompanyInvites,
   resendCompanyInvite,
@@ -36,7 +38,6 @@ export function createCompanyInviteHandler(db: SupabaseLike) {
         organizationId: organizationIdOrThrow(req),
         inviterId: user.id,
         email: payload.email,
-        roleId: payload.roleId,
         expiresInDays: payload.expiresInDays,
       });
       return res.status(201).json({ success: true, data });
@@ -88,6 +89,30 @@ export function resendCompanyInviteHandler(db: SupabaseLike) {
     try {
       const user = userOrThrow(req);
       const data = await resendCompanyInvite(db, String(req.params.id), organizationIdOrThrow(req), user.id);
+      return res.json({ success: true, data });
+    } catch (error) {
+      return handleCompanyInviteError(res, error);
+    }
+  };
+}
+
+export function hideCompanyInviteFromHistoryHandler(db: SupabaseLike) {
+  return async (req: Request, res: Response) => {
+    try {
+      const user = userOrThrow(req);
+      await hideCompanyInviteFromHistory(db, String(req.params.id), organizationIdOrThrow(req), user.id);
+      return res.json({ success: true });
+    } catch (error) {
+      return handleCompanyInviteError(res, error);
+    }
+  };
+}
+
+export function clearCompanyInviteHistoryHandler(db: SupabaseLike) {
+  return async (req: Request, res: Response) => {
+    try {
+      const user = userOrThrow(req);
+      const data = await clearCompanyInviteHistory(db, organizationIdOrThrow(req), user.id);
       return res.json({ success: true, data });
     } catch (error) {
       return handleCompanyInviteError(res, error);

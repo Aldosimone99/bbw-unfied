@@ -1,20 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createClient } from "../../lib/supabase/server";
-import { loginAccount, registerAccount } from "./auth-service";
+import { loginAccount, logoutAccount, registerAccount } from "./auth-service";
 import { requestBackend } from "../backend/server-request";
+import { clearActiveOperationalContext } from "./operational-context-cookie";
 
 vi.mock("../../lib/supabase/server", () => ({ createClient: vi.fn() }));
 vi.mock("../backend/server-request", () => ({ requestBackend: vi.fn() }));
+vi.mock("./operational-context-cookie", () => ({ clearActiveOperationalContext: vi.fn() }));
 
 const mockedCreateClient = vi.mocked(createClient);
 const mockedRequestBackend = vi.mocked(requestBackend);
+const mockedClearActiveOperationalContext = vi.mocked(clearActiveOperationalContext);
 const signInWithPassword = vi.fn();
 const setSession = vi.fn();
+const signOut = vi.fn();
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mockedCreateClient.mockResolvedValue({ auth: { signInWithPassword, setSession } } as unknown as Awaited<ReturnType<typeof createClient>>);
+  mockedCreateClient.mockResolvedValue({ auth: { signInWithPassword, setSession, signOut } } as unknown as Awaited<ReturnType<typeof createClient>>);
 });
 
 describe("transition auth service", () => {
@@ -56,5 +60,15 @@ describe("transition auth service", () => {
       acceptPrivacy: true
     })).resolves.toEqual({ status: "redirect" });
     expect(mockedRequestBackend).toHaveBeenNthCalledWith(2, "/auth/login", expect.objectContaining({ method: "POST" }));
+  });
+
+  it("destroys the Supabase session and clears the active operational context on logout", async () => {
+    signOut.mockResolvedValue({ error: null });
+    mockedClearActiveOperationalContext.mockResolvedValue();
+
+    await expect(logoutAccount()).resolves.toBeUndefined();
+
+    expect(signOut).toHaveBeenCalledOnce();
+    expect(mockedClearActiveOperationalContext).toHaveBeenCalledOnce();
   });
 });

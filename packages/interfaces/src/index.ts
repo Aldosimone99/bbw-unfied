@@ -12,6 +12,7 @@ export * from './schemas/document-schema';
 export * from './schemas/onboarding-schema';
 export * from './schemas/operational-readiness-schema';
 export * from './schemas/operational-context-schema';
+export * from './schemas/organization-members-schema';
 export * from './schemas/register-validate-schema';
 export * from './schemas/notification-schema';
 export * from './schemas/domain-schema';

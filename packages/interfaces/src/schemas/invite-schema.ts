@@ -45,7 +45,6 @@ export const companyInviteAcceptSchema = z.object({
 
 export const createCompanyInviteRequestSchema = z.object({
   email: z.string().trim().email(),
-  roleId: z.string().uuid(),
   expiresInDays: z.number().int().min(1).max(30).optional(),
 }).strict();
 

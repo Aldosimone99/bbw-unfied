@@ -4,6 +4,7 @@ import { getTransitionAuthorizationContext } from '../auth/transition-session';
 import type { OperationalContextSummary, PermissionCode, ProfileSummary } from '../../types/authorization';
 import { resolveSafePostLoginRedirect, type PostLoginRedirectPath } from '../security/redirects';
 import {
+  clearActiveOperationalContext,
   getRequestedOperationalContext,
   setOperationalContextCookie,
 } from './operational-context-cookie';
@@ -70,10 +71,27 @@ export function resolveDestinationFromContext(context: PostLoginContext): PostLo
   return '/seleziona-contesto';
 }
 
-export async function resolvePostLoginDestination(requestedRedirect?: string): Promise<string> {
-  const context = await getPostLoginContext();
-  const destination = resolveDestinationFromContext(context);
+export function resolveContextSelectionDestination(requestedRedirect?: string): string {
+  const safeNextDestination = resolveSafePostLoginRedirect(requestedRedirect, '/dashboard');
+  if (safeNextDestination === '/dashboard') return '/seleziona-contesto';
+  return `/seleziona-contesto?${new URLSearchParams({ next: safeNextDestination }).toString()}`;
+}
 
+export async function resolvePostLoginDestination(requestedRedirect?: string): Promise<string> {
+  // A new login never reuses the prior session's context preference. Existing
+  // navigation still calls getPostLoginContext() and therefore keeps its choice.
+  const context = await getPostLoginContext(null);
+
+  if (
+    context.user
+    && context.profile?.onboardingStatus === 'completed'
+    && context.availableOperationalContexts.length > 1
+  ) {
+    await clearActiveOperationalContext();
+    return resolveContextSelectionDestination(requestedRedirect);
+  }
+
+  const destination = resolveDestinationFromContext(context);
   if (
     context.user
     && context.profile?.onboardingStatus === 'completed'

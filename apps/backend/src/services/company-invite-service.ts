@@ -56,7 +56,6 @@ type CreateCompanyInvitePayload = {
   organizationId: string;
   inviterId: string;
   email: string;
-  roleId: string;
   expiresInDays?: number;
 };
 
@@ -83,6 +82,10 @@ function oneRole(value: RoleRecord | RoleRecord[] | null): RoleRecord | null {
   return Array.isArray(value) ? value[0] ?? null : value;
 }
 
+function invitationRoleDisplayName(role: RoleRecord): string {
+  return role.code === 'practitioner' ? 'Medico' : role.display_name;
+}
+
 function toInvitationStatus(value: string): CompanyInviteRow['status'] {
   if (value === 'pending' || value === 'accepted' || value === 'revoked' || value === 'expired') return value;
   throw new CompanyInviteError('INVITATION_INVALID_STATUS', 500);
@@ -96,7 +99,7 @@ function normalizeRow(record: InvitationRecord): CompanyInviteRow {
     id: record.id,
     organizationId: record.organization_id,
     email: record.email,
-    role: { id: role.id, code: role.code, displayName: role.display_name },
+    role: { id: role.id, code: role.code, displayName: invitationRoleDisplayName(role) },
     status: toInvitationStatus(record.status),
     expiresAt: record.expires_at,
     createdAt: record.created_at,
@@ -187,10 +190,41 @@ export async function listAssignableOrganizationInvitationRoles(
   for (const rule of (data ?? []) as unknown as RoleAssignmentRuleRecord[]) {
     const role = oneRole(rule.target_role);
     if (!role || role.scope !== 'organization' || role.is_active === false) continue;
-    rolesById.set(role.id, { id: role.id, code: role.code, displayName: role.display_name });
+    rolesById.set(role.id, { id: role.id, code: role.code, displayName: invitationRoleDisplayName(role) });
   }
 
   return [...rolesById.values()].sort((left, right) => left.displayName.localeCompare(right.displayName, 'it'));
+}
+
+async function getMedicalPractitionerRole(db: SupabaseLike): Promise<OrganizationInvitationRole> {
+  const { data, error } = await db
+    .from('roles')
+    .select('id,code,display_name,scope,is_active')
+    .eq('code', 'practitioner')
+    .eq('scope', 'organization')
+    .eq('is_active', true)
+    .maybeSingle();
+  const role = data as unknown as RoleRecord | null;
+  if (error || !role) throw new CompanyInviteError('INVITATION_MEDICAL_ROLE_NOT_CONFIGURED', 500);
+  return { id: role.id, code: role.code, displayName: invitationRoleDisplayName(role) };
+}
+
+async function expirePendingCompanyInvites(
+  db: SupabaseLike,
+  organizationId: string,
+  now: Date,
+  email?: string,
+): Promise<void> {
+  let query = db
+    .from('invitations')
+    .update({ status: 'expired' })
+    .eq('organization_id', organizationId)
+    .eq('status', 'pending')
+    .lte('expires_at', now.toISOString());
+  if (email) query = query.ilike('email', email);
+
+  const { error } = await query;
+  if (error) throw new CompanyInviteError('INVITATION_EXPIRY_UPDATE_FAILED', 500);
 }
 
 export async function lookupCompanyInvite(db: SupabaseLike, token: string) {
@@ -221,18 +255,21 @@ export async function acceptCompanyInvite(db: SupabaseLike, token: string, userI
       ['MEMBERSHIP_ALREADY_EXISTS', 'MEMBERSHIP_ALREADY_EXISTS', 409],
       ['MEMBERSHIP_NOT_ACTIVE', 'MEMBERSHIP_NOT_ACTIVE', 409],
       ['INVITATION_ORGANIZATION_NOT_ACTIVE', 'FORBIDDEN', 403],
+      ['INVITATION_ROLE_NOT_MEDICAL', 'INVITATION_ROLE_NOT_MEDICAL', 422],
+      ['INVITATION_RECIPIENT_NOT_PHYSICIAN', 'INVITATION_RECIPIENT_NOT_PHYSICIAN', 422],
     ];
     const mapped = mappedCodes.find(([source]) => message.includes(source));
     if (mapped) throw new CompanyInviteError(mapped[1], mapped[2]);
     throw new CompanyInviteError('INVITATION_ACCEPT_FAILED', 500);
   }
 
-  const result = data as unknown as { organization_id?: string; role_code?: string; already_member?: boolean } | null;
+  const result = data as unknown as { organization_id?: string; role_code?: string; already_member?: boolean; membership_reactivated?: boolean } | null;
   if (!result?.organization_id || !result.role_code) throw new CompanyInviteError('INVITATION_ROLE_NOT_CONFIGURED', 500);
   return {
     organizationId: result.organization_id,
     roleCode: result.role_code,
     alreadyMember: Boolean(result.already_member),
+    membershipReactivated: Boolean(result.membership_reactivated),
   };
 }
 
@@ -242,11 +279,14 @@ export async function createCompanyInvite(
   options: CreateCompanyInviteOptions = {},
 ): Promise<{ invitation: CompanyInviteRow; acceptLink: string }> {
   await getOrganizationName(db, payload.organizationId);
+  const medicalPractitionerRole = await getMedicalPractitionerRole(db);
   const assignableRoles = await listAssignableOrganizationInvitationRoles(db, payload.organizationId, payload.inviterId);
-  const role = assignableRoles.find((candidate) => candidate.id === payload.roleId);
+  const role = assignableRoles.find((candidate) => candidate.id === medicalPractitionerRole.id);
   if (!role) throw new CompanyInviteError('INVITATION_ROLE_NOT_ASSIGNABLE', 403);
 
   const email = payload.email.trim().toLowerCase();
+  const now = options.now?.() ?? new Date();
+  await expirePendingCompanyInvites(db, payload.organizationId, now, email);
   const { data: pendingInvite, error: pendingInviteError } = await db
     .from('invitations')
     .select('id')
@@ -257,7 +297,6 @@ export async function createCompanyInvite(
   if (pendingInviteError) throw new CompanyInviteError('INVITATION_LOOKUP_FAILED', 500);
   if (pendingInvite) throw new CompanyInviteError('INVITATION_ALREADY_PENDING', 409);
 
-  const now = options.now?.() ?? new Date();
   const expiresAt = new Date(now);
   expiresAt.setDate(expiresAt.getDate() + (payload.expiresInDays ?? 7));
   const rawToken = options.tokenFactory?.() ?? makeToken();
@@ -304,10 +343,12 @@ export async function listCompanyInvites(
   const limit = Math.min(100, Math.max(1, pagination.limit || 20));
   const from = (page - 1) * limit;
   const to = from + limit - 1;
+  await expirePendingCompanyInvites(db, organizationId, new Date());
   const { data, count, error } = await db
     .from('invitations')
     .select('id,organization_id,email,role_id,status,expires_at,created_at,invited_by,accepted_at,revoked_at,roles(id,code,display_name)', { count: 'exact' })
     .eq('organization_id', organizationId)
+    .is('hidden_from_history_at', null)
     .order('created_at', { ascending: false })
     .range(from, to);
   if (error) throw new CompanyInviteError('INVITATION_LIST_FAILED', 500);
@@ -354,6 +395,45 @@ export async function revokeCompanyInvite(
     metadata: {},
   });
   if (auditError) throw new CompanyInviteError('INVITATION_AUDIT_FAILED', 500);
+}
+
+export async function hideCompanyInviteFromHistory(
+  db: SupabaseLike,
+  inviteId: string,
+  organizationId: string,
+  actorUserId: string,
+): Promise<void> {
+  const { error } = await db.rpc('hide_organization_invitation_from_history', {
+    p_organization_id: organizationId,
+    p_invitation_id: inviteId,
+    p_actor_user_id: actorUserId,
+  });
+  if (!error) return;
+
+  const message = error.message ?? '';
+  if (message.includes('INVITATION_NOT_FOUND')) throw new CompanyInviteError('INVITATION_NOT_FOUND', 404);
+  if (message.includes('INVITATION_PENDING_HISTORY_HIDE_NOT_ALLOWED')) {
+    throw new CompanyInviteError('INVITATION_PENDING_HISTORY_HIDE_NOT_ALLOWED', 422);
+  }
+  throw new CompanyInviteError('INVITATION_HISTORY_HIDE_FAILED', 500);
+}
+
+export async function clearCompanyInviteHistory(
+  db: SupabaseLike,
+  organizationId: string,
+  actorUserId: string,
+): Promise<{ hiddenCount: number }> {
+  const { data, error } = await db.rpc('clear_organization_invitation_history', {
+    p_organization_id: organizationId,
+    p_actor_user_id: actorUserId,
+  });
+  if (error) throw new CompanyInviteError('INVITATION_HISTORY_CLEAR_FAILED', 500);
+
+  const hiddenCount = typeof data === 'number' ? data : Number(data);
+  if (!Number.isInteger(hiddenCount) || hiddenCount < 0) {
+    throw new CompanyInviteError('INVITATION_HISTORY_CLEAR_FAILED', 500);
+  }
+  return { hiddenCount };
 }
 
 export async function resendCompanyInvite(

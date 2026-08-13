@@ -86,17 +86,16 @@ describe('invite and referral contracts', () => {
     })).toThrow();
   });
 
-  it('parses strict company invite create requests with a database role identifier', () => {
+  it('parses a strict medical-only company invite request without a client-selected role', () => {
     const parsed = createCompanyInviteRequestSchema.parse({
       email: 'medico@example.com',
-      roleId: '33333333-3333-4333-8333-333333333333',
       expiresInDays: 14,
     });
 
-    expect(parsed.roleId).toBe('33333333-3333-4333-8333-333333333333');
+    expect(parsed).toEqual({ email: 'medico@example.com', expiresInDays: 14 });
   });
 
-  it('rejects a company invite request without a valid role identifier', () => {
+  it('rejects a company invite request that attempts to select a role', () => {
     expect(() => createCompanyInviteRequestSchema.parse({
       email: 'owner@example.com',
       roleId: 'owner',

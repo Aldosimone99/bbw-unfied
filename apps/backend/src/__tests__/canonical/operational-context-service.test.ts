@@ -56,8 +56,14 @@ function activeMembership(overrides: Record<string, unknown> = {}) {
 }
 
 describe('available operational contexts', () => {
-  it('returns no context for an account without an operational professional profile or active membership', () => {
-    expect(availableContexts({ professionalProfiles: [operationalProfessionalProfile({ verification_status: 'pending' })] })).toEqual([]);
+  it('keeps a pending professional profile selectable while verification controls operational permissions', () => {
+    expect(availableContexts({ professionalProfiles: [operationalProfessionalProfile({ verification_status: 'pending' })] })).toEqual([{
+      kind: 'personal_professional',
+      professionalProfileId,
+      label: 'Studio Mario Rossi',
+      professionalTypeCode: 'physician',
+      professionalTypeDisplayName: 'Medico',
+    }]);
   });
 
   it('derives a personal professional workspace from owned operational profile data', () => {
@@ -101,6 +107,21 @@ describe('available operational contexts', () => {
   ])('excludes a %s', (_label, membership) => {
     expect(availableContexts({ memberships: [membership] })).toEqual([]);
   });
+
+  it('removes a revoked clinic once and restores it once after canonical reactivation', () => {
+    const input = {
+      professionalProfiles: [operationalProfessionalProfile()],
+      rolesByMembershipId: new Map([[membershipId, [{ code: 'practitioner', displayName: 'Professionista' }]]]),
+    };
+    const active = availableContexts({ ...input, memberships: [activeMembership()] });
+    const removed = availableContexts({ ...input, memberships: [activeMembership({ status: 'revoked' })] });
+    const reactivated = availableContexts({ ...input, memberships: [activeMembership({ status: 'active' })] });
+
+    expect(active.filter((context) => context.kind === 'organization')).toHaveLength(1);
+    expect(removed.filter((context) => context.kind === 'organization')).toHaveLength(0);
+    expect(reactivated.filter((context) => context.kind === 'organization')).toHaveLength(1);
+    expect(reactivated).toHaveLength(2);
+  });
 });
 
 describe('operational context resolution', () => {
@@ -114,5 +135,10 @@ describe('operational context resolution', () => {
     expect(resolveOperationalContext(contexts, undefined)).toBeNull();
     expect(resolveOperationalContext(contexts, { kind: 'organization', id: organizationId })).toMatchObject({ kind: 'organization', organizationId });
     expect(resolveOperationalContext(contexts, { kind: 'organization', id: '00000000-0000-4000-8000-000000000099' })).toBeNull();
+  });
+
+  it('falls back to the sole context when a revoked membership invalidates a stale preference', () => {
+    const [personalContext] = availableContexts({ professionalProfiles: [operationalProfessionalProfile()] });
+    expect(resolveOperationalContext([personalContext!], { kind: 'organization', id: organizationId })).toEqual(personalContext);
   });
 });
