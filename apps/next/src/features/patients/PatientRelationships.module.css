@@ -1,0 +1,305 @@
+.pageHeader {
+  max-width: 760px;
+}
+
+.eyebrow,
+.cardEyebrow {
+  margin: 0;
+  color: rgba(126, 91, 35, .75);
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.pageHeader h1 {
+  margin: 13px 0 0;
+  color: #302720;
+  font-size: clamp(3rem, 5.8vw, 6.2rem);
+  font-weight: 300;
+  letter-spacing: -.045em;
+  line-height: .9;
+}
+
+.pageHeader > p:last-child {
+  margin: 14px 0 0;
+  color: rgba(74, 58, 47, .64);
+  font-size: 1.06rem;
+  line-height: 1.5;
+}
+
+.relationshipSection {
+  width: min(100%, 1040px);
+  margin-top: 54px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 0 18px;
+}
+
+.searchField,
+.lookupInput,
+.lookupSelect {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid rgba(127, 90, 52, .2);
+  border-radius: 8px;
+  background: rgba(255, 253, 250, .7);
+  color: #8f6025;
+}
+
+.searchField {
+  width: min(100%, 540px);
+}
+
+.searchField:focus-within,
+.lookupInput:focus-within,
+.lookupSelect:focus-within {
+  border-color: rgba(155, 103, 37, .66);
+  box-shadow: 0 0 0 4px rgba(200, 162, 90, .12);
+}
+
+.searchField input,
+.lookupInput input,
+.lookupSelect select {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--brown);
+  font: inherit;
+}
+
+.lookupSelect {
+  flex: 0 0 174px;
+}
+
+.lookupSelect select {
+  cursor: pointer;
+}
+
+.lookupForm {
+  display: grid;
+  gap: 16px;
+  margin: 8px 0 28px;
+  padding: 22px 24px;
+  border: 1px solid rgba(127, 90, 52, .15);
+  border-radius: 11px;
+  background: rgba(249, 242, 233, .46);
+}
+
+.lookupIntro {
+  display: grid;
+  gap: 7px;
+}
+
+.lookupIntro p:last-child {
+  margin: 0;
+  color: rgba(74, 58, 47, .64);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.lookupControls {
+  display: flex;
+  gap: 9px;
+}
+
+.lookupInput {
+  flex: 1 1 auto;
+}
+
+.primaryButton,
+.secondaryButton,
+.removeButton {
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.primaryButton {
+  min-height: 46px;
+  padding: 0 19px;
+  border: 1px solid #4b3a2e;
+  background: #4b3a2e;
+  color: #fffaf4;
+}
+
+.secondaryButton {
+  min-height: 38px;
+  padding: 0 15px;
+  border: 1px solid rgba(127, 90, 52, .28);
+  background: #fffdf9;
+  color: #71491f;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover {
+  border-color: #342820;
+  background: #342820;
+}
+
+.lookupResult {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(127, 90, 52, .12);
+}
+
+.lookupResult > div,
+.identity {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.lookupResult strong,
+.identity a {
+  overflow-wrap: anywhere;
+  color: var(--brown);
+  font-size: .92rem;
+  font-weight: 550;
+  text-decoration: none;
+}
+
+.identity a:hover {
+  color: #71491f;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.lookupResult span,
+.identity span {
+  overflow-wrap: anywhere;
+  color: rgba(74, 58, 47, .66);
+  font-size: .8rem;
+}
+
+.error,
+.notice {
+  margin: 0 0 16px;
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+.error { color: #9b432e; }
+.notice { color: #3e6d42; }
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patientRow {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 17px 0;
+  border-bottom: 1px solid rgba(127, 90, 52, .13);
+}
+
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(200, 162, 90, .2);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #eadbc9, #f6eee5);
+  color: #8c622d;
+  font-size: .76rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+}
+
+.removeButton {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid rgba(155, 67, 46, .25);
+  background: transparent;
+  color: #9b432e;
+  font-size: .75rem;
+}
+
+.removeButton:hover {
+  background: rgba(155, 67, 46, .07);
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.removeButton:focus-visible,
+.searchField:focus-within,
+.lookupInput:focus-within,
+.lookupSelect:focus-within,
+.identity a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.removeButton:disabled {
+  cursor: wait;
+  opacity: .58;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@media (max-width: 640px) {
+  .relationshipSection {
+    margin-top: 42px;
+  }
+
+  .lookupControls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lookupSelect {
+    flex-basis: auto;
+  }
+
+  .lookupResult {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lookupResult button {
+    width: 100%;
+  }
+
+  .patientRow {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .patientRow > :nth-child(3) {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .removeButton {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}

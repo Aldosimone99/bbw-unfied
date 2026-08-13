@@ -46,7 +46,7 @@ describe('canonical registration service', () => {
       email: 'person@example.com',
       email_confirm: true,
     }));
-    expect(writes.map((write) => write.table)).toEqual(['profiles', 'account_consents', 'audit_events']);
+    expect(writes.map((write) => write.table)).toEqual(['profiles', 'subjects', 'account_consents', 'audit_events']);
     expect(db.from).not.toHaveBeenCalledWith('users');
     expect(db.from).not.toHaveBeenCalledWith('companies');
   });

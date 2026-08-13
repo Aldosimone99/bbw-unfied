@@ -1,7 +1,25 @@
-import PlatformPlaceholder from '../../../features/dashboard/PlatformPlaceholder';
+import { forbidden } from 'next/navigation';
+
+import PatientRelationships from '../../../features/patients/PatientRelationships';
+import PlatformShell from '../../../features/dashboard/PlatformShell';
 import { requirePlatformContext } from '../../../features/dashboard/requirePlatformContext';
 
 export default async function ClientsPage() {
   const context = await requirePlatformContext(true);
-  return <PlatformPlaceholder user={context.user} profile={context.profile} permissions={context.permissions} operationalContext={context} activePath="/clienti" eyebrow="Relazioni" title="Clienti" description="Clienti, collegamenti professionali e storico delle attività." />;
+  if (!context.operationalPermissions.includes('patients.read')) forbidden();
+
+  return (
+    <PlatformShell
+      user={context.user}
+      profile={context.profile}
+      activePath="/clienti"
+      operationalContext={context}
+      permissions={context.permissions}
+    >
+      <PatientRelationships
+        canLink={context.operationalPermissions.includes('patients.link')}
+        canUnlink={context.operationalPermissions.includes('patients.unlink')}
+      />
+    </PlatformShell>
+  );
 }

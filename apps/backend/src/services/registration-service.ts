@@ -71,6 +71,11 @@ export async function registerUser(
       phone: payload.telefono ?? null,
     }).eq('user_id', userId));
 
+    await insertOrThrow(db.from('subjects').insert({
+      subject_kind: 'person',
+      user_id: userId,
+    }));
+
     const now = new Date().toISOString();
     await insertOrThrow(db.from('account_consents').insert([
       {
@@ -122,6 +127,7 @@ export async function registerUser(
 
     return { userId };
   } catch (error) {
+    await db.from('subjects').delete().eq('user_id', userId);
     await db.from('account_consents').delete().eq('user_id', userId);
     await db.from('audit_events').delete().eq('actor_user_id', userId);
     await db.auth.admin.deleteUser(userId);

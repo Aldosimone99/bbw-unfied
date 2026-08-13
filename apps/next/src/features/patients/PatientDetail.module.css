@@ -1,0 +1,86 @@
+.backLink {
+  display: inline-flex;
+  margin-bottom: 42px;
+  color: #71491f;
+  font-size: .84rem;
+  text-underline-offset: 4px;
+}
+
+.card {
+  width: min(100%, 720px);
+  padding: clamp(26px, 4vw, 42px);
+  border: 1px solid rgba(127, 90, 52, .17);
+  border-radius: 13px;
+  background: linear-gradient(140deg, rgba(255, 253, 250, .9), rgba(248, 239, 229, .66));
+  box-shadow: 0 20px 50px rgba(82, 54, 28, .045);
+}
+
+.eyebrow {
+  margin: 0;
+  color: rgba(126, 91, 35, .75);
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.card h1 {
+  margin: 13px 0 16px;
+  color: #302720;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  font-weight: 320;
+  letter-spacing: -.035em;
+  line-height: 1;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 28px;
+  margin: 32px 0 0;
+  padding-top: 24px;
+  border-top: 1px solid rgba(127, 90, 52, .13);
+}
+
+.details div {
+  min-width: 0;
+}
+
+.details dt {
+  color: rgba(74, 58, 47, .58);
+  font-size: .68rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.details dd {
+  overflow-wrap: anywhere;
+  margin: 5px 0 0;
+  color: #4b3a2e;
+  font-size: .84rem;
+  line-height: 1.4;
+}
+
+.note {
+  margin: 30px 0 0;
+  color: rgba(74, 58, 47, .64);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.error {
+  margin: 30px 0 0;
+  color: #9b432e;
+  font-size: .84rem;
+}
+
+.backLink:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .details {
+    grid-template-columns: 1fr;
+  }
+}

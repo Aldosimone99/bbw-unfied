@@ -41,7 +41,10 @@ export function getDashboardNavItems(
   if (!context) return [{ href: '/dashboard', label: 'Dashboard', icon: 'home' }, ...commonAccountItems];
 
   if (context.kind === 'personal_professional') {
-    return [...personalProfessionalItems, ...commonAccountItems];
+    const visibleItems = permissions.includes('patients.read')
+      ? personalProfessionalItems
+      : personalProfessionalItems.filter((item) => item.href !== '/clienti');
+    return [...visibleItems, ...commonAccountItems];
   }
 
   const membershipItems: DashboardNavItem[] = [];
@@ -52,5 +55,8 @@ export function getDashboardNavItems(
     membershipItems.push({ href: '/inviti', label: 'Inviti', icon: 'invites' });
   }
 
-  return [...organizationItems, ...membershipItems, ...commonAccountItems];
+  const visibleOrganizationItems = permissions.includes('patients.read')
+    ? organizationItems
+    : organizationItems.filter((item) => item.href !== '/clienti');
+  return [...visibleOrganizationItems, ...membershipItems, ...commonAccountItems];
 }

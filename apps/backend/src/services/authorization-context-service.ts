@@ -24,6 +24,9 @@ export const permissionCodes = [
   'organization.members.read',
   'organization.members.invite',
   'organization.members.manage',
+  'patients.read',
+  'patients.link',
+  'patients.unlink',
   'professional_profile.create',
   'professional_profile.read_own',
   'professional_profile.update_own',
@@ -388,7 +391,7 @@ export async function getAuthorizationContext(
   const operationalPermissions = activeOperationalContext?.kind === 'organization'
     ? organizationPermissionsByMembership.get(activeOperationalContext.membershipId) ?? []
     : activeProfessionalProfile && isOperationalProfessionalProfile(activeProfessionalProfile)
-      ? ['professional_profile.read_own', 'professional_profile.update_own'] satisfies BackendPermissionCode[]
+      ? ['professional_profile.read_own', 'professional_profile.update_own', 'patients.read', 'patients.link', 'patients.unlink'] satisfies BackendPermissionCode[]
       : [];
   const operationalRoles = activeOperationalContext?.kind === 'organization'
     ? activeOperationalContext.roles

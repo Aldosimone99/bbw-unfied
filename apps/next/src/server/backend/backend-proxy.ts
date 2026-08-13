@@ -26,8 +26,12 @@ export async function forwardBackendRequest(request: Request, path: string[]): P
   }
 
   const activeOperationalContext = await getRequestedOperationalContext();
-  if (activeOperationalContext?.kind === 'organization') {
-    headers.set('x-company-id', activeOperationalContext.id);
+  if (activeOperationalContext) {
+    headers.set('x-operational-context-kind', activeOperationalContext.kind);
+    headers.set('x-operational-context-id', activeOperationalContext.id);
+    if (activeOperationalContext.kind === 'organization') {
+      headers.set('x-company-id', activeOperationalContext.id);
+    }
   }
 
   const accessToken = await getAccessToken();
