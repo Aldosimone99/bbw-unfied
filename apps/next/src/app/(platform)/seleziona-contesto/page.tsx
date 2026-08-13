@@ -29,7 +29,7 @@ export default async function SelectOperationalContextPage({ searchParams }: Sel
       <section className={styles.content} aria-labelledby="select-operational-context-title">
         <p className={styles.eyebrow}>Beauty Broker World</p>
         <h1 className={styles.heading} id="select-operational-context-title">Dove vuoi entrare?</h1>
-        <p className={styles.intro}>Scegli il workspace in cui lavorare. Il contesto determina lo scope operativo, mentre autorizzazioni e permessi restano verificati dal server.</p>
+        <p className={styles.intro}>Scegli lo spazio in cui vuoi lavorare. Potrai passare da un contesto all’altro quando necessario.</p>
         {context.activeOperationalContext ? (
           <div className={styles.activeNotice}>
             <p>Stai operando in <strong>{context.activeOperationalContext.label}</strong>.</p>

@@ -76,6 +76,13 @@ describe('available operational contexts', () => {
     }]);
   });
 
+  it('uses a neutral personal workspace label when no studio name is available', () => {
+    expect(availableContexts({ professionalProfiles: [operationalProfessionalProfile({ display_name: null })] })).toMatchObject([{
+      kind: 'personal_professional',
+      label: 'Il tuo studio',
+    }]);
+  });
+
   it('returns personal and organization workspaces independently with informative roles', () => {
     const contexts = availableContexts({
       professionalProfiles: [operationalProfessionalProfile()],

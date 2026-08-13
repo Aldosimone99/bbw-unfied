@@ -1,4 +1,5 @@
 import {
+  ArrowRight,
   BadgeCheck,
   BarChart3,
   Building2,
@@ -21,6 +22,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 const platformIcons = {
+  arrowRight: ArrowRight,
   home: House,
   dashboard: House,
   calendar: CalendarDays,

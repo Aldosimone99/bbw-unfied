@@ -171,7 +171,7 @@ export function getAvailableOperationalContexts(
       return [{
         kind: 'personal_professional',
         professionalProfileId: profile.id,
-        label: profile.display_name?.trim() || type.display_name,
+        label: profile.display_name?.trim() || 'Il tuo studio',
         professionalTypeCode: type.code,
         professionalTypeDisplayName: type.display_name,
       }];
