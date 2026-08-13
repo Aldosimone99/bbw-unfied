@@ -9,9 +9,9 @@
 .staticState,
 .emptyState {
   display: grid;
-  gap: 9px;
+  gap: 8px;
   width: 100%;
-  padding: 12px;
+  padding: 10px 12px;
   border: 1px solid rgba(200, 162, 90, .22);
   border-radius: 10px;
   background: rgba(255, 252, 248, .72);
@@ -48,22 +48,22 @@
 
 .workspaceRow {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) 18px;
+  grid-template-columns: 28px minmax(0, 1fr) 18px;
   align-items: center;
   gap: 9px;
   min-width: 0;
 }
 
 .staticState .workspaceRow {
-  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-columns: 28px minmax(0, 1fr);
 }
 
 .workspaceIcon {
   display: inline-grid;
-  flex: 0 0 30px;
+  flex: 0 0 28px;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border: 1px solid rgba(200, 162, 90, .14);
   border-radius: 50%;
   background: rgba(200, 162, 90, .08);
@@ -72,7 +72,6 @@
 
 .workspaceCopy {
   display: grid;
-  flex: 1 1 auto;
   min-width: 0;
   gap: 3px;
 }
@@ -86,13 +85,13 @@
 
 .workspaceCopy strong {
   color: #4b3a2e;
-  font-size: .79rem;
+  font-size: .8rem;
   font-weight: 520;
 }
 
 .workspaceCopy small {
   color: var(--dashboard-muted, rgba(74, 58, 47, .64));
-  font-size: .67rem;
+  font-size: .68rem;
 }
 
 .chevron {
@@ -100,25 +99,43 @@
 }
 
 .popover {
-  position: absolute;
-  z-index: 10;
-  left: 0;
-  bottom: calc(100% + 10px);
-  width: min(294px, 100%);
+  position: fixed;
+  z-index: 100;
+  width: 330px;
+  max-width: calc(100vw - 32px);
+}
+
+.popoverSurface {
   box-sizing: border-box;
-  padding: 12px;
-  border: 1px solid rgba(200, 162, 90, .26);
+  width: 100%;
+  max-height: min(520px, calc(100dvh - 32px));
+  overflow-y: auto;
+  isolation: isolate;
+  padding: 14px;
+  border: 1px solid rgba(200, 162, 90, .38);
   border-radius: 12px;
-  background: #fffaf5;
-  box-shadow: 0 18px 42px rgba(76, 56, 43, .12);
+  background-color: #f8efe5;
+  background-image: linear-gradient(140deg, #fffdf9 0%, #f5eadf 100%);
+  box-shadow: 0 24px 56px rgba(76, 56, 43, .16), inset 0 0 0 1px rgba(255, 253, 250, .48);
+}
+
+.popover[data-ready="false"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.popover[data-mobile="true"] .popoverSurface {
+  border-radius: 14px;
+  max-height: calc(100dvh - 32px);
 }
 
 .popoverTitle {
-  margin: 2px 8px 8px;
+  margin: 1px 8px 8px;
   color: rgba(126, 91, 35, .75);
   font-size: .62rem;
   font-weight: 600;
   letter-spacing: .1em;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
@@ -133,9 +150,9 @@
 
 .workspaceOptionIdentity {
   display: grid;
-  flex: 1 1 auto;
   grid-template-columns: 30px minmax(0, 1fr);
   align-items: center;
+  flex: 1 1 auto;
   gap: 9px;
   min-width: 0;
 }
@@ -145,8 +162,8 @@
   align-items: center;
   gap: 9px;
   width: 100%;
-  min-height: 56px;
-  padding: 7px 8px;
+  min-height: 58px;
+  padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
@@ -154,18 +171,19 @@
   cursor: pointer;
   font: inherit;
   text-align: left;
-  transition: border-color .2s ease-out, background .2s ease-out;
+  transition: border-color .2s ease-out, background .2s ease-out, color .2s ease-out;
 }
 
 .workspaceOption:hover,
 .workspaceOption[aria-checked="true"] {
   border-color: rgba(200, 162, 90, .16);
-  background: rgba(200, 162, 90, .08);
+  background: rgba(200, 162, 90, .07);
+  color: #3f3027;
 }
 
 .workspaceOption:disabled {
   cursor: wait;
-  opacity: .6;
+  opacity: .62;
 }
 
 .checkmark {
@@ -191,30 +209,31 @@
   color: #71491f;
   font-size: .76rem;
   text-decoration: none;
+  transition: background .2s ease-out, color .2s ease-out;
 }
 
 .manageLink:hover {
   background: rgba(200, 162, 90, .08);
+  color: #5f3e1e;
 }
 
+.pendingMessage,
 .error {
   margin: 9px 8px 2px;
-  color: #9b432e;
   font-size: .72rem;
   line-height: 1.4;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .trigger,
-  .workspaceOption { transition: none; }
+.pendingMessage {
+  color: var(--dashboard-muted, rgba(74, 58, 47, .64));
 }
 
-@media (max-width: 760px) {
-  .popover {
-    top: calc(100% + 10px);
-    left: 0;
-    right: auto;
-    bottom: auto;
-    width: 100%;
-  }
+.error {
+  color: #9b432e;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .workspaceOption,
+  .manageLink { transition: none; }
 }

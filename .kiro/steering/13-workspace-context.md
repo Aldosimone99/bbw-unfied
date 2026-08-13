@@ -50,3 +50,19 @@ Se il cambio fallisce, il workspace precedente resta attivo e la UI mostra un er
 ## Workspace-aware pages
 
 Le pagine organization-centric devono ricevere e usare il contesto attivo già risolto dal server. Le pagine dello Studio personale devono usare il relativo professional profile. Non mescolare dati, query o capabilities tra workspace diversi e non usare nomi come “Clinica Di Rosa” per decidere il comportamento.
+
+## Refinement visuale e interaction contract
+
+Il pattern globale del workspace comprende:
+
+- trigger compatto con label `Spazio attivo`, nome principale, tipo/ruolo secondario muted e `ChevronDown`;
+- popover custom BBW con larghezza desktop sufficiente alla lettura dei nomi, righe interamente cliccabili, check oro soltanto sul workspace attivo e background attivo appena percettibile;
+- `Gestisci spazi` visibile solo quando route e capability server-side lo consentono;
+- portal/fixed positioning quando il contenitore sidebar potrebbe tagliare il popover;
+- Escape, click outside, focus visibile, focus restituito al trigger alla chiusura, frecce/Home/End sulle righe e `aria-expanded`/`aria-controls` sul trigger;
+- pending minimale con selezioni disabilitate e messaggio inline, errore leggibile senza sostituire o invalidare il workspace precedente;
+- stesso contratto su desktop e mobile, con target touch ampi e nessun `<select>` nativo.
+
+Il blocco Account resta separato dal workspace ma può contenere la propria label dentro il bordo del box. La descrizione secondaria dell'account deve usare il mapping ruolo user-facing centralizzato e non duplicare `Account personale` quando la label è già presente.
+
+Le card `Il tuo studio` e `La tua struttura` sono informative: mostrano tipo, nome, badge ruolo fit-content e stato del profilo/contesto; non contengono controlli di cambio workspace.

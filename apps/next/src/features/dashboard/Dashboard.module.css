@@ -212,7 +212,7 @@
   align-items: center;
   column-gap: 11px;
   row-gap: 6px;
-  min-height: 86px;
+  min-height: 82px;
   padding: 12px;
   cursor: pointer;
   list-style: none;
@@ -530,14 +530,19 @@
   font-size: .78rem;
 }
 
-.organizationRole {
-  padding: 5px 9px;
+.contextRoleBadge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 24px;
+  padding: 4px 9px;
   border: 1px solid rgba(200, 162, 90, .2);
   border-radius: 6px;
   background: rgba(239, 231, 220, .58);
   color: #8e6a32;
   font-size: .72rem;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .organizationState {
@@ -1451,7 +1456,12 @@
 }
 
 .organizationSummary .organizationMeta {
+  display: grid;
+  gap: 8px;
   margin-top: 16px;
+  color: var(--dashboard-muted);
+  font-size: .82rem;
+  line-height: 1.4;
 }
 
 @media (max-width: 760px) {

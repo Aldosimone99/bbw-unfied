@@ -251,3 +251,11 @@ Una modifica grafica è completa quando:
 Nelle liste applicative l'affordance per un gruppo di azioni usa `MoreHorizontal`, resa dal mapping `moreActions` dell'adapter `PlatformIcon`; non usare caratteri Unicode come `•••`. La ricerca usa `Search` tramite il mapping `search`. Le due icone mantengono `18px`, `strokeWidth={1.75}`, cap e join round e devono avere un nome accessibile sul controllo che le contiene.
 
 Le superfici organizzative Inviti e Staff costituiscono il riferimento per righe premium: identità primaria, informazione secondaria, metadati contestuali, badge semantico e menu solo per azioni effettivamente autorizzate. Staff è la superficie user-facing delle membership e delle persone che collaborano con la struttura; non mantenere una pagina Membri separata.
+
+## Workspace e metadata di contesto
+
+I controlli dropdown della dashboard usano `ChevronDown` tramite `PlatformIcon`; `ChevronsUpDown` non va introdotto per comunicare un semplice menu apribile. Il trigger workspace mantiene icona, nome principale, metadata secondari muted e target cliccabile completo.
+
+I badge di ruolo e tipo nelle card sono metadata: devono usare `width: fit-content`, altezza e padding compatti, bordo sottile, fondo beige leggero e testo oro/marrone. Non devono imitare input disabilitati né occupare tutta la larghezza della card.
+
+Il popover workspace riusa il design system delle card e dei dropdown: avorio, border sottile, radius 8–14px, shadow calda morbida, hover beige leggero e stato attivo appena percettibile. Quando la sidebar ha overflow, il popover può essere montato in portal con posizionamento fixed per preservare la larghezza utile e impedire il clipping.

@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 
 import { logoutAction } from '../auth/actions';
 import type { CurrentUser, OperationalContextSummary, PermissionCode, ProfileSummary } from '../../types/authorization';
 import WorkspaceSwitcher from '../operational-context/WorkspaceSwitcher';
+import { getOperationalContextUserRoleLabel } from '../operational-context/labels';
 import PlatformIcon, { type PlatformIconName } from './PlatformIcon';
 import { getDashboardNavItems } from './transitionNavigation';
 import styles from './Dashboard.module.css';
@@ -45,6 +45,9 @@ export default function PlatformShell({ user, profile, activePath, operationalCo
   const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Profilo BBW';
   const activeContext = operationalContext.activeOperationalContext;
   const navItems = getDashboardNavItems(activeContext, permissions);
+  const accountDescriptor = activeContext
+    ? getOperationalContextUserRoleLabel(activeContext) ?? 'Profilo personale'
+    : 'Profilo personale';
   const accountItems = navItems.filter((item) => item.href === '/profilo' || item.href === '/impostazioni');
   const canManageOrganization = activeContext?.kind === 'organization' && permissions.includes('organization.update');
   const organizationProfileItem: DashboardNavItem = {
@@ -91,9 +94,9 @@ export default function PlatformShell({ user, profile, activePath, operationalCo
                 <span className={styles.avatarSmall} aria-hidden="true">{initials}</span>
                 <span className={styles.sidebarUserName}>
                   <strong>{fullName}</strong>
-                  <span>Account personale</span>
+                  <span>{accountDescriptor}</span>
                 </span>
-                <ChevronDown className={styles.userArrow} size={18} strokeWidth={1.75} aria-hidden="true" focusable="false" />
+                <PlatformIcon name="chevronDown" className={styles.userArrow} size={18} />
               </summary>
               <div className={styles.sidebarAccountMenu}>
                 <a href="/profilo">Profilo personale</a>

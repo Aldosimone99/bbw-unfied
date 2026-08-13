@@ -16,6 +16,15 @@ export function getOperationalContextRoleLabel(context: OperationalContext): str
   return context.roles[0]?.displayName ?? null;
 }
 
+export function getOperationalContextUserRoleLabel(context: OperationalContext): string | null {
+  return getOperationalContextRoleLabel(context)
+    ?? (context.kind === 'personal_professional' ? context.professionalTypeDisplayName : null);
+}
+
+export function getOperationalContextPresentationLabel(context: OperationalContext): string {
+  return context.kind === 'personal_professional' ? 'Studio personale' : 'La tua struttura';
+}
+
 export function getOperationalContextDescription(context: OperationalContext): string {
   return context.kind === 'personal_professional'
     ? 'Gestisci la tua attività professionale e i tuoi appuntamenti personali.'
