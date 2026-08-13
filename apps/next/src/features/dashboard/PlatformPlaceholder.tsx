@@ -17,8 +17,8 @@ type PlatformPlaceholderProps = {
 export default function PlatformPlaceholder({ user, profile, activePath, eyebrow, title, description, operationalContext, permissions }: PlatformPlaceholderProps) {
   const iconByPath: Record<string, PlatformIconName> = {
     '/catalogo': 'catalog', '/calendario': 'calendar', '/clienti': 'clients', '/consensi': 'consents',
-    '/disponibilita': 'availability', '/inviti': 'invites', '/membri': 'members', '/messaggi': 'messages',
-    '/prenotazioni': 'bookings', '/profilo': 'profile', '/report': 'reports', '/staff': 'staff',
+    '/disponibilita': 'availability', '/inviti': 'invites', '/messaggi': 'messages',
+    '/prenotazioni': 'bookings', '/profilo': 'profile', '/report': 'reports',
     '/storico': 'history', '/impostazioni': 'settings',
   };
 

@@ -35,10 +35,10 @@ async function readEnvelope(response: Response): Promise<ApiEnvelope> {
 
 function memberErrorMessage(code: string | null): string {
   const messages: Record<string, string> = {
-    FORBIDDEN: 'Non hai i permessi necessari per gestire i membri di questa struttura.',
+    FORBIDDEN: 'Non hai i permessi necessari per gestire lo staff di questa struttura.',
     ORGANIZATION_MEMBER_SELF_REMOVAL_NOT_ALLOWED: 'Non puoi rimuovere te stesso da questo pannello.',
     ORGANIZATION_LAST_OWNER_REMOVAL_NOT_ALLOWED: 'Non puoi rimuovere l’ultimo responsabile della struttura.',
-    ORGANIZATION_MEMBER_NOT_ACTIVE: 'Questo membro non è più attivo.',
+    ORGANIZATION_MEMBER_NOT_ACTIVE: 'Questa persona non è più attiva.',
   };
   return code ? messages[code] ?? 'Non è stato possibile completare l’operazione.' : 'Non è stato possibile completare l’operazione.';
 }
@@ -108,7 +108,7 @@ export default function OrganizationMembers({
       if (!response.ok || !envelope.success) throw new Error(memberErrorMessage(errorCode(envelope)));
       setRemovalTarget(null);
       setActionMenuId(null);
-      setNotice(`${memberName(removalTarget)} non fa più parte della struttura.`);
+      setNotice(`${memberName(removalTarget)} non fa più parte dello staff.`);
       await load();
     } catch (removeError) {
       setError(removeError instanceof Error ? removeError.message : 'Non è stato possibile rimuovere il membro.');
@@ -120,12 +120,12 @@ export default function OrganizationMembers({
   return (
     <OrganizationPageShell>
       <OrganizationPageHeader
-        title="Membri"
-        description="Gestisci le persone che fanno parte della struttura."
+        title="Staff"
+        description="Gestisci le persone che collaborano con la struttura."
       />
 
       <section className={styles.membersSection} aria-labelledby="organization-members-list-title">
-        <OrganizationSectionHeader id="organization-members-list-title" title="Membri della struttura" count={members.length} />
+        <OrganizationSectionHeader id="organization-members-list-title" title="Staff della struttura" count={members.length} />
         <div className={styles.toolbar}>
           <label className={styles.searchField} htmlFor="member-search">
             <PlatformIcon name="search" size={18} />
@@ -138,29 +138,29 @@ export default function OrganizationMembers({
               type="search"
             />
           </label>
-          {canInvite ? <Link className={styles.inviteLink} href="/inviti">Invita membro <PlatformIcon name="arrowRight" size={18} /></Link> : null}
+          {canInvite ? <Link className={styles.inviteLink} href="/inviti">Invita persona <PlatformIcon name="arrowRight" size={18} /></Link> : null}
         </div>
 
         {error ? <p className={styles.error} role="alert">{error}</p> : null}
         {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
-        {loading ? <OrganizationLoadingState label="Caricamento membri…" /> : null}
+        {loading ? <OrganizationLoadingState label="Caricamento staff…" /> : null}
         {!loading && members.length === 0 ? (
           <OrganizationEmptyState
             icon="members"
-            title="Il team è ancora vuoto."
+            title="Lo staff è ancora vuoto."
             description="Invita un professionista per iniziare a collaborare nella struttura."
-            action={canInvite ? <Link className={styles.emptyLink} href="/inviti">Invita membro <PlatformIcon name="arrowRight" size={18} /></Link> : null}
+            action={canInvite ? <Link className={styles.emptyLink} href="/inviti">Invita persona <PlatformIcon name="arrowRight" size={18} /></Link> : null}
           />
         ) : null}
         {!loading && members.length > 0 && visibleMembers.length === 0 ? (
           <OrganizationEmptyState
             icon="search"
-            title="Nessun membro corrisponde alla ricerca."
+            title="Nessuna persona corrisponde alla ricerca."
             description="Prova a cercare con un altro nome o indirizzo email."
           />
         ) : null}
         {!loading && visibleMembers.length > 0 ? (
-          <ul className={styles.list} aria-label="Membri della struttura">
+          <ul className={styles.list} aria-label="Staff della struttura">
             {visibleMembers.map((member) => {
               const canRemove = canManage && member.status === 'active' && !member.isOrganizationOwner;
               return (
@@ -188,7 +188,7 @@ export default function OrganizationMembers({
                       </button>
                       {actionMenuId === member.membershipId ? (
                         <div className={styles.menu} role="menu">
-                          <button onClick={() => setRemovalTarget(member)} role="menuitem" type="button">Rimuovi dalla struttura</button>
+                          <button onClick={() => setRemovalTarget(member)} role="menuitem" type="button">Rimuovi dallo staff</button>
                         </div>
                       ) : null}
                     </div>
@@ -204,8 +204,8 @@ export default function OrganizationMembers({
         <div className={styles.dialogBackdrop} role="presentation">
           <section aria-describedby="remove-member-description" aria-labelledby="remove-member-title" aria-modal="true" className={styles.dialog} role="dialog">
             <p className={styles.cardEyebrow}>Conferma</p>
-            <h2 id="remove-member-title">Rimuovere {memberName(removalTarget)} dalla struttura?</h2>
-            <p id="remove-member-description">La persona perderà l’accesso alle funzionalità associate a questa struttura.</p>
+            <h2 id="remove-member-title">Rimuovere {memberName(removalTarget)} dallo staff?</h2>
+            <p id="remove-member-description">La persona perderà l’accesso alle funzionalità associate allo staff.</p>
             <div className={styles.dialogActions}>
               <button disabled={Boolean(removingId)} onClick={() => setRemovalTarget(null)} type="button">Annulla</button>
               <button disabled={Boolean(removingId)} onClick={() => void removeMember()} type="button">

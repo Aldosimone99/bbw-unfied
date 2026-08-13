@@ -25,7 +25,7 @@ Usare section header, liste e card leggere coerenti con la dashboard. Evitare ta
 
 ## 5. Secondary content
 
-Cronologie, dettagli secondari e azioni di pulizia devono essere visivamente subordinati al contenuto principale. Separare concettualmente Membri, Staff e Inviti: Membri rappresenta le membership restituite dal dominio; Inviti rappresenta richieste ancora aperte o concluse; Staff resta un sottoinsieme operativo soltanto se il dominio lo definisce esplicitamente.
+Cronologie, dettagli secondari e azioni di pulizia devono essere visivamente subordinati al contenuto principale. Separare concettualmente Inviti e Staff: Staff è la superficie user-facing per le membership e le persone che collaborano con la struttura; Inviti rappresenta richieste ancora aperte o concluse. Una futura superficie operativa distinta potrà essere introdotta solo se il dominio definisce un sottoinsieme reale dello staff.
 
 ## 6. Empty/loading/error states
 
@@ -33,7 +33,7 @@ Ogni contenuto deve avere uno stato vuoto progettato con icona, messaggio compre
 
 ## Collection Page
 
-Usata per membri, clienti, consensi, trattamenti, staff e prenotazioni quando il dominio è approvato.
+Usata per staff, clienti, consensi, trattamenti e prenotazioni quando il dominio è approvato.
 
 ```text
 PageHeader

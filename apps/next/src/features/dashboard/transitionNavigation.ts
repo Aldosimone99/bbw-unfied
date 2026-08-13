@@ -46,13 +46,10 @@ export function getDashboardNavItems(
 
   const membershipItems: DashboardNavItem[] = [];
   if (includesAnyPermission(permissions, ['organization.members.read', 'organization.members.manage'])) {
-    membershipItems.push({ href: '/membri', label: 'Membri', icon: 'members' });
+    membershipItems.push({ href: '/staff', label: 'Staff', icon: 'staff' });
   }
   if (includesAnyPermission(permissions, ['organization.members.invite', 'organization.members.manage'])) {
     membershipItems.push({ href: '/inviti', label: 'Inviti', icon: 'invites' });
-  }
-  if (permissions.includes('organization.members.manage')) {
-    membershipItems.push({ href: '/staff', label: 'Staff', icon: 'staff' });
   }
 
   return [...organizationItems, ...membershipItems, ...commonAccountItems];
