@@ -1,0 +1,369 @@
+.pageHeader {
+  max-width: 780px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: rgba(126, 91, 35, .75);
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.pageHeader h1 {
+  margin: 13px 0 0;
+  color: #302720;
+  font-size: clamp(3rem, 5.8vw, 6.2rem);
+  font-weight: 300;
+  letter-spacing: -.045em;
+  line-height: .9;
+}
+
+.pageHeader > p:last-child {
+  margin: 14px 0 0;
+  color: rgba(74, 58, 47, .64);
+  font-size: 1.06rem;
+  line-height: 1.5;
+}
+
+.catalogSection,
+.listinoSection {
+  width: min(100%, 1120px);
+  margin-top: 32px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  padding: 22px 0 18px;
+}
+
+.searchField,
+.categoryField,
+.editor label {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  border: 1px solid rgba(127, 90, 52, .2);
+  border-radius: 8px;
+  background: rgba(255, 253, 250, .7);
+  color: var(--brown);
+}
+
+.searchField {
+  flex: 1 1 auto;
+}
+
+.categoryField {
+  flex: 0 0 230px;
+}
+
+.searchField input,
+.categoryField select {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--brown);
+  font: inherit;
+}
+
+.categoryField select {
+  cursor: pointer;
+}
+
+.searchField:focus-within,
+.categoryField:focus-within,
+.editor label:focus-within {
+  border-color: rgba(155, 103, 37, .66);
+  box-shadow: 0 0 0 4px rgba(200, 162, 90, .12);
+}
+
+.error,
+.notice,
+.sectionDescription,
+.listinoSummary {
+  margin: 0 0 16px;
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+.error { color: #9b432e; }
+.notice { color: #3e6d42; }
+.sectionDescription,
+.listinoSummary { color: rgba(74, 58, 47, .64); }
+
+.treatmentList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.treatmentRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(127, 90, 52, .13);
+}
+
+.treatmentInfo {
+  min-width: 0;
+}
+
+.treatmentTitle {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.treatmentTitle strong {
+  color: var(--brown);
+  font-size: .96rem;
+  font-weight: 550;
+}
+
+.treatmentTitle span {
+  color: #8c622d;
+  font-size: .72rem;
+}
+
+.treatmentInfo p,
+.treatmentInfo small {
+  display: block;
+  margin: 6px 0 0;
+  color: rgba(74, 58, 47, .66);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+
+.treatmentInfo small {
+  max-width: 720px;
+  color: rgba(74, 58, 47, .52);
+  font-size: .73rem;
+}
+
+.rowMeta {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+  min-width: 142px;
+}
+
+.effectiveValue {
+  color: rgba(74, 58, 47, .68);
+  font-size: .73rem;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  min-width: max-content;
+}
+
+.primaryButton,
+.secondaryButton,
+.removeButton {
+  min-height: 36px;
+  padding: 0 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  font-size: .75rem;
+}
+
+.primaryButton {
+  border: 1px solid #4b3a2e;
+  background: #4b3a2e;
+  color: #fffaf4;
+}
+
+.secondaryButton {
+  border: 1px solid rgba(127, 90, 52, .28);
+  background: #fffdf9;
+  color: #71491f;
+}
+
+.removeButton {
+  border: 1px solid rgba(155, 67, 46, .25);
+  background: transparent;
+  color: #9b432e;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover {
+  border-color: #342820;
+  background: #342820;
+  color: #fffaf4;
+}
+
+.removeButton:hover {
+  background: rgba(155, 67, 46, .07);
+}
+
+.editor {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: end;
+  gap: 9px;
+  padding: 16px;
+  border: 1px solid rgba(127, 90, 52, .15);
+  border-radius: 10px;
+  background: rgba(249, 242, 233, .46);
+}
+
+.editor label {
+  display: grid;
+  align-items: center;
+  gap: 4px;
+  min-height: 0;
+  padding: 7px 10px 0;
+  color: rgba(74, 58, 47, .66);
+  font-size: .68rem;
+}
+
+.editor input {
+  width: 110px;
+  height: 29px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--brown);
+  font: inherit;
+  font-size: .84rem;
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.removeButton:focus-visible,
+.searchField:focus-within,
+.categoryField:focus-within,
+.editor label:focus-within {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.removeButton:disabled {
+  cursor: wait;
+  opacity: .58;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.listinoList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listinoRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 15px 0;
+  border-bottom: 1px solid rgba(127, 90, 52, .13);
+}
+
+.listinoRow > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.listinoRow strong {
+  overflow-wrap: anywhere;
+  color: var(--brown);
+  font-size: .9rem;
+  font-weight: 550;
+}
+
+.listinoRow span {
+  color: rgba(74, 58, 47, .64);
+  font-size: .75rem;
+}
+
+.listinoRow .listinoValue {
+  color: var(--brown);
+  font-size: .78rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .listinoRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .listinoRow .listinoValue {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .listinoRow > span:last-child {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .treatmentRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .rowMeta {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .catalogSection,
+  .listinoSection {
+    margin-top: 24px;
+  }
+
+  .toolbar {
+    flex-direction: column;
+  }
+
+  .categoryField {
+    flex-basis: auto;
+  }
+
+  .rowMeta {
+    justify-items: start;
+  }
+
+  .editor {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .editor label,
+  .editor input {
+    width: 100%;
+  }
+}

@@ -17,7 +17,7 @@ import { createPPLRouter } from './routes/ppl-routes';
 import { createAvailabilityRouter } from './routes/availability-routes';
 import { createBookingsRouter } from './routes/bookings-routes';
 import { createSlotsRouter } from './routes/slots-routes';
-import { createCatalogRouter } from './routes/catalog';
+import { createCatalogRoutes } from './routes/catalog-routes';
 import { createConsentTemplatesRouter } from './routes/consent-templates-routes';
 import { createConsentDocumentsRouter } from './routes/consent-documents-routes';
 import { createUsersRouter } from './routes/users-routes';
@@ -62,7 +62,7 @@ export function createApp(db = createSupabaseServerClient()) {
       return callback(new Error('CORS_ORIGIN_FORBIDDEN'));
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'X-Company-Id', 'X-Request-Id'],
+    allowedHeaders: ['Authorization', 'Content-Type', 'X-Company-Id', 'X-Operational-Context-Kind', 'X-Operational-Context-Id', 'X-Request-Id'],
     maxAge: 600,
   }));
   app.use(express.json({ limit: process.env.JSON_BODY_LIMIT ?? '1mb' }));
@@ -74,6 +74,7 @@ export function createApp(db = createSupabaseServerClient()) {
   app.use('/organizations', createOrganizationProfileRouter(db));
   app.use('/organization/members', createOrganizationMembersRouter(db));
   app.use('/patients', createPatientRelationshipRouter(db));
+  app.use('/catalog', createCatalogRoutes(db));
 
   if (enableLegacyRoutes) {
     app.use('/invites', createInvitesRouter(db));
@@ -89,7 +90,6 @@ export function createApp(db = createSupabaseServerClient()) {
     app.use('/bookings', createBookingsRouter(db));
     app.use('/availability', createAvailabilityRouter(db));
     app.use('/slots', createSlotsRouter(db));
-    app.use('/catalog', createCatalogRouter(db));
     app.use('/consent-templates', createConsentTemplatesRouter(db));
     app.use('/consents', createConsentDocumentsRouter(db));
     app.use('/users', createUsersRouter(db));

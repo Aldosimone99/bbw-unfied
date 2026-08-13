@@ -22,6 +22,7 @@ export * from './schemas/availability-schema';
 export * from './schemas/catalog-schema';
 export * from './schemas/consent-schema';
 export * from './schemas/patient-relationship-schema';
+export * from './schemas/catalog-master-schema';
 export * from './api/users';
 export * from './api/companies';
 export * from './api/address';

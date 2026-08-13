@@ -41,10 +41,13 @@ export function getDashboardNavItems(
   if (!context) return [{ href: '/dashboard', label: 'Dashboard', icon: 'home' }, ...commonAccountItems];
 
   if (context.kind === 'personal_professional') {
-    const visibleItems = permissions.includes('patients.read')
+    const visibleItems = permissions.includes('catalog.read')
       ? personalProfessionalItems
-      : personalProfessionalItems.filter((item) => item.href !== '/clienti');
-    return [...visibleItems, ...commonAccountItems];
+      : personalProfessionalItems.filter((item) => item.href !== '/catalogo');
+    const patientsVisible = permissions.includes('patients.read')
+      ? visibleItems
+      : visibleItems.filter((item) => item.href !== '/clienti');
+    return [...patientsVisible, ...commonAccountItems];
   }
 
   const membershipItems: DashboardNavItem[] = [];
@@ -55,8 +58,11 @@ export function getDashboardNavItems(
     membershipItems.push({ href: '/inviti', label: 'Inviti', icon: 'invites' });
   }
 
-  const visibleOrganizationItems = permissions.includes('patients.read')
+  const visibleOrganizationItems = permissions.includes('catalog.read')
     ? organizationItems
-    : organizationItems.filter((item) => item.href !== '/clienti');
-  return [...visibleOrganizationItems, ...membershipItems, ...commonAccountItems];
+    : organizationItems.filter((item) => item.href !== '/catalogo');
+  const patientsVisibleOrganizationItems = permissions.includes('patients.read')
+    ? visibleOrganizationItems
+    : visibleOrganizationItems.filter((item) => item.href !== '/clienti');
+  return [...patientsVisibleOrganizationItems, ...membershipItems, ...commonAccountItems];
 }
