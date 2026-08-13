@@ -44,7 +44,11 @@ export default function DashboardView({ user, profile, operationalContext, permi
         <DashboardOnboardingBanner permissions={permissions} readiness={readiness} />
 
         <div className={styles.dashboardGrid}>
-          <OrganizationSummary context={activeContext} canManage={activeContext?.kind === 'organization' && permissions.includes('organization.update')} />
+          <OrganizationSummary
+            context={activeContext}
+            contexts={operationalContext.availableOperationalContexts}
+            canManage={activeContext?.kind === 'organization' && permissions.includes('organization.update')}
+          />
           <AttentionList />
         </div>
 

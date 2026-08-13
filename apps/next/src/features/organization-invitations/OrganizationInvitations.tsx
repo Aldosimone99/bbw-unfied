@@ -1,7 +1,22 @@
 'use client';
 
 import { companyInviteListResponseSchema, type CompanyInviteRow } from '@bbw/interfaces';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+
+import PlatformIcon from '../dashboard/PlatformIcon';
+import {
+  OrganizationEmptyState,
+  OrganizationLoadingState,
+  OrganizationPageHeader,
+  OrganizationPageShell,
+  OrganizationSectionHeader,
+  StatusBadge,
+} from '../organizations/OrganizationPagePrimitives';
+import {
+  getInvitationStatusLabel,
+  getInvitationStatusTone,
+  getOrganizationRoleLabel,
+} from '../organizations/organizationPresentation';
 
 import styles from './OrganizationInvitations.module.css';
 
@@ -25,19 +40,20 @@ function invitationErrorMessage(code: string | null): string {
     INVITATION_NOT_FOUND: 'L’invito non è più disponibile.',
     INVITATION_NOT_PENDING: 'Questo invito non può più essere modificato.',
     INVITATION_PENDING_HISTORY_HIDE_NOT_ALLOWED: 'Un invito in attesa deve essere prima revocato.',
+    INVITATION_ROLE_NOT_ASSIGNABLE: 'Non puoi inviare questo invito nel contesto attuale.',
   };
   return code ? messages[code] ?? 'Non è stato possibile completare l’operazione.' : 'Non è stato possibile completare l’operazione.';
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value));
+  return new Intl.DateTimeFormat('it-IT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(value));
 }
 
-function statusLabel(status: CompanyInviteRow['status']): string {
-  return ({ pending: 'In attesa', accepted: 'Accettato', revoked: 'Revocato', expired: 'Scaduto' })[status];
-}
-
-export default function OrganizationInvitations({ organizationName }: Readonly<{ organizationName: string }>) {
+export default function OrganizationInvitations() {
   const [invitations, setInvitations] = useState<CompanyInviteRow[]>([]);
   const [email, setEmail] = useState('');
   const [latestLink, setLatestLink] = useState<string | null>(null);
@@ -69,8 +85,14 @@ export default function OrganizationInvitations({ organizationName }: Readonly<{
     return () => window.clearTimeout(timer);
   }, [load]);
 
-  const pendingInvitations = useMemo(() => invitations.filter((invitation) => invitation.status === 'pending'), [invitations]);
-  const completedInvitations = useMemo(() => invitations.filter((invitation) => invitation.status !== 'pending'), [invitations]);
+  const pendingInvitations = useMemo(
+    () => invitations.filter((invitation) => invitation.status === 'pending'),
+    [invitations],
+  );
+  const completedInvitations = useMemo(
+    () => invitations.filter((invitation) => invitation.status !== 'pending'),
+    [invitations],
+  );
 
   async function copyLink() {
     if (!latestLink) return;
@@ -82,7 +104,7 @@ export default function OrganizationInvitations({ organizationName }: Readonly<{
     }
   }
 
-  async function createInvitation(event: React.FormEvent<HTMLFormElement>) {
+  async function createInvitation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
     setError(null);
@@ -90,7 +112,9 @@ export default function OrganizationInvitations({ organizationName }: Readonly<{
     setLatestLink(null);
     try {
       const response = await fetch('/api/backend/company/invites', {
-        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }),
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email }),
       });
       const envelope = await readEnvelope(response);
       if (!response.ok || !envelope.success) throw new Error(invitationErrorMessage(errorCode(envelope)));
@@ -98,7 +122,7 @@ export default function OrganizationInvitations({ organizationName }: Readonly<{
       if (typeof data.acceptLink !== 'string') throw new Error('Il link invito non è disponibile. Riprova.');
       setLatestLink(data.acceptLink);
       setEmail('');
-      setNotice('Invito medico creato. Copia il link ora: non viene conservato nel database.');
+      setNotice('Invito creato. Copia il link ora: non viene conservato nel database.');
       await load();
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : 'Non è stato possibile creare l’invito.');
@@ -138,7 +162,7 @@ export default function OrganizationInvitations({ organizationName }: Readonly<{
       if (typeof data.acceptLink !== 'string') throw new Error('Il nuovo link non è disponibile. Riprova.');
       setLatestLink(data.acceptLink);
       setActionId(null);
-      setNotice('Nuovo link medico generato. Il precedente è stato invalidato.');
+      setNotice('Nuovo link generato. Il precedente è stato invalidato.');
       await load();
     } catch (resendError) {
       setError(resendError instanceof Error ? resendError.message : 'Non è stato possibile generare un nuovo link.');
@@ -173,39 +197,206 @@ export default function OrganizationInvitations({ organizationName }: Readonly<{
   }
 
   return (
-    <section className={styles.content} aria-labelledby="organization-invitations-title">
-      <header className={styles.intro}>
-        <p className={styles.eyebrow}>Struttura</p>
-        <h1 id="organization-invitations-title">Inviti</h1>
-        <p>Invita un medico a collaborare con la struttura.</p>
-      </header>
+    <OrganizationPageShell>
+      <OrganizationPageHeader
+        title="Inviti"
+        description="Invita professionisti e gestisci gli accessi alla struttura."
+      />
 
-      <form className={styles.composer} onSubmit={createInvitation}>
-        <label htmlFor="medical-invitation-email">Email del medico</label>
-        <div>
-          <input id="medical-invitation-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="medico@example.com" required disabled={submitting || loading} />
-          <button type="submit" disabled={submitting || loading}>{submitting ? 'Invio…' : 'Invia invito'}</button>
+      <section className={styles.actionCard} aria-labelledby="new-invitation-title">
+        <div className={styles.actionCardHeader}>
+          <span className={styles.cardIcon}><PlatformIcon name="invites" size={20} /></span>
+          <div>
+            <p className={styles.cardEyebrow}>Nuovo invito</p>
+            <h2 id="new-invitation-title">Invita un professionista</h2>
+            <p>Inserisci l’indirizzo email della persona che vuoi aggiungere alla struttura.</p>
+          </div>
         </div>
-      </form>
+        <form className={styles.inviteForm} onSubmit={createInvitation}>
+          <label htmlFor="organization-invitation-email">Indirizzo email</label>
+          <div className={styles.formRow}>
+            <input
+              id="organization-invitation-email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              autoComplete="email"
+              placeholder="nome@example.com"
+              required
+              disabled={submitting || loading}
+            />
+            <button className={styles.primaryButton} type="submit" disabled={submitting || loading}>
+              {submitting ? 'Invio…' : 'Invia invito'}
+              <PlatformIcon name="arrowRight" size={18} />
+            </button>
+          </div>
+        </form>
+      </section>
 
       {error ? <p className={styles.error} role="alert">{error}</p> : null}
       {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
-      {latestLink ? <section className={styles.linkPanel} aria-label="Link invito medico appena generato"><label htmlFor="latest-invitation-link">Link invito</label><div><input id="latest-invitation-link" value={latestLink} readOnly /><button type="button" onClick={() => void copyLink()}>Copia link</button></div></section> : null}
+
+      {latestLink ? (
+        <section className={styles.linkPanel} aria-labelledby="latest-invitation-link-title">
+          <div>
+            <p className={styles.cardEyebrow}>Link appena creato</p>
+            <h2 id="latest-invitation-link-title">Condividi l’invito</h2>
+            <p>Per sicurezza il link viene mostrato solo ora e non viene conservato nel database.</p>
+          </div>
+          <div className={styles.formRow}>
+            <label className={styles.srOnly} htmlFor="latest-invitation-link">Link invito</label>
+            <input id="latest-invitation-link" value={latestLink} readOnly />
+            <button className={styles.secondaryButton} type="button" onClick={() => void copyLink()}>Copia link</button>
+          </div>
+        </section>
+      ) : null}
 
       <section className={styles.invitationSection} aria-labelledby="pending-invitations-title">
-        <div className={styles.sectionHeading}><h2 id="pending-invitations-title">Inviti in attesa</h2><span>{pendingInvitations.length}</span></div>
-        {loading ? <p className={styles.empty}>Caricamento inviti…</p> : null}
-        {!loading && pendingInvitations.length === 0 ? <p className={styles.empty}>Nessun invito in attesa.</p> : null}
-        {!loading && pendingInvitations.length > 0 ? <ul className={styles.list}>{pendingInvitations.map((invitation) => <li className={styles.invitation} key={invitation.id}><div className={styles.identity}><strong>{invitation.email}</strong><span>Medico · Scade il {formatDate(invitation.expiresAt)}</span></div><div className={styles.actionArea}><button aria-expanded={actionId === invitation.id} aria-haspopup="menu" aria-label={`Azioni per ${invitation.email}`} className={styles.menuTrigger} onClick={() => setActionId((current) => current === invitation.id ? null : invitation.id)} type="button">•••</button>{actionId === invitation.id ? <div className={styles.menu} role="menu"><button disabled={mutating} onClick={() => void rotateInvitationLink(invitation.id)} role="menuitem" type="button">Genera nuovo link</button><button disabled={mutating} onClick={() => void revokeInvitation(invitation.id)} role="menuitem" type="button">Revoca invito</button></div> : null}</div></li>)}</ul> : null}
+        <OrganizationSectionHeader id="pending-invitations-title" title="Inviti in attesa" count={pendingInvitations.length} />
+        {loading ? <OrganizationLoadingState label="Caricamento inviti…" /> : null}
+        {!loading && pendingInvitations.length === 0 ? (
+          <OrganizationEmptyState
+            icon="invites"
+            title="Nessun invito in attesa."
+            description="I nuovi inviti compariranno qui finché non verranno accettati."
+          />
+        ) : null}
+        {!loading && pendingInvitations.length > 0 ? (
+          <ul className={styles.list} aria-label="Inviti in attesa">
+            {pendingInvitations.map((invitation) => (
+              <li className={styles.invitationRow} key={invitation.id}>
+                <div className={styles.identity}>
+                  <strong>{invitation.email}</strong>
+                  <span>{getOrganizationRoleLabel(invitation.role)}</span>
+                </div>
+                <div className={styles.rowMeta}>
+                  <StatusBadge label="In attesa" tone="warning" />
+                  <span>Scade il {formatDate(invitation.expiresAt)}</span>
+                </div>
+                <InvitationActions
+                  invitation={invitation}
+                  open={actionId === invitation.id}
+                  disabled={mutating}
+                  onToggle={() => setActionId((current) => current === invitation.id ? null : invitation.id)}
+                  onResend={() => void rotateInvitationLink(invitation.id)}
+                  onRevoke={() => void revokeInvitation(invitation.id)}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </section>
 
       <section className={styles.invitationSection} aria-labelledby="invitation-history-title">
-        <div className={styles.sectionHeading}><h2 id="invitation-history-title">Cronologia</h2>{completedInvitations.length > 0 ? <button className={styles.historyClear} onClick={() => setHistoryDialog({ kind: 'clear' })} type="button">Pulisci cronologia</button> : null}</div>
-        {!loading && completedInvitations.length === 0 ? <p className={styles.empty}>Nessun invito concluso da mostrare.</p> : null}
-        {!loading && completedInvitations.length > 0 ? <ul className={styles.list}>{completedInvitations.map((invitation) => <li className={styles.invitation} key={invitation.id}><div className={styles.identity}><strong>{invitation.email}</strong><span>Medico · {statusLabel(invitation.status)} · Creato il {formatDate(invitation.createdAt)}</span></div><div className={styles.actionArea}><button aria-expanded={actionId === invitation.id} aria-haspopup="menu" aria-label={`Azioni per ${invitation.email}`} className={styles.menuTrigger} onClick={() => setActionId((current) => current === invitation.id ? null : invitation.id)} type="button">•••</button>{actionId === invitation.id ? <div className={styles.menu} role="menu"><button disabled={mutating} onClick={() => setHistoryDialog({ kind: 'hide', invitation })} role="menuitem" type="button">Rimuovi dalla cronologia</button></div> : null}</div></li>)}</ul> : null}
+        <OrganizationSectionHeader
+          id="invitation-history-title"
+          title="Cronologia"
+          count={completedInvitations.length}
+          action={completedInvitations.length > 0 ? (
+            <button className={styles.historyClear} onClick={() => setHistoryDialog({ kind: 'clear' })} type="button">
+              Pulisci cronologia
+            </button>
+          ) : null}
+        />
+        {!loading && completedInvitations.length === 0 ? (
+          <OrganizationEmptyState
+            icon="history"
+            title="La cronologia è vuota."
+            description="Gli inviti accettati, revocati o scaduti compariranno qui."
+          />
+        ) : null}
+        {!loading && completedInvitations.length > 0 ? (
+          <ul className={styles.list} aria-label="Cronologia inviti">
+            {completedInvitations.map((invitation) => (
+              <li className={styles.invitationRow} key={invitation.id}>
+                <div className={styles.identity}>
+                  <strong>{invitation.email}</strong>
+                  <span>{getOrganizationRoleLabel(invitation.role)} · Invito del {formatDate(invitation.createdAt)}</span>
+                </div>
+                <div className={styles.rowMeta}>
+                  <StatusBadge
+                    label={getInvitationStatusLabel(invitation.status)}
+                    tone={getInvitationStatusTone(invitation.status)}
+                  />
+                </div>
+                <InvitationActions
+                  invitation={invitation}
+                  open={actionId === invitation.id}
+                  disabled={mutating}
+                  onToggle={() => setActionId((current) => current === invitation.id ? null : invitation.id)}
+                  onHide={() => setHistoryDialog({ kind: 'hide', invitation })}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </section>
 
-      {historyDialog ? <div className={styles.dialogBackdrop} role="presentation"><section aria-modal="true" className={styles.dialog} role="dialog"><p className={styles.eyebrow}>Conferma</p><h2>{historyDialog.kind === 'clear' ? 'Rimuovere gli inviti conclusi dalla cronologia?' : `Rimuovere l’invito per ${historyDialog.invitation.email} dalla cronologia?`}</h2><p>{historyDialog.kind === 'clear' ? 'Gli inviti accettati, revocati o scaduti non saranno più visualizzati. Gli inviti in attesa resteranno invariati.' : 'L’invito resterà conservato per audit, ma non verrà più visualizzato in questa pagina.'}</p><div className={styles.dialogActions}><button disabled={mutating} onClick={() => setHistoryDialog(null)} type="button">Annulla</button><button disabled={mutating} onClick={() => void confirmHistoryAction()} type="button">{mutating ? 'Aggiornamento…' : historyDialog.kind === 'clear' ? 'Pulisci cronologia' : 'Rimuovi'}</button></div></section></div> : null}
-    </section>
+      {historyDialog ? (
+        <div className={styles.dialogBackdrop} role="presentation">
+          <section aria-modal="true" className={styles.dialog} role="dialog" aria-labelledby="invitation-dialog-title">
+            <p className={styles.cardEyebrow}>Conferma</p>
+            <h2 id="invitation-dialog-title">
+              {historyDialog.kind === 'clear'
+                ? 'Rimuovere gli inviti conclusi dalla cronologia?'
+                : `Rimuovere l’invito per ${historyDialog.invitation.email} dalla cronologia?`}
+            </h2>
+            <p>
+              {historyDialog.kind === 'clear'
+                ? 'Gli inviti accettati, revocati o scaduti non saranno più visualizzati. Gli inviti in attesa resteranno invariati.'
+                : 'L’invito resterà conservato per audit, ma non verrà più visualizzato in questa pagina.'}
+            </p>
+            <div className={styles.dialogActions}>
+              <button disabled={mutating} onClick={() => setHistoryDialog(null)} type="button">Annulla</button>
+              <button disabled={mutating} onClick={() => void confirmHistoryAction()} type="button">
+                {mutating ? 'Aggiornamento…' : historyDialog.kind === 'clear' ? 'Pulisci cronologia' : 'Rimuovi'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+    </OrganizationPageShell>
+  );
+}
+
+type InvitationActionsProps = {
+  invitation: CompanyInviteRow;
+  open: boolean;
+  disabled: boolean;
+  onToggle: () => void;
+  onResend?: () => void;
+  onRevoke?: () => void;
+  onHide?: () => void;
+};
+
+function InvitationActions({
+  invitation,
+  open,
+  disabled,
+  onToggle,
+  onResend,
+  onRevoke,
+  onHide,
+}: InvitationActionsProps) {
+  return (
+    <div className={styles.actionArea}>
+      <button
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={`Azioni per ${invitation.email}`}
+        className={styles.menuTrigger}
+        onClick={onToggle}
+        type="button"
+      >
+        <PlatformIcon name="moreActions" size={18} />
+      </button>
+      {open ? (
+        <div className={styles.menu} role="menu">
+          {onResend ? <button disabled={disabled} onClick={onResend} role="menuitem" type="button">Genera nuovo link</button> : null}
+          {onRevoke ? <button disabled={disabled} onClick={onRevoke} role="menuitem" type="button">Revoca invito</button> : null}
+          {onHide ? <button disabled={disabled} onClick={onHide} role="menuitem" type="button">Rimuovi dalla cronologia</button> : null}
+        </div>
+      ) : null}
+    </div>
   );
 }

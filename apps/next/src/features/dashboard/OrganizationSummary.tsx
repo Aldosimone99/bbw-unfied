@@ -2,15 +2,17 @@ import type { OperationalContext } from '@bbw/interfaces';
 import { ArrowRight } from 'lucide-react';
 
 import { getOperationalContextRoleLabel, getOperationalContextTypeLabel } from '../operational-context/labels';
+import ContextSwitcher from '../operational-context/ContextSwitcher';
 import PlatformIcon from './PlatformIcon';
 import styles from './Dashboard.module.css';
 
 type OrganizationSummaryProps = {
   context: OperationalContext | null;
+  contexts: OperationalContext[];
   canManage: boolean;
 };
 
-export default function OrganizationSummary({ context, canManage }: OrganizationSummaryProps) {
+export default function OrganizationSummary({ context, contexts, canManage }: OrganizationSummaryProps) {
   if (!context) {
     return (
       <section className={`${styles.surfaceCard} ${styles.organizationSummary}`} aria-labelledby="context-card-title">
@@ -30,10 +32,14 @@ export default function OrganizationSummary({ context, canManage }: Organization
       <span className={styles.cardMark}><PlatformIcon name={isOrganization ? 'organization' : 'professionals'} size={20} /></span>
       <p className={styles.cardLabel}>{getOperationalContextTypeLabel(context)}</p>
       <h2 id="context-card-title">{context.label}</h2>
-      <div className={styles.organizationMeta}>
-        {roleLabel ? <span>{roleLabel}</span> : null}
-        {isOrganization ? <span>Organizzazione attiva</span> : <span>Workspace professionale personale</span>}
-      </div>
+      {contexts.length > 1 ? (
+        <ContextSwitcher contexts={contexts} activeContext={context} />
+      ) : (
+        <div className={styles.organizationMeta}>
+          {roleLabel ? <span>{roleLabel}</span> : null}
+          <span>{isOrganization ? 'Organizzazione attiva' : 'Workspace professionale personale'}</span>
+        </div>
+      )}
       {canManage ? (
         <a className={styles.textLink} href="/organizzazione">
           Gestisci struttura

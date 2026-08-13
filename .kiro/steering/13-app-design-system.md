@@ -196,6 +196,7 @@ Questa è la mappa normativa. La colonna “Motivazione” spiega la scelta sema
 | Notifiche | `Bell` | Rappresenta avvisi e aggiornamenti da leggere. |
 | Messaggi | `MessageSquare` | Identifica conversazioni e comunicazioni testuali. |
 | Ricerca | `Search` | Affordance standard per cercare contenuti. |
+| Altre azioni | `MoreHorizontal` | Apre il menu delle azioni secondarie contestuali. |
 | Filtri | `SlidersHorizontal` | Rappresenta criteri regolabili per restringere un elenco. |
 | Impostazioni | `Settings2` | Rappresenta preferenze e configurazione dell'app. |
 | Ruoli | `ShieldCheck` | Comunica responsabilità e ruolo verificato. |
@@ -244,3 +245,9 @@ Una modifica grafica è completa quando:
 - verifica hover, active, disabled, loading, error e reduced motion quando applicabili;
 - passa typecheck, test e build previsti dal repository;
 - non lascia SVG inline, pseudo-icone o caratteri Unicode per la stessa funzione.
+
+## Convenzioni per liste e azioni contestuali
+
+Nelle liste applicative l'affordance per un gruppo di azioni usa `MoreHorizontal`, resa dal mapping `moreActions` dell'adapter `PlatformIcon`; non usare caratteri Unicode come `•••`. La ricerca usa `Search` tramite il mapping `search`. Le due icone mantengono `18px`, `strokeWidth={1.75}`, cap e join round e devono avere un nome accessibile sul controllo che le contiene.
+
+Le superfici organizzative Inviti e Membri costituiscono il riferimento per righe premium: identità primaria, informazione secondaria, metadati contestuali, badge semantico e menu solo per azioni effettivamente autorizzate. `Staff` non è un alias automatico di `Membri`: finché non esiste un dominio operativo canonico, resta una superficie distinta e non si deve inventare una lista o una capability.

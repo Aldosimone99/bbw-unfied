@@ -10,6 +10,6 @@ export default async function InvitesPage() {
   if (activeContext?.kind !== 'organization' || !context.operationalPermissions.includes('organization.members.invite')) forbidden();
 
   return <PlatformShell user={context.user} profile={context.profile} activePath="/inviti" operationalContext={context} permissions={context.permissions}>
-    <OrganizationInvitations organizationName={activeContext.label} />
+    <OrganizationInvitations />
   </PlatformShell>;
 }

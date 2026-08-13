@@ -10,6 +10,9 @@ export default async function MembersPage() {
   if (activeContext?.kind !== 'organization' || !context.operationalPermissions.includes('organization.members.read')) forbidden();
 
   return <PlatformShell user={context.user} profile={context.profile} activePath="/membri" operationalContext={context} permissions={context.permissions}>
-    <OrganizationMembers organizationName={activeContext.label} canManage={context.operationalPermissions.includes('organization.members.manage')} />
+    <OrganizationMembers
+      canManage={context.operationalPermissions.includes('organization.members.manage')}
+      canInvite={context.operationalPermissions.includes('organization.members.invite')}
+    />
   </PlatformShell>;
 }

@@ -28,8 +28,8 @@ export default function ContextSwitcher({ contexts, activeContext }: ContextSwit
 
   if (contexts.length === 0) {
     return (
-      <div className={styles.contextSwitcherEmpty} aria-label="Contesto operativo">
-        <span className={styles.contextSwitcherLabel}>Contesto operativo</span>
+      <div className={styles.contextSwitcherEmpty} aria-label="Spazio di lavoro">
+        <span className={styles.contextSwitcherLabel}>Spazio di lavoro</span>
         <strong>Nessun contesto operativo disponibile</strong>
       </div>
     );
@@ -39,7 +39,7 @@ export default function ContextSwitcher({ contexts, activeContext }: ContextSwit
     const context = contexts[0]!;
     const roleLabel = getOperationalContextRoleLabel(context);
     return (
-      <div className={styles.contextSwitcherSingle} aria-label="Contesto operativo attivo">
+      <div className={styles.contextSwitcherSingle} aria-label="Spazio di lavoro attivo">
         <span className={styles.contextSwitcherLabel}>{getOperationalContextTypeLabel(context)}</span>
         <strong>{context.label}</strong>
         {roleLabel ? <small>{roleLabel}</small> : null}
@@ -49,7 +49,7 @@ export default function ContextSwitcher({ contexts, activeContext }: ContextSwit
 
   return (
     <form className={styles.contextSwitcher} action={formAction}>
-      <label className={styles.contextSwitcherLabel} htmlFor="active-operational-context">Contesto operativo</label>
+      <label className={styles.contextSwitcherLabel} htmlFor="active-operational-context">Spazio di lavoro</label>
       <input type="hidden" name="contextKind" value={selectedContext?.kind ?? ''} readOnly />
       <input type="hidden" name="contextId" value={selectedContext ? getOperationalContextId(selectedContext) : ''} readOnly />
       <div className={styles.contextSwitcherControls}>
@@ -68,7 +68,7 @@ export default function ContextSwitcher({ contexts, activeContext }: ContextSwit
             );
           })}
         </select>
-        <button type="submit" disabled={pending}>{pending ? 'Cambio…' : 'Applica'}</button>
+        <button type="submit" disabled={pending}>{pending ? 'Cambio…' : 'Cambia spazio'}</button>
       </div>
       {state.status === 'error' ? <p className={styles.contextSwitcherError} role="alert">{state.message}</p> : null}
     </form>
