@@ -11,6 +11,7 @@ const invitations = readFileSync(resolve(migrationRoot, '20260812000400_canonica
 const invitationAcceptance = readFileSync(resolve(migrationRoot, '20260812000500_accept_invitation_transaction.sql'), 'utf8');
 const readiness = readFileSync(resolve(migrationRoot, '20260812000600_operational_readiness_profile_data.sql'), 'utf8');
 const readinessAuditTransactions = readFileSync(resolve(migrationRoot, '20260812000700_profile_update_audit_transactions.sql'), 'utf8');
+const invitationHardening = readFileSync(resolve(migrationRoot, '20260812000800_organization_invitation_hardening.sql'), 'utf8');
 const seed = readFileSync(resolve(process.cwd(), 'supabase/seed.sql'), 'utf8');
 
 describe('canonical foundation schema', () => {
@@ -83,6 +84,16 @@ describe('canonical foundation schema', () => {
     expect(readinessAuditTransactions).toContain("if (select auth.role()) <> 'service_role'");
     expect(readinessAuditTransactions).toContain("jsonb_build_object('changed_fields', changed_fields)");
     expect(readinessAuditTransactions).toContain('grant execute on function public.update_personal_profile_with_audit');
+  });
+
+  it('keeps invitation role assignment and acceptance hardened without permissive RLS', () => {
+    expect(invitationHardening).toContain('create table public.organization_role_assignment_rules');
+    expect(invitationHardening).toContain('grant select, insert, update, delete on public.organization_role_assignment_rules to service_role');
+    expect(invitationHardening).not.toMatch(/using\s*\(\s*true\s*\)/i);
+    expect(invitationHardening).toContain('INVITATION_REVOKED');
+    expect(invitationHardening).toContain('MEMBERSHIP_ALREADY_EXISTS');
+    expect(invitationHardening).toContain("'organization.membership.created'");
+    expect(invitationHardening).toContain("'organization.invitation.accepted'");
   });
 
   it('accepts invitations in a locked service-role-only transaction', () => {

@@ -6,10 +6,11 @@ import {
   lookupCompanyInvite,
 } from '../services/company-invite-service';
 import { resolveUser } from '../middleware/resolve-user-middleware';
-import { requireCompanyRole } from '../middleware/require-company-role-middleware';
+import { requireCompanyPermission } from '../middleware/require-company-permission-middleware';
 import {
   createCompanyInviteHandler,
   handleCompanyInviteError,
+  listAssignableCompanyInviteRolesHandler,
   listCompanyInvitesHandler,
   resendCompanyInviteHandler,
   revokeCompanyInviteHandler,
@@ -22,26 +23,27 @@ type CompanyInvitesRouterOptions = {
 export function createCompanyInvitesRouter(db: SupabaseLike, options: CompanyInvitesRouterOptions = {}): Router {
   const router = Router();
   const requireUser = options.resolveUserMiddleware ?? resolveUser(db);
-  const requireInviteRole = requireCompanyRole(db, ['organization_owner', 'organization_admin', 'office_manager']);
+  const requireInvitationPermission = requireCompanyPermission(db, 'organization.members.invite');
 
-  router.get('/lookup/:token', createCompanyInviteLookupHandler(db));
+  router.post('/lookup', createCompanyInviteLookupHandler(db));
   router.post('/accept', requireUser, createCompanyInviteAcceptHandler(db));
-  router.post('/', requireUser, requireInviteRole, createCompanyInviteHandler(db));
-  router.get('/', requireUser, requireInviteRole, listCompanyInvitesHandler(db));
-  router.delete('/:id', requireUser, requireInviteRole, revokeCompanyInviteHandler(db));
-  router.post('/:id/resend', requireUser, requireInviteRole, resendCompanyInviteHandler(db));
+  router.get('/assignable-roles', requireUser, requireInvitationPermission, listAssignableCompanyInviteRolesHandler(db));
+  router.post('/', requireUser, requireInvitationPermission, createCompanyInviteHandler(db));
+  router.get('/', requireUser, requireInvitationPermission, listCompanyInvitesHandler(db));
+  router.delete('/:id', requireUser, requireInvitationPermission, revokeCompanyInviteHandler(db));
+  router.post('/:id/resend', requireUser, requireInvitationPermission, resendCompanyInviteHandler(db));
   return router;
 }
 
 function handleCompanyInviteErrorLocal(res: Response, error: unknown) {
   if (error instanceof CompanyInviteError) return res.status(error.status).json({ success: false, code: error.code });
-  return res.status(500).json({ success: false, code: 'COMPANY_INVITE_FAILED' });
+  return res.status(500).json({ success: false, code: 'INVITATION_FAILED' });
 }
 
 export function createCompanyInviteLookupHandler(db: SupabaseLike) {
   return async (req: Request, res: Response) => {
     try {
-      const data = await lookupCompanyInvite(db, String(req.params.token || ''));
+      const data = await lookupCompanyInvite(db, String(req.body?.token || '').trim());
       return res.json({ success: true, data });
     } catch (error) {
       return handleCompanyInviteErrorLocal(res, error);

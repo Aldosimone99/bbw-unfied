@@ -9,12 +9,13 @@ export const metadata: Metadata = {
 };
 
 type AccediPageProps = {
-  searchParams?: Promise<{ redirectTo?: string | string[] }>;
+  searchParams?: Promise<{ redirectTo?: string | string[]; invitationToken?: string | string[] }>;
 };
 
 export default async function AccediPage({ searchParams }: AccediPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const redirectTo = typeof params?.redirectTo === "string" ? params.redirectTo : undefined;
+  const invitationToken = typeof params?.invitationToken === "string" ? params.invitationToken : undefined;
 
   return (
     <main className={styles.page}>
@@ -46,7 +47,7 @@ export default async function AccediPage({ searchParams }: AccediPageProps) {
         </div>
 
         <div className={styles.formShell} aria-label="Accesso">
-          <LoginForm redirectTo={redirectTo} />
+          <LoginForm redirectTo={redirectTo} invitationToken={invitationToken} />
         </div>
       </section>
     </main>

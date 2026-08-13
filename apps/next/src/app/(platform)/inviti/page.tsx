@@ -1,7 +1,17 @@
-import PlatformPlaceholder from '../../../features/dashboard/PlatformPlaceholder';
+import { forbidden } from 'next/navigation';
+
+import OrganizationInvitations from '../../../features/organization-invitations/OrganizationInvitations';
 import { requirePlatformContext } from '../../../features/dashboard/requirePlatformContext';
 
 export default async function InvitesPage() {
   const context = await requirePlatformContext(true);
-  return <PlatformPlaceholder user={context.user} profile={context.profile} permissions={context.permissions} operationalContext={context} activePath="/inviti" eyebrow="Network" title="Inviti" description="Inviti a clienti, professionisti e collaboratori del tuo contesto." />;
+  const activeContext = context.activeOperationalContext;
+  if (
+    activeContext?.kind !== 'organization'
+    || !context.operationalPermissions.includes('organization.members.invite')
+  ) {
+    forbidden();
+  }
+
+  return <OrganizationInvitations organizationName={activeContext.label} />;
 }

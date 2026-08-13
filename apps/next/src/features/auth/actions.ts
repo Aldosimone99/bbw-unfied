@@ -1,5 +1,6 @@
 "use server";
 
+import { companyInviteAcceptSchema } from '@bbw/interfaces';
 import { redirect } from "next/navigation";
 
 import { getFieldErrors, type FieldErrors } from "../../lib/validation/action-errors";
@@ -58,10 +59,14 @@ export async function loginAction(
   _previousState: LoginActionState,
   formData: FormData
 ): Promise<LoginActionState> {
+  const rawInvitationToken = getFormValue(formData, "invitationToken");
+  const invitationToken = companyInviteAcceptSchema.safeParse({
+    token: typeof rawInvitationToken === 'string' ? rawInvitationToken : '',
+  });
   const parsed = loginInputSchema.safeParse({
     email: getFormValue(formData, "email"),
     password: getFormValue(formData, "password"),
-    redirectTo: getFormValue(formData, "redirectTo")
+    redirectTo: invitationToken.success ? undefined : getFormValue(formData, "redirectTo")
   });
 
   if (!parsed.success) {
@@ -69,7 +74,12 @@ export async function loginAction(
   }
 
   const result = await loginAccount(parsed.data);
-  if (result.status === "success") redirect(await resolvePostLoginDestination(parsed.data.redirectTo));
+  if (result.status === "success") {
+    const requestedRedirect = invitationToken.success
+      ? `/inviti/accetta?${new URLSearchParams({ token: invitationToken.data.token }).toString()}`
+      : parsed.data.redirectTo;
+    redirect(await resolvePostLoginDestination(requestedRedirect));
+  }
 
   return { status: "error", message: result.error.message };
 }

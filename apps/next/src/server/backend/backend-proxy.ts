@@ -1,11 +1,12 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from '@/lib/supabase/server';
+import { getRequestedOperationalContext } from '@/server/services/operational-context-cookie';
 
-const backendUrl = (process.env.BBW_BACKEND_URL ?? "http://localhost:3001").replace(/\/$/, "");
+const backendUrl = (process.env.BBW_BACKEND_URL ?? 'http://localhost:3001').replace(/\/$/, '');
 
-const forwardedRequestHeaders = new Set(["accept", "content-type", "x-company-id"]);
+const forwardedRequestHeaders = new Set(['accept', 'content-type']);
 
 function buildBackendUrl(path: string[], search: string): string {
-  const encodedPath = path.map((segment) => encodeURIComponent(segment)).join("/");
+  const encodedPath = path.map((segment) => encodeURIComponent(segment)).join('/');
   return `${backendUrl}/${encodedPath}${search}`;
 }
 
@@ -24,24 +25,29 @@ export async function forwardBackendRequest(request: Request, path: string[]): P
     }
   }
 
+  const activeOperationalContext = await getRequestedOperationalContext();
+  if (activeOperationalContext?.kind === 'organization') {
+    headers.set('x-company-id', activeOperationalContext.id);
+  }
+
   const accessToken = await getAccessToken();
   if (accessToken) {
-    headers.set("authorization", `Bearer ${accessToken}`);
+    headers.set('authorization', `Bearer ${accessToken}`);
   }
 
   const method = request.method.toUpperCase();
-  const body = method === "GET" || method === "HEAD" ? undefined : await request.arrayBuffer();
+  const body = method === 'GET' || method === 'HEAD' ? undefined : await request.arrayBuffer();
   const response = await fetch(buildBackendUrl(path, new URL(request.url).search), {
     method,
     headers,
     body,
-    cache: "no-store",
-    redirect: "manual",
+    cache: 'no-store',
+    redirect: 'manual',
   });
 
   const responseHeaders = new Headers(response.headers);
-  responseHeaders.delete("content-length");
-  responseHeaders.delete("content-encoding");
+  responseHeaders.delete('content-length');
+  responseHeaders.delete('content-encoding');
 
   return new Response(response.body, {
     status: response.status,

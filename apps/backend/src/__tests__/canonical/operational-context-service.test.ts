@@ -95,6 +95,7 @@ describe('available operational contexts', () => {
   it.each([
     ['pending membership', activeMembership({ status: 'pending' })],
     ['suspended membership', activeMembership({ status: 'suspended' })],
+    ['revoked membership', activeMembership({ status: 'revoked' })],
     ['inactive organization', activeMembership({ organizations: { ...activeMembership().organizations, status: 'suspended' } })],
     ['membership of another account', activeMembership({ user_id: '00000000-0000-4000-8000-000000000099' })],
   ])('excludes a %s', (_label, membership) => {

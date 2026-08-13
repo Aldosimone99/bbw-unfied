@@ -26,20 +26,48 @@ export const inviteLookupResponseSchema = z.object({
   companyName: z.string().nullable().optional(),
 }).strict();
 
+export const organizationInvitationRoleSchema = z.object({
+  id: z.string().uuid(),
+  code: z.string().min(1),
+  displayName: z.string().min(1),
+}).strict();
+
 export const companyInviteLookupResponseSchema = z.object({
-  email: z.string().email(),
-  nome: z.string().nullable().optional(),
-  cognome: z.string().nullable().optional(),
-  role: z.string(),
-  companyId: z.string().uuid(),
-  companyName: z.string().nullable().optional(),
-  expiresAt: z.string().nullable().optional(),
-  userId: z.string().uuid().nullable().optional(),
-  status: z.enum(['pending', 'accepted']),
+  organizationName: z.string().min(1),
+  role: z.string().min(1),
+  expiresAt: z.string(),
+  status: z.literal('pending'),
 }).strict();
 
 export const companyInviteAcceptSchema = z.object({
-  token: z.string().trim().min(1),
+  token: z.string().trim().min(1).max(512),
+}).strict();
+
+export const createCompanyInviteRequestSchema = z.object({
+  email: z.string().trim().email(),
+  roleId: z.string().uuid(),
+  expiresInDays: z.number().int().min(1).max(30).optional(),
+}).strict();
+
+export const companyInviteRowSchema = z.object({
+  id: z.string().uuid(),
+  organizationId: z.string().uuid(),
+  email: z.string().email(),
+  role: organizationInvitationRoleSchema,
+  status: z.enum(['pending', 'accepted', 'revoked', 'expired']),
+  expiresAt: z.string(),
+  createdAt: z.string(),
+  invitedBy: z.string().uuid(),
+  acceptedAt: z.string().nullable(),
+  revokedAt: z.string().nullable(),
+}).strict();
+
+export const companyInviteListResponseSchema = z.object({
+  data: z.array(companyInviteRowSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  pages: z.number(),
 }).strict();
 
 export const referralContextQuerySchema = z.object({
@@ -82,48 +110,14 @@ export const inviteListResponseSchema = z.object({
   pages: z.number(),
 });
 
-export const companyInviteTargetRoleSchema = z.enum(['medico', 'estetista', 'cliente', 'admin', 'staff']);
-
-export const createCompanyInviteRequestSchema = z.object({
-  email: z.string().email(),
-  role: companyInviteTargetRoleSchema,
-  nome: z.string().trim().optional(),
-  cognome: z.string().trim().optional(),
-  expiresInDays: z.number().int().min(1).max(30).optional(),
-}).strict();
-
-export const companyInviteRowSchema = z.object({
-  id: z.string().uuid(),
-  company_id: z.string().uuid(),
-  email: z.string().email(),
-  role: z.string(),
-  status: z.enum(['pending', 'accepted', 'revoked', 'expired']),
-  nome: z.string().nullable().optional(),
-  cognome: z.string().nullable().optional(),
-  created_at: z.string(),
-  expires_at: z.string().nullable().optional(),
-  accepted_by: z.string().uuid().nullable().optional(),
-  accept_token: z.string().nullable().optional(),
-  acceptLink: z.string().url().optional(),
-});
-
-export const companyInviteListResponseSchema = z.object({
-  data: z.array(companyInviteRowSchema),
-  total: z.number(),
-  page: z.number(),
-  limit: z.number(),
-  pages: z.number(),
-});
-
-export type CompanyInviteTargetRole = z.infer<typeof companyInviteTargetRoleSchema>;
+export type OrganizationInvitationRole = z.infer<typeof organizationInvitationRoleSchema>;
 export type CreateCompanyInviteRequest = z.infer<typeof createCompanyInviteRequestSchema>;
 export type CompanyInviteRow = z.infer<typeof companyInviteRowSchema>;
 export type CompanyInviteListResponse = z.infer<typeof companyInviteListResponseSchema>;
-
-export type InviteRegistrationFields = z.infer<typeof inviteRegistrationFieldsSchema>;
-export type InviteLookupResponse = z.infer<typeof inviteLookupResponseSchema>;
 export type CompanyInviteLookupResponse = z.infer<typeof companyInviteLookupResponseSchema>;
 export type CompanyInviteAccept = z.infer<typeof companyInviteAcceptSchema>;
+export type InviteRegistrationFields = z.infer<typeof inviteRegistrationFieldsSchema>;
+export type InviteLookupResponse = z.infer<typeof inviteLookupResponseSchema>;
 export type ReferralContextQuery = z.infer<typeof referralContextQuerySchema>;
 export type CreateInviteRequest = z.infer<typeof createInviteRequestSchema>;
 export type InviteRow = z.infer<typeof inviteRowSchema>;

@@ -86,39 +86,39 @@ describe('invite and referral contracts', () => {
     })).toThrow();
   });
 
-  it('parses strict company invite create requests', () => {
+  it('parses strict company invite create requests with a database role identifier', () => {
     const parsed = createCompanyInviteRequestSchema.parse({
       email: 'medico@example.com',
-      role: 'medico',
-      nome: 'Mario',
-      cognome: 'Rossi',
+      roleId: '33333333-3333-4333-8333-333333333333',
       expiresInDays: 14,
     });
 
-    expect(parsed.role).toBe('medico');
+    expect(parsed.roleId).toBe('33333333-3333-4333-8333-333333333333');
   });
 
-  it('rejects unsupported company invite roles', () => {
+  it('rejects a company invite request without a valid role identifier', () => {
     expect(() => createCompanyInviteRequestSchema.parse({
       email: 'owner@example.com',
-      role: 'owner',
+      roleId: 'owner',
     })).toThrow();
   });
 
-  it('parses paginated company invite rows', () => {
+  it('parses paginated canonical company invite rows without raw tokens', () => {
     const row = companyInviteRowSchema.parse({
       id: '22222222-2222-4222-8222-222222222222',
-      company_id: '11111111-1111-4111-8111-111111111111',
+      organizationId: '11111111-1111-4111-8111-111111111111',
       email: 'cliente@example.com',
-      role: 'cliente',
+      role: {
+        id: '33333333-3333-4333-8333-333333333333',
+        code: 'practitioner',
+        displayName: 'Professionista',
+      },
       status: 'pending',
-      nome: null,
-      cognome: null,
-      created_at: '2026-06-25T10:00:00.000Z',
-      expires_at: '2026-07-02T10:00:00.000Z',
-      accepted_by: null,
-      accept_token: 'token-1',
-      acceptLink: 'http://localhost:3000/company/invite/accept/token-1',
+      createdAt: '2026-06-25T10:00:00.000Z',
+      expiresAt: '2026-07-02T10:00:00.000Z',
+      invitedBy: '44444444-4444-4444-8444-444444444444',
+      acceptedAt: null,
+      revokedAt: null,
     });
 
     const parsed = companyInviteListResponseSchema.parse({

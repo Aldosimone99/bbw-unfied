@@ -19,6 +19,13 @@ describe("safe post-login redirects", () => {
     expect(resolveSafePostLoginRedirect("/admin", "/dashboard")).toBe("/dashboard");
   });
 
+  it('allows a return only to the constrained invitation-acceptance URL', () => {
+    expect(resolveSafePostLoginRedirect('/inviti/accetta?token=valid-token', '/dashboard')).toBe(
+      '/inviti/accetta?token=valid-token',
+    );
+    expect(resolveSafePostLoginRedirect('/inviti/accetta?token=valid-token&next=%2Fadmin', '/dashboard')).toBe('/dashboard');
+  });
+
   it("rejects malformed path traversal variants", () => {
     expect(resolveSafePostLoginRedirect("/\\evil.example", "/dashboard")).toBe("/dashboard");
     expect(resolveSafePostLoginRedirect("/dashboard/../admin", "/dashboard")).toBe("/dashboard");

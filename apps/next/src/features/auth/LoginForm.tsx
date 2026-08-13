@@ -8,12 +8,16 @@ import { loginAction, type LoginActionState } from "./actions";
 
 const initialState: LoginActionState = { status: "idle" };
 
-export default function LoginForm({ redirectTo }: Readonly<{ redirectTo?: string }>) {
+export default function LoginForm({
+  redirectTo,
+  invitationToken,
+}: Readonly<{ redirectTo?: string; invitationToken?: string }>) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
     <form className={styles.panel} action={formAction} noValidate>
       {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
+      {invitationToken && <input type="hidden" name="invitationToken" value={invitationToken} />}
       <div className={styles.panelHead}>
         <h2>Login</h2>
         <p className={styles.formMessage} aria-live="polite">

@@ -1,10 +1,10 @@
 import type { Request, Response } from 'express';
 import { createCompanyInviteRequestSchema } from '@bbw/interfaces';
 import type { SupabaseLike } from '../db/supabase';
-import { createEmailService } from '../services/email-service';
 import {
   CompanyInviteError,
   createCompanyInvite,
+  listAssignableOrganizationInvitationRoles,
   listCompanyInvites,
   resendCompanyInvite,
   revokeCompanyInvite,
@@ -15,35 +15,43 @@ function userOrThrow(req: Request) {
   return req.user;
 }
 
-function companyRoleOrThrow(req: Request) {
-  if (!req.companyRole) throw new CompanyInviteError('COMPANY_MEMBER_REQUIRED', 403);
-  return req.companyRole;
+function organizationIdOrThrow(req: Request): string {
+  if (!req.companyId) throw new CompanyInviteError('OPERATIONAL_CONTEXT_REQUIRED', 422);
+  return req.companyId;
 }
 
 export function handleCompanyInviteError(res: Response, error: unknown) {
   if (error instanceof CompanyInviteError) {
     return res.status(error.status).json({ success: false, code: error.code });
   }
-  return res.status(500).json({ success: false, code: 'COMPANY_INVITE_FAILED' });
+  return res.status(500).json({ success: false, code: 'INVITATION_FAILED' });
 }
 
 export function createCompanyInviteHandler(db: SupabaseLike) {
   return async (req: Request, res: Response) => {
     try {
       const user = userOrThrow(req);
-      const companyRole = companyRoleOrThrow(req);
       const payload = createCompanyInviteRequestSchema.parse(req.body);
       const data = await createCompanyInvite(db, {
-        companyId: req.companyId ?? '',
+        organizationId: organizationIdOrThrow(req),
         inviterId: user.id,
-        inviterCompanyRole: companyRole,
         email: payload.email,
-        role: payload.role,
-        nome: payload.nome,
-        cognome: payload.cognome,
+        roleId: payload.roleId,
         expiresInDays: payload.expiresInDays,
-      }, createEmailService());
+      });
       return res.status(201).json({ success: true, data });
+    } catch (error) {
+      return handleCompanyInviteError(res, error);
+    }
+  };
+}
+
+export function listAssignableCompanyInviteRolesHandler(db: SupabaseLike) {
+  return async (req: Request, res: Response) => {
+    try {
+      const user = userOrThrow(req);
+      const data = await listAssignableOrganizationInvitationRoles(db, organizationIdOrThrow(req), user.id);
+      return res.json({ success: true, data });
     } catch (error) {
       return handleCompanyInviteError(res, error);
     }
@@ -53,10 +61,9 @@ export function createCompanyInviteHandler(db: SupabaseLike) {
 export function listCompanyInvitesHandler(db: SupabaseLike) {
   return async (req: Request, res: Response) => {
     try {
-      const companyId = req.companyId ?? '';
       const page = Number(req.query.page ?? 1);
       const limit = Number(req.query.limit ?? 20);
-      const data = await listCompanyInvites(db, companyId, { page, limit });
+      const data = await listCompanyInvites(db, organizationIdOrThrow(req), { page, limit });
       return res.json({ success: true, data });
     } catch (error) {
       return handleCompanyInviteError(res, error);
@@ -67,8 +74,8 @@ export function listCompanyInvitesHandler(db: SupabaseLike) {
 export function revokeCompanyInviteHandler(db: SupabaseLike) {
   return async (req: Request, res: Response) => {
     try {
-      const companyId = req.companyId ?? '';
-      await revokeCompanyInvite(db, String(req.params.id), companyId);
+      const user = userOrThrow(req);
+      await revokeCompanyInvite(db, String(req.params.id), organizationIdOrThrow(req), user.id);
       return res.json({ success: true });
     } catch (error) {
       return handleCompanyInviteError(res, error);
@@ -79,8 +86,8 @@ export function revokeCompanyInviteHandler(db: SupabaseLike) {
 export function resendCompanyInviteHandler(db: SupabaseLike) {
   return async (req: Request, res: Response) => {
     try {
-      const companyId = req.companyId ?? '';
-      const data = await resendCompanyInvite(db, String(req.params.id), companyId, createEmailService());
+      const user = userOrThrow(req);
+      const data = await resendCompanyInvite(db, String(req.params.id), organizationIdOrThrow(req), user.id);
       return res.json({ success: true, data });
     } catch (error) {
       return handleCompanyInviteError(res, error);

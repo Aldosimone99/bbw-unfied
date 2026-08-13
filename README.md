@@ -261,3 +261,27 @@ Useful references:
 - [Database steering](./.kiro/steering/03-database.md)
 - [Auth and permissions steering](./.kiro/steering/04-auth-and-permissions.md)
 - [Identity and authorization change log](./docs/identity-and-authorization.md)
+
+### Manual organization-invitation multi-context smoke test
+
+This first invitation vertical slice intentionally does **not** send email. The creator receives a raw invitation URL once, immediately after creation or explicit link rotation; the database stores only its hash. Do not copy invitation URLs into logs, tickets or persistent documentation.
+
+Prerequisites: local Supabase and Redis running, migrations applied, and frontend/backend started. Use two different browser profiles so the two Supabase sessions remain isolated.
+
+1. **Browser 1 — Account A, owner:** register and complete onboarding as an organization owner, create/complete `Clinica Aurora`, then enter its organization context through the Context Switcher.
+2. Open `/inviti`. The page is available only in an active organization context with `organization.members.invite`. Select a role from the backend-provided list (for this scenario, `Professionista`), enter Account B’s email and select **Crea invito**.
+3. Copy the URL displayed in the temporary *Link invito* panel. Refreshing the page intentionally removes this raw value; from an existing pending invitation use **Genera nuovo link**, which invalidates the old token.
+4. **Browser 2 — Account B, professional:** register, complete the personal and professional profile required to make the personal professional context operational, and confirm that the Context Switcher only shows the personal workspace.
+5. Open the copied `/inviti/accetta?token=…` URL. If Browser 2 is unauthenticated, BBW redirects to `/accedi` and safely returns to the same invitation after login. Verify the page identifies `Clinica Aurora`, the assigned role and its expiry without exposing the invited email or internal IDs.
+6. Accept using the same Account B email. An account with another email must receive **Questo invito è destinato a un altro account**. After success, choose **Entra nella clinica** to open `/seleziona-contesto`; BBW does not change the active workspace implicitly.
+7. Confirm Account B now has both contexts: the personal professional workspace and `Clinica Aurora`. Switch to `Clinica Aurora` and verify `activeOperationalContext.kind = organization`, the organization membership role and only that context’s operational permissions. Switch back to the personal workspace and verify those organization permissions disappear.
+8. Back in Browser 1, create a second pending invitation and revoke it. Opening or accepting its URL must fail as revoked. If membership removal/suspension is performed through the canonical administrative path once available, refresh Browser 2: the inactive `Clinica Aurora` membership must disappear from available contexts while the personal workspace remains.
+
+Before handing off a local change, run from the repository root:
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
