@@ -91,6 +91,10 @@ export const patientInvitationListResponseSchema = z.object({
   total: z.number().int().nonnegative(),
 }).strict();
 
+export const patientInvitationLinkResponseSchema = z.object({
+  acceptLink: z.string().url(),
+}).strict();
+
 export const patientInvitationLookupResponseSchema = z.object({
   organizationName: z.string().min(1),
   expiresAt: z.string(),
@@ -158,6 +162,7 @@ export type PatientInvitationType = z.infer<typeof patientInvitationTypeSchema>;
 export type CreatePatientInvitationRequest = z.infer<typeof createPatientInvitationRequestSchema>;
 export type PatientInvitation = z.infer<typeof patientInvitationSchema>;
 export type PatientInvitationListResponse = z.infer<typeof patientInvitationListResponseSchema>;
+export type PatientInvitationLinkResponse = z.infer<typeof patientInvitationLinkResponseSchema>;
 export type PatientInvitationLookupResponse = z.infer<typeof patientInvitationLookupResponseSchema>;
 export type PatientInvitationAcceptRequest = z.infer<typeof patientInvitationAcceptRequestSchema>;
 export type PatientInvitationAcceptResponse = z.infer<typeof patientInvitationAcceptResponseSchema>;

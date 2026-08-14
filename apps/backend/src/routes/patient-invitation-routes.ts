@@ -10,6 +10,7 @@ import { resolveUser } from '../middleware/resolve-user-middleware';
 import {
   acceptPatientInvitation,
   createPatientInvitation,
+  createPatientInvitationLink,
   listPatientInvitations,
   lookupPatientInvitation,
   PatientInvitationError,
@@ -76,6 +77,17 @@ export function createPatientInvitationRouter(db: SupabaseLike): Router {
   router.get('/', resolveUser(db), async (req, res) => {
     try {
       return res.json({ success: true, data: await listPatientInvitations(db, req.user!, contextFromRequest(req)) });
+    } catch (error) {
+      return handleError(res, error);
+    }
+  });
+
+  router.post('/:invitationId/link', resolveUser(db), async (req, res) => {
+    try {
+      return res.json({
+        success: true,
+        data: await createPatientInvitationLink(db, req.user!, contextFromRequest(req), invitationIdFromRequest(req)),
+      });
     } catch (error) {
       return handleError(res, error);
     }

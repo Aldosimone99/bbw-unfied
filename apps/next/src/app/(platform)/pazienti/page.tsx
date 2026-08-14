@@ -1,6 +1,7 @@
 import { forbidden } from 'next/navigation';
 
 import PatientRelationships from '../../../features/patients/PatientRelationships';
+import { canInvitePatients } from '../../../features/patients/patientCapabilities';
 import PlatformShell from '../../../features/dashboard/PlatformShell';
 import { requirePlatformContext } from '../../../features/dashboard/requirePlatformContext';
 
@@ -19,7 +20,7 @@ export default async function PatientsPage() {
       <PatientRelationships
         canLink={context.operationalPermissions.includes('patients.link')}
         canUnlink={context.operationalPermissions.includes('patients.unlink')}
-        canInvite={context.operationalPermissions.includes('patients.invite')}
+        canInvite={canInvitePatients(context.activeOperationalContext, context.operationalPermissions)}
       />
     </PlatformShell>
   );

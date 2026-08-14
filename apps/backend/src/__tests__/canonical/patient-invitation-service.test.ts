@@ -3,6 +3,7 @@ import { hashInvitationToken } from '../../services/invitation-token-service';
 import {
   acceptPatientInvitation,
   createPatientInvitation,
+  createPatientInvitationLink,
   listPatientInvitations,
   lookupPatientInvitation,
   PatientInvitationError,
@@ -85,6 +86,28 @@ describe('patient invitation service', () => {
     }));
     expect(db.rpc.mock.calls[0][1].p_token_hash).not.toBe(rawToken);
     expect(result.invitation.id).toBe(invitationId);
+    expect(result.acceptLink).toContain(encodeURIComponent(rawToken));
+  });
+
+  it('rotates a pending invitation token and returns a link without exposing the token hash', async () => {
+    const rawToken = 'rotated-patient-token';
+    const db = rpcDb({ data: invitationId, error: null });
+
+    const result = await createPatientInvitationLink(
+      db,
+      user,
+      context,
+      invitationId,
+      { tokenFactory: () => rawToken },
+    );
+
+    expect(db.rpc).toHaveBeenCalledWith('rotate_patient_relationship_invitation_link', {
+      p_organization_id: organizationId,
+      p_invitation_id: invitationId,
+      p_actor_user_id: userId,
+      p_token_hash: hashInvitationToken(rawToken),
+    });
+    expect(db.rpc.mock.calls[0][1].p_token_hash).not.toBe(rawToken);
     expect(result.acceptLink).toContain(encodeURIComponent(rawToken));
   });
 

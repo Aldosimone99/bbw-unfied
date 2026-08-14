@@ -77,6 +77,14 @@
   border-bottom: 1px solid rgba(127, 90, 52, .13);
 }
 
+.invitationActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .invitationRow .identity {
   min-width: 0;
 }
@@ -394,6 +402,11 @@
   .invitationRow > :nth-child(3) {
     grid-column: 2;
     grid-row: 1 / span 2;
+  }
+
+  .invitationActions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
 

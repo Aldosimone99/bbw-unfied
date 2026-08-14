@@ -3,6 +3,7 @@
 import {
   createPatientInvitationRequestSchema,
   patientInvitationListResponseSchema,
+  patientInvitationLinkResponseSchema,
   patientLookupResponseSchema,
   patientRelationshipListSchema,
   patientRelationshipSchema,
@@ -48,6 +49,7 @@ function patientErrorMessage(code: string | null): string {
     PATIENT_RELATIONSHIP_ALREADY_ACTIVE: 'Questo paziente è già collegato al contesto attivo.',
     PATIENT_RELATIONSHIP_NOT_FOUND: 'La relazione paziente non è più disponibile in questo contesto.',
     PATIENT_INVITATION_ALREADY_PENDING: 'Esiste già un invito paziente in attesa per questo indirizzo email.',
+    PATIENT_INVITATION_EXPIRED: 'L’invito paziente è scaduto. Creane uno nuovo.',
     PATIENT_INVITATION_NOT_FOUND: 'L’invito paziente non è più disponibile.',
     PATIENT_INVITATION_REVOKED: 'L’invito paziente è stato revocato.',
     PATIENT_INVITATION_ALREADY_ACCEPTED: 'L’invito paziente è già stato accettato.',
@@ -178,6 +180,30 @@ export default function PatientRelationships({ canLink, canUnlink, canInvite }: 
     }
   }
 
+  async function copyInvitationLink(invitation: PatientInvitation) {
+    if (!canInvite || invitationBusy) return;
+    setInvitationBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/backend/patients/invitations/${encodeURIComponent(invitation.id)}/link`, { method: 'POST' });
+      const envelope = await readEnvelope(response);
+      if (!response.ok || !envelope.success) throw new Error(patientErrorMessage(errorCode(envelope)));
+      const link = patientInvitationLinkResponseSchema.parse(envelope.data).acceptLink;
+      setLatestInviteLink(link);
+      try {
+        await navigator.clipboard.writeText(link);
+        setNotice('Link invito copiato negli appunti.');
+      } catch {
+        setNotice('Link rigenerato. Copialo dal pannello mostrato qui sotto.');
+      }
+    } catch (copyError) {
+      setError(copyError instanceof Error ? copyError.message : 'Non è stato possibile generare il link invito.');
+    } finally {
+      setInvitationBusy(false);
+    }
+  }
+
   async function revokeInvitation(invitation: PatientInvitation) {
     if (!canInvite || invitationBusy) return;
     if (!window.confirm(`Revocare l’invito per ${invitation.email}?`)) return;
@@ -281,7 +307,7 @@ export default function PatientRelationships({ canLink, canUnlink, canInvite }: 
         <div>
           <p className={styles.eyebrow}>Gestione</p>
           <h1>Pazienti</h1>
-          <p>Gestisci i pazienti collegati a questo contesto.</p>
+          <p>Gestisci i pazienti collegati alla struttura.</p>
         </div>
         {canInvite ? <button className={styles.primaryButton} onClick={openInviteDialog} type="button">Invita paziente</button> : null}
       </header>
@@ -317,7 +343,10 @@ export default function PatientRelationships({ canLink, canUnlink, canInvite }: 
                     <span>Scade il {new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(invitation.expiresAt))}</span>
                   </div>
                   <StatusBadge label="In attesa" tone="warning" />
-                  <button className={styles.removeButton} disabled={invitationBusy} onClick={() => void revokeInvitation(invitation)} type="button">Revoca</button>
+                  <div className={styles.invitationActions}>
+                    <button className={styles.secondaryButton} disabled={invitationBusy} onClick={() => void copyInvitationLink(invitation)} type="button">Copia link</button>
+                    <button className={styles.removeButton} disabled={invitationBusy} onClick={() => void revokeInvitation(invitation)} type="button">Revoca</button>
+                  </div>
                 </li>
               ))}
             </ul>

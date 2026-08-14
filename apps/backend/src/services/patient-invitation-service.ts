@@ -9,6 +9,7 @@ import type {
 import {
   patientInvitationAcceptResponseSchema,
   patientInvitationListResponseSchema,
+  patientInvitationLinkResponseSchema,
   patientInvitationSchema,
 } from '@bbw/interfaces';
 import type { SupabaseLike } from '../db/supabase';
@@ -196,6 +197,28 @@ export async function createPatientInvitation(
     invitation: await getInvitationById(db, scope.organizationId, data),
     acceptLink: buildInvitationLink('/inviti/paziente/accetta', rawToken),
   };
+}
+
+export async function createPatientInvitationLink(
+  db: SupabaseLike,
+  user: ResolvedUser,
+  context: OperationalContextReference,
+  invitationId: string,
+  options: PatientInvitationCreateOptions = {},
+): Promise<{ acceptLink: string }> {
+  const scope = await authorizeOrganizationContext(db, user, context);
+  const rawToken = options.tokenFactory?.() ?? createInvitationToken();
+  const { data, error } = await db.rpc('rotate_patient_relationship_invitation_link', {
+    p_organization_id: scope.organizationId,
+    p_invitation_id: invitationId,
+    p_actor_user_id: user.id,
+    p_token_hash: hashInvitationToken(rawToken),
+  });
+  if (error) throw mapRpcError(error);
+  if (typeof data !== 'string') throw new PatientInvitationError('PATIENT_INVITATION_LINK_FAILED', 500);
+  return patientInvitationLinkResponseSchema.parse({
+    acceptLink: buildInvitationLink('/inviti/paziente/accetta', rawToken),
+  });
 }
 
 export async function listPatientInvitations(

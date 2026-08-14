@@ -5,9 +5,11 @@ import {
   companyInviteRowSchema,
   createCompanyInviteRequestSchema,
   createInviteRequestSchema,
+  createPatientInvitationRequestSchema,
   inviteListResponseSchema,
   inviteLookupResponseSchema,
   inviteRegistrationFieldsSchema,
+  patientInvitationLinkResponseSchema,
   inviteRowSchema,
   referralContextQuerySchema,
   referralCodeSchema,
@@ -100,6 +102,17 @@ describe('invite and referral contracts', () => {
       email: 'owner@example.com',
       roleId: 'owner',
     })).toThrow();
+  });
+
+  it('validates patient invitation email and rejects invalid or extra fields', () => {
+    expect(createPatientInvitationRequestSchema.safeParse({ email: 'patient@example.com' }).success).toBe(true);
+    expect(createPatientInvitationRequestSchema.safeParse({ email: 'not-an-email' }).success).toBe(false);
+    expect(createPatientInvitationRequestSchema.safeParse({ email: 'patient@example.com', organizationId: '11111111-1111-4111-8111-111111111111' }).success).toBe(false);
+  });
+
+  it('parses a generated patient invitation link response', () => {
+    expect(patientInvitationLinkResponseSchema.parse({ acceptLink: 'http://localhost:3000/inviti/paziente/accetta?token=token' }).acceptLink)
+      .toContain('/inviti/paziente/accetta');
   });
 
   it('parses paginated canonical company invite rows without raw tokens', () => {
