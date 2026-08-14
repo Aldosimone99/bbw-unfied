@@ -287,3 +287,14 @@ npm run lint
 npm test
 npm run build
 ```
+
+
+## Domain decision status
+
+Il registro ufficiale è [`docs/domain/decision-register.md`](./docs/domain/decision-register.md).
+
+**APPROVED**: Patient/Subject globale con relationship scoped; ProfessionalProfile globale; multi-organization e RBAC scoped; BBW Treatment Library non obbligatoria; TreatmentDefinition distinta da TreatmentOffering; soft removal e audit.
+
+**TBD / BLOCKED**: retention, qualification taxonomy, sharing dello storico, agenda/booking/availability canonici, consensi avanzati, payments, documenti avanzati, payout e state machine generica.
+
+**TECHNICAL DECISION**: le migration legacy non sono la baseline e le route transition restano disabilitate.

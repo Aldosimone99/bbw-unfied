@@ -16,6 +16,8 @@ export const catalogProfessionalRequirementSchema = z.enum([
   'beauty_professional',
 ]);
 
+export const catalogTreatmentSourceSchema = z.enum(['bbw_template', 'organization', 'professional']);
+
 export const catalogTreatmentSchema = z.object({
   id: uuid,
   externalCode: z.string().min(1),
@@ -32,6 +34,9 @@ export const catalogTreatmentSchema = z.object({
   durationLabel: z.string().min(1),
   professionalRequirements: z.array(catalogProfessionalRequirementSchema),
   isActive: z.boolean(),
+  source: catalogTreatmentSourceSchema,
+  ownerOrganizationId: uuid.nullable(),
+  ownerProfessionalProfileId: uuid.nullable(),
 }).strict().refine(
   (value) => value.defaultDurationMaxMinutes >= value.defaultDurationMinMinutes,
   { message: 'Maximum duration must be greater than or equal to minimum duration' },
@@ -64,6 +69,10 @@ export const treatmentOfferingSchema = z.object({
   categoryCode: z.string().min(1),
   categoryDisplayName: z.string().min(1),
   bodyArea: z.string().nullable(),
+  description: z.string().nullable(),
+  source: catalogTreatmentSourceSchema,
+  ownerOrganizationId: uuid.nullable(),
+  ownerProfessionalProfileId: uuid.nullable(),
   defaultPriceCents: z.number().int().nonnegative(),
   defaultDurationMinMinutes: z.number().int().positive(),
   defaultDurationMaxMinutes: z.number().int().positive(),
@@ -88,11 +97,27 @@ export const createTreatmentOfferingRequestSchema = z.object({
   points: z.number().int().nonnegative().optional(),
 }).strict();
 
+export const createCustomTreatmentRequestSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(4000).optional(),
+  categoryId: uuid,
+  bodyArea: z.string().trim().max(200).optional(),
+  priceCents: z.number().int().nonnegative(),
+  durationMinutes: z.number().int().positive(),
+  points: z.number().int().nonnegative(),
+}).strict();
+
+export const createCustomTreatmentResponseSchema = z.object({
+  definitionId: uuid,
+  offeringId: uuid,
+}).strict();
+
 export const updateTreatmentOfferingRequestSchema = z.object({
   priceCents: z.number().int().nonnegative().optional(),
   durationMinutes: z.number().int().positive().optional(),
   points: z.number().int().nonnegative().optional(),
   isActive: z.boolean().optional(),
+  description: z.string().trim().max(4000).nullable().optional(),
 }).strict().refine((value) => Object.keys(value).length > 0, {
   message: 'At least one offering field is required',
 });
@@ -104,8 +129,11 @@ export const removeTreatmentOfferingResponseSchema = z.object({
 
 export type CatalogCategory = z.infer<typeof catalogCategorySchema>;
 export type CatalogProfessionalRequirement = z.infer<typeof catalogProfessionalRequirementSchema>;
+export type CatalogTreatmentSource = z.infer<typeof catalogTreatmentSourceSchema>;
 export type CatalogTreatment = z.infer<typeof catalogTreatmentSchema>;
 export type CatalogFilters = z.infer<typeof catalogFiltersSchema>;
 export type TreatmentOffering = z.infer<typeof treatmentOfferingSchema>;
 export type CreateTreatmentOfferingRequest = z.infer<typeof createTreatmentOfferingRequestSchema>;
+export type CreateCustomTreatmentRequest = z.infer<typeof createCustomTreatmentRequestSchema>;
+export type CreateCustomTreatmentResponse = z.infer<typeof createCustomTreatmentResponseSchema>;
 export type UpdateTreatmentOfferingRequest = z.infer<typeof updateTreatmentOfferingRequestSchema>;

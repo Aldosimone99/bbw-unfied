@@ -23,6 +23,9 @@ type RelationshipRpcRow = {
   subject_id: string;
   organization_id: string | null;
   professional_profile_id: string | null;
+  origin_kind: 'organization' | 'professional';
+  origin_organization_id: string | null;
+  origin_professional_profile_id: string | null;
   first_name: string | null;
   last_name: string | null;
   email: string;
@@ -57,6 +60,7 @@ function mapRpcError(error: { message?: string } | null | undefined): PatientRel
     ['PATIENT_RELATIONSHIP_ALREADY_ACTIVE', 'PATIENT_RELATIONSHIP_ALREADY_ACTIVE', 409],
     ['PATIENT_RELATIONSHIP_NOT_FOUND', 'PATIENT_RELATIONSHIP_NOT_FOUND', 404],
     ['PATIENT_SUBJECT_NOT_FOUND', 'PATIENT_SUBJECT_NOT_FOUND', 404],
+    ['PATIENT_SUBJECT_DELETED', 'PATIENT_SUBJECT_DELETED', 410],
     ['PATIENT_ORGANIZATION_NOT_FOUND', 'PATIENT_ORGANIZATION_NOT_FOUND', 404],
     ['PATIENT_PROFESSIONAL_PROFILE_NOT_FOUND', 'PATIENT_PROFESSIONAL_PROFILE_NOT_FOUND', 404],
   ];
@@ -89,6 +93,9 @@ function normalizeRelationship(row: RelationshipRpcRow, scope: PatientScope): Pa
     relationshipScope: scope.kind,
     organizationId: row.organization_id,
     professionalProfileId: row.professional_profile_id,
+    originKind: row.origin_kind,
+    originOrganizationId: row.origin_organization_id,
+    originProfessionalProfileId: row.origin_professional_profile_id,
     firstName: row.first_name,
     lastName: row.last_name,
     email: row.email,

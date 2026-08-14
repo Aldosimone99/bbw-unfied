@@ -6,6 +6,10 @@ const migration = readFileSync(
   resolve(process.cwd(), 'supabase/migrations/20260813000300_catalog_master_and_offerings.sql'),
   'utf8',
 );
+const alignmentMigration = readFileSync(
+  resolve(process.cwd(), 'supabase/migrations/20260814000000_domain_alignment.sql'),
+  'utf8',
+);
 
 describe('canonical catalog schema', () => {
   it('separates the master catalog from organization and personal offerings', () => {
@@ -42,5 +46,30 @@ describe('canonical catalog schema', () => {
     expect(migration).toContain('create policy organization_treatment_offerings_select');
     expect(migration).toContain('create policy professional_treatment_offerings_select');
     expect(migration).not.toMatch(/using\s*\(\s*true\s*\)/i);
+  });
+});
+
+describe('domain-aligned catalog schema', () => {
+  it('separates BBW templates from organization and professional custom definitions', () => {
+    expect(alignmentMigration).toContain("source in ('bbw_template', 'organization', 'professional')");
+    expect(alignmentMigration).toContain('owner_organization_id');
+    expect(alignmentMigration).toContain('owner_professional_profile_id');
+    expect(alignmentMigration).toContain('create_organization_custom_treatment');
+    expect(alignmentMigration).toContain('create_professional_custom_treatment');
+    expect(alignmentMigration).toContain('list_accessible_treatment_definitions');
+  });
+
+  it('keeps CSV import ownership limited to BBW templates', () => {
+    expect(alignmentMigration).toContain("source, is_active");
+    expect(alignmentMigration).toContain("'bbw_template', true");
+    expect(alignmentMigration).toContain("source = 'bbw_template' and not (external_code = any(incoming_codes))");
+  });
+
+  it('adds relationship origin, logical patient deletion and immutable audit events', () => {
+    expect(alignmentMigration).toContain('origin_kind');
+    expect(alignmentMigration).toContain('soft_delete_patient_subject');
+    expect(alignmentMigration).toContain('create trigger audit_events_immutable');
+    expect(alignmentMigration).toContain('revoke update, delete on public.audit_events');
+    expect(alignmentMigration).not.toContain('delete from public.audit_events');
   });
 });

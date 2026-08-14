@@ -63,3 +63,12 @@ Il client non può scegliere permission arbitrarie, organizzazione arbitraria o 
 Il cambio workspace è esposto dalla navigation globale, ma resta un'operazione server-authoritative. Il componente client può mostrare `availableOperationalContexts` e inviare `{ kind, id }`; il server deve riverificare sessione, ownership del professional profile oppure membership attiva, stato dell'organizzazione e permission prima di aggiornare il cookie HttpOnly.
 
 Dopo una selezione valida il contesto, i ruoli e le permission operative vengono ricalcolati e la pagina viene riportata alla dashboard del nuovo workspace. Un riferimento manipolato, una membership revocata o un contesto non più disponibile non cambia il workspace attivo precedente e produce un errore user-facing. Il workspace attivo non è l'account e non è una prova di autorizzazione.
+
+
+## DOMAIN DECISION STATUS — Domain Alignment Pass
+
+**APPROVED**: professional può lavorare in più organization; i ruoli restano scoped alla membership; patient access è relationship/permission scoped; clinic admin, professional e staff hanno capacità diverse; export e role assignment devono essere permission-based.
+
+**TBD / NON IMPLEMENTATO**: permission export, conflict visibility cross-organization, payout e policy completa di condivisione dello storico.
+
+**TECHNICAL DECISION**: mantenere `organization_members → member_roles → role_permissions`; il business può limitare gli abbinamenti consentiti senza trasformare `role` in attributo globale del professional. I middleware legacy role-name-based restano non canonici e disabilitati.

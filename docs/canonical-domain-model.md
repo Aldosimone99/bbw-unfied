@@ -63,3 +63,12 @@ alterare lo schema principale.
   dominio sopra `subjects`, non una conseguenza della registrazione.
 - I dati sanitari e i documenti sensibili avranno tabelle, policy e audit
   specifici; non vengono resi leggibili dal solo ruolo platform.
+
+
+## Domain alignment addendum
+
+**APPROVED**: `Subject` è l’identità patient globale; le relationship organizzative e professionali sono scoped. `ProfessionalProfile` è globale e non viene duplicato in `organization_members`. Il catalogo BBW è una libreria di template: `TreatmentDefinition` può essere `bbw_template`, organization-owned o professional-owned, mentre `TreatmentOffering` contiene il context operativo.
+
+**TBD / BLOCKED**: la tassonomia qualifiche, la retention, lo storico globale condiviso, consensi, pagamenti, documenti avanzati e state machine complete non sono definiti sufficientemente.
+
+**TECHNICAL DECISION**: appointment e availability legacy non fanno parte del modello canonico attivo e non devono essere usati come base per nuove feature.

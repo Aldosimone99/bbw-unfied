@@ -3,6 +3,7 @@ import { z } from 'zod';
 const uuidSchema = z.string().uuid();
 
 export const patientRelationshipScopeSchema = z.enum(['organization', 'personal_professional']);
+export const patientRelationshipOriginKindSchema = z.enum(['organization', 'professional']);
 export const patientRelationshipStatusSchema = z.enum(['active', 'removed']);
 
 export const patientRelationshipSchema = z.object({
@@ -11,6 +12,9 @@ export const patientRelationshipSchema = z.object({
   relationshipScope: patientRelationshipScopeSchema,
   organizationId: uuidSchema.nullable(),
   professionalProfileId: uuidSchema.nullable(),
+  originKind: patientRelationshipOriginKindSchema,
+  originOrganizationId: uuidSchema.nullable(),
+  originProfessionalProfileId: uuidSchema.nullable(),
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
   email: z.string().email(),
@@ -59,6 +63,7 @@ export const removePatientRelationshipResponseSchema = z.object({
 }).strict();
 
 export type PatientRelationship = z.infer<typeof patientRelationshipSchema>;
+export type PatientRelationshipOriginKind = z.infer<typeof patientRelationshipOriginKindSchema>;
 export type PatientRelationshipList = z.infer<typeof patientRelationshipListSchema>;
 export type PatientLookupRequest = z.infer<typeof patientLookupRequestSchema>;
 export type PatientLookupResponse = z.infer<typeof patientLookupResponseSchema>;

@@ -73,3 +73,28 @@ Non usare `User` per indicare indiscriminatamente account/profile; non usare `Cl
 ## Non ancora deciso
 
 Vanno confermati per il prodotto completo: gestione di minori/deleghe; separazione tra dati identificativi e sanitari; vocabolario definitivo dei tipi; versionamento dei consensi; natura della firma; ricorrenza e timezone degli appuntamenti; ownership di documenti e allegati; retention e cancellazione; eventuale interoperabilità sanitaria. La membership multi-organizzazione e il contesto attivo sono invece implementati nella foundation Identity & Authorization.
+
+
+## DOMAIN DECISION STATUS — Domain Alignment Pass
+
+### APPROVED
+
+- Patient/Subject appartiene alla piattaforma e ha una sola identità globale.
+- `organization_patient_relationships` e `professional_patient_relationships` restano scoped.
+- ProfessionalProfile è globale; qualifiche e specializzazioni appartengono al professionista.
+- Un professional può lavorare in più organization e avere Studio personale.
+- TreatmentDefinition è distinta da TreatmentOffering.
+- Una TreatmentDefinition può essere template BBW, organization-owned o professional-owned.
+- Appointment futuro supporta più treatment e più professional, con professional inizialmente opzionale.
+- Availability futura è organization-scoped; le eccezioni sovrascrivono il weekly schedule.
+- Soft delete e audit sono il default per le entità rilevanti.
+
+### TBD / BLOCKED
+
+Restano TBD la tassonomia delle qualifiche, la condivisione dello storico globale, la retention, i consensi, i pagamenti, i documenti professionali avanzati e le state machine complete.
+
+### TECHNICAL DECISION
+
+`source`/`origin` descrive la provenienza della relationship o della definition, non la titolarità legale dei dati. Ruoli e permission restano contestuali alla organization; non usare etichette come `clinic` o `doctor` per autorizzare.
+
+Il registro vincolante è `docs/domain/decision-register.md`.

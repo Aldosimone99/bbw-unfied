@@ -107,3 +107,12 @@ are not evidence that the module is currently exposed.
 
 The full workspace also includes frontend and shared-interface checks; use the
 root README commands before handoff.
+
+
+## Domain alignment status
+
+La baseline backend canonica usa Patient/Subject globale, relationship scoped, ProfessionalProfile globale, OperationalContext e permission organization-scoped. Il catalogo BBW è una libreria di template; le TreatmentDefinition custom appartengono direttamente a organization o professional context.
+
+Le route legacy di bookings, availability, slots, consensi e documenti non sono funzionalità canoniche. Restano disabilitate finché non esistono migration, RLS, permission, audit e test coerenti con `docs/domain/decision-register.md`.
+
+Retention, consensi avanzati, pagamenti e documenti avanzati sono **TBD/BLOCKED**.

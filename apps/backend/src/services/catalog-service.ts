@@ -2,6 +2,8 @@ import type {
   CatalogCategory,
   CatalogFilters,
   CatalogTreatment,
+  CreateCustomTreatmentRequest,
+  CreateCustomTreatmentResponse,
   CreateTreatmentOfferingRequest,
   OperationalContextReference,
   TreatmentOffering,
@@ -10,6 +12,7 @@ import type {
 import {
   catalogCategoryListResponseSchema,
   catalogTreatmentListResponseSchema,
+  createCustomTreatmentResponseSchema,
   treatmentOfferingListResponseSchema,
 } from '@bbw/interfaces';
 import type { SupabaseLike } from '../db/supabase';
@@ -49,7 +52,12 @@ type TreatmentRow = {
   duration_label: string;
   professional_requirements: string[];
   is_active: boolean;
-  treatment_categories: CategoryRelation;
+  source: 'bbw_template' | 'organization' | 'professional';
+  owner_organization_id: string | null;
+  owner_professional_profile_id: string | null;
+  category_code?: string;
+  category_display_name?: string;
+  treatment_categories?: CategoryRelation;
 };
 type OfferingRpcRow = {
   offering_id: string;
@@ -61,6 +69,7 @@ type OfferingRpcRow = {
   category_code: string;
   category_display_name: string;
   body_area: string | null;
+  description: string | null;
   default_price_cents: number;
   default_duration_min_minutes: number;
   default_duration_max_minutes: number;
@@ -69,6 +78,9 @@ type OfferingRpcRow = {
   duration_minutes: number;
   points: number;
   is_active: boolean;
+  source: 'bbw_template' | 'organization' | 'professional';
+  owner_organization_id: string | null;
+  owner_professional_profile_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -99,6 +111,9 @@ function mapRpcError(error: { message?: string } | null | undefined): CatalogSer
     ['CATALOG_PROFESSIONAL_PROFILE_NOT_FOUND', 'CATALOG_PROFESSIONAL_PROFILE_NOT_FOUND', 404],
     ['CATALOG_OFFERING_INVALID_INPUT', 'CATALOG_OFFERING_INVALID_INPUT', 422],
     ['CATALOG_OFFERING_FIELD_FORBIDDEN', 'CATALOG_OFFERING_FIELD_FORBIDDEN', 422],
+    ['CATALOG_CUSTOM_TREATMENT_INVALID_INPUT', 'CATALOG_CUSTOM_TREATMENT_INVALID_INPUT', 422],
+    ['CATALOG_CATEGORY_NOT_FOUND', 'CATALOG_CATEGORY_NOT_FOUND', 404],
+    ['CATALOG_CUSTOM_TREATMENT_OPERATION_FAILED', 'CATALOG_CUSTOM_TREATMENT_OPERATION_FAILED', 500],
   ];
   const match = known.find(([source]) => message.includes(source));
   return match ? new CatalogServiceError(match[1], match[2]) : new CatalogServiceError('CATALOG_OPERATION_FAILED', 500);
@@ -123,7 +138,9 @@ async function authorizeContext(
 }
 
 function normalizeTreatment(row: TreatmentRow): CatalogTreatment {
-  const category = relationOne(row.treatment_categories);
+  const category = row.category_code && row.category_display_name
+    ? { id: row.category_id, code: row.category_code, display_name: row.category_display_name }
+    : relationOne(row.treatment_categories ?? null);
   if (!category) throw new CatalogServiceError('CATALOG_CATEGORY_NOT_FOUND', 500);
   return {
     id: row.id,
@@ -143,6 +160,9 @@ function normalizeTreatment(row: TreatmentRow): CatalogTreatment {
       value === 'physician' || value === 'healthcare_professional' || value === 'beauty_professional'
     )),
     isActive: row.is_active,
+    source: row.source,
+    ownerOrganizationId: row.owner_organization_id,
+    ownerProfessionalProfileId: row.owner_professional_profile_id,
   };
 }
 
@@ -158,6 +178,10 @@ function normalizeOffering(row: OfferingRpcRow, scope: CatalogScope): TreatmentO
     categoryCode: row.category_code,
     categoryDisplayName: row.category_display_name,
     bodyArea: row.body_area,
+    description: row.description,
+    source: row.source,
+    ownerOrganizationId: row.owner_organization_id,
+    ownerProfessionalProfileId: row.owner_professional_profile_id,
     defaultPriceCents: row.default_price_cents,
     defaultDurationMinMinutes: row.default_duration_min_minutes,
     defaultDurationMaxMinutes: row.default_duration_max_minutes,
@@ -171,7 +195,7 @@ function normalizeOffering(row: OfferingRpcRow, scope: CatalogScope): TreatmentO
   };
 }
 
-const treatmentSelect = 'id,external_code,name,category_id,description,body_area,default_points,default_price_cents,default_duration_min_minutes,default_duration_max_minutes,duration_label,professional_requirements,is_active,treatment_categories(id,code,display_name)';
+const treatmentSelect = 'id,external_code,name,category_id,description,body_area,default_points,default_price_cents,default_duration_min_minutes,default_duration_max_minutes,duration_label,professional_requirements,is_active,source,owner_organization_id,owner_professional_profile_id,treatment_categories(id,code,display_name)';
 
 export async function listCatalogCategories(
   db: SupabaseLike,
@@ -197,13 +221,16 @@ export async function listCatalogTreatments(
   context: OperationalContextReference,
   filters: CatalogFilters,
 ): Promise<CatalogTreatment[]> {
-  await authorizeContext(db, user, context, 'catalog.read');
-  const { data, error } = await db.from('catalog_treatments').select(treatmentSelect).eq('is_active', true).order('name', { ascending: true });
-  if (error) throw new CatalogServiceError('CATALOG_TREATMENT_LIST_FAILED', 500);
+  const scope = await authorizeContext(db, user, context, 'catalog.read');
+  const { data, error } = await db.rpc('list_accessible_treatment_definitions', {
+    p_scope_kind: scope.kind,
+    p_scope_id: scope.id,
+  });
+  if (error) throw mapRpcError(error);
   const search = filters.search?.toLocaleLowerCase('it');
   const categoryCode = filters.categoryCode?.toLocaleLowerCase('it');
   const bodyArea = filters.bodyArea?.toLocaleLowerCase('it');
-  const items = (data as unknown as TreatmentRow[] ?? [])
+  const items = ((data ?? []) as unknown as TreatmentRow[])
     .map(normalizeTreatment)
     .filter((treatment) => !search || `${treatment.name} ${treatment.categoryDisplayName} ${treatment.bodyArea ?? ''}`.toLocaleLowerCase('it').includes(search))
     .filter((treatment) => !categoryCode || treatment.categoryCode.toLocaleLowerCase('it') === categoryCode)
@@ -212,7 +239,7 @@ export async function listCatalogTreatments(
 }
 
 async function fetchOfferings(db: SupabaseLike, scope: CatalogScope): Promise<TreatmentOffering[]> {
-  const rpcName = scope.kind === 'organization' ? 'list_organization_treatment_offerings' : 'list_professional_treatment_offerings';
+  const rpcName = scope.kind === 'organization' ? 'list_organization_treatment_offerings_v2' : 'list_professional_treatment_offerings_v2';
   const args = scope.kind === 'organization'
     ? { p_organization_id: scope.organizationId }
     : { p_professional_profile_id: scope.professionalProfileId };
@@ -231,10 +258,15 @@ export async function listTreatmentOfferings(
   return fetchOfferings(db, scope);
 }
 
-async function getMasterTreatment(db: SupabaseLike, catalogTreatmentId: string): Promise<CatalogTreatment> {
-  const { data, error } = await db.from('catalog_treatments').select(treatmentSelect).eq('id', catalogTreatmentId).eq('is_active', true).maybeSingle();
-  if (error || !data) throw new CatalogServiceError('CATALOG_TREATMENT_NOT_FOUND', 404);
-  return normalizeTreatment(data as unknown as TreatmentRow);
+async function getMasterTreatment(db: SupabaseLike, scope: CatalogScope, catalogTreatmentId: string): Promise<CatalogTreatment> {
+  const { data, error } = await db.rpc('list_accessible_treatment_definitions', {
+    p_scope_kind: scope.kind,
+    p_scope_id: scope.id,
+  });
+  if (error) throw mapRpcError(error);
+  const treatment = ((data ?? []) as unknown as TreatmentRow[]).find((row) => row.id === catalogTreatmentId);
+  if (!treatment) throw new CatalogServiceError('CATALOG_TREATMENT_NOT_FOUND', 404);
+  return normalizeTreatment(treatment);
 }
 
 async function getCreatedOffering(db: SupabaseLike, scope: CatalogScope, offeringId: string): Promise<TreatmentOffering> {
@@ -250,7 +282,7 @@ export async function createTreatmentOffering(
   payload: CreateTreatmentOfferingRequest,
 ): Promise<TreatmentOffering> {
   const scope = await authorizeContext(db, user, context, 'catalog.offering.create');
-  const treatment = await getMasterTreatment(db, payload.catalogTreatmentId);
+  const treatment = await getMasterTreatment(db, scope, payload.catalogTreatmentId);
   const args = {
     p_actor_user_id: user.id,
     p_catalog_treatment_id: payload.catalogTreatmentId,
@@ -303,4 +335,38 @@ export async function removeTreatmentOffering(
   if (error) throw mapRpcError(error);
   if (typeof data !== 'string') throw new CatalogServiceError('CATALOG_OFFERING_OPERATION_FAILED', 500);
   return { id: data, isActive: false };
+}
+
+export async function createCustomTreatment(
+  db: SupabaseLike,
+  user: ResolvedUser,
+  context: OperationalContextReference,
+  payload: CreateCustomTreatmentRequest,
+): Promise<CreateCustomTreatmentResponse> {
+  const scope = await authorizeContext(db, user, context, 'catalog.offering.create');
+  const rpcName = scope.kind === 'organization'
+    ? 'create_organization_custom_treatment'
+    : 'create_professional_custom_treatment';
+  const rpcArgs = {
+    p_actor_user_id: user.id,
+    p_name: payload.name,
+    p_description: payload.description ?? null,
+    p_category_id: payload.categoryId,
+    p_body_area: payload.bodyArea ?? null,
+    p_price_cents: payload.priceCents,
+    p_duration_minutes: payload.durationMinutes,
+    p_points: payload.points,
+    ...(scope.kind === 'organization'
+      ? { p_organization_id: scope.organizationId }
+      : { p_professional_profile_id: scope.professionalProfileId }),
+  };
+  const { data, error } = await db.rpc(rpcName, rpcArgs);
+  if (error) throw mapRpcError(error);
+  const result = data as { definition_id?: unknown; offering_id?: unknown };
+  const parsed = createCustomTreatmentResponseSchema.safeParse({
+    definitionId: result.definition_id,
+    offeringId: result.offering_id,
+  });
+  if (!parsed.success) throw new CatalogServiceError('CATALOG_CUSTOM_TREATMENT_OPERATION_FAILED', 500);
+  return parsed.data;
 }

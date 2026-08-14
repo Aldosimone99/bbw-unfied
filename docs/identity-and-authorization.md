@@ -230,3 +230,12 @@ The latest verification included:
 For future sensitive changes, record date, files, migration, observable
 redirects, Auth/profile/role/permission impact, tests and any open decisions.
 Never edit an applied migration; create a new numbered migration.
+
+
+## Domain alignment status
+
+**APPROVED**: il ProfessionalProfile è globale; il professional può avere più organization context; Patient/Subject è globale ma l’accesso alle relationship è scoped; patient invitation non crea membership; RBAC resta organization-scoped.
+
+**TBD / BLOCKED**: export, conflict visibility cross-organization, condivisione storico, consensi avanzati, pagamenti e retention.
+
+**TECHNICAL DECISION**: i role-name checks dei moduli transition non sono autorizzazione canonica. Le route transition restano disabilitate e il backend canonico usa context + permission + RLS.

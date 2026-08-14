@@ -77,3 +77,12 @@ due account/organizzazioni si può iniziare il porting di catalogo e appuntament
 - Le vecchie route e i test non ancora portati restano debito di migrazione:
   non devono essere considerati pronti per dati reali solo perché il file
   esiste nel repository.
+
+
+## Domain alignment status
+
+Il catalogo legacy `platform_treatments/company_treatment_catalog/custom_services` non è la baseline canonica: il CSV è una template library e le TreatmentDefinition custom devono usare ownership organization/professional senza organization fittizie.
+
+Booking, availability, room scheduling, consensi, payments e documenti avanzati restano **BLOCKED / NOT IMPLEMENTED** nella baseline canonica. Non riattivare `ENABLE_LEGACY_TRANSITION_ROUTES` per considerarli implementati.
+
+Il registro delle decisioni è `docs/domain/decision-register.md`.

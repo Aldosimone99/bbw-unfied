@@ -129,7 +129,6 @@ export async function registerUser(
   } catch (error) {
     await db.from('subjects').delete().eq('user_id', userId);
     await db.from('account_consents').delete().eq('user_id', userId);
-    await db.from('audit_events').delete().eq('actor_user_id', userId);
     await db.auth.admin.deleteUser(userId);
     throw new RegistrationError({
       code: 'REGISTRATION_FAILED',

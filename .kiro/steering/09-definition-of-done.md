@@ -75,3 +75,15 @@ Una feature è completata solo quando il comportamento approvato, il confine di 
 - [ ] Review di codice e sicurezza completate; decisioni aperte approvate.
 - [ ] Nessuna modifica manuale non documentata in production.
 - [ ] La feature è pronta per il deploy solo dopo evidenza dei check, non per assunzione.
+
+
+## DOMAIN DECISION STATUS — Domain Alignment Pass
+
+Una verifica è conforme solo se distingue:
+
+- **APPROVED**: Patient globale, relationship scoped, ProfessionalProfile globale, RBAC organization-scoped, TreatmentDefinition/Offering separati, template BBW non obbligatori, soft delete e audit.
+- **TBD**: retention, qualification taxonomy, sharing storico globale, cancellation policy dettagliata e payout.
+- **BLOCKED**: consensi avanzati, pagamenti, documenti professionali avanzati e mega state machine.
+- **TECHNICAL DECISION**: migration additive, RLS, permission semantiche, audit append-only e route legacy disabilitate.
+
+Non dichiarare completate agenda, booking, availability, consensi o pagamenti in assenza delle relative migration canoniche, permission, RLS, test e decisioni di dominio.

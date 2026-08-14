@@ -114,3 +114,14 @@ Evitare di usare “utente” come sinonimo di persona, membership o ruolo. Evit
 ## Criteri di priorità
 
 Una richiesta sale di priorità se riduce un rischio privacy/sicurezza, sblocca il percorso principale di un utente, evita dati incoerenti o manualità non tracciata, oppure è necessaria per un vincolo legale/operativo. Le funzionalità estetiche, le integrazioni e le automazioni vengono dopo la validazione del dominio e dell’autorizzazione.
+
+
+## DOMAIN DECISION STATUS — Domain Alignment Pass
+
+**APPROVED**: Patient/Subject è globale alla piattaforma; ProfessionalProfile è globale; il professionista può lavorare in più organization e avere uno Studio personale; le relationship patient sono scoped; il CSV BBW è una Treatment Library di template, non un catalogo obbligatorio.
+
+**TBD / NON DEFINITO**: retention definitiva, condivisione dello storico globale, tassonomia qualifiche, cancellation policy dettagliata, consensi avanzati, pagamenti, documenti professionali avanzati e state machine generica.
+
+**TECHNICAL DECISION**: Account/Profile/ProfessionalProfile/OrganizationMembership/OperationalContext restano separati; RBAC è organization-scoped e permission-based. Il codice legacy di booking, availability, catalogo e consent non è prova di funzionalità approvata perché le route transition sono disabilitate.
+
+Il registro completo è in `docs/domain/decision-register.md`.

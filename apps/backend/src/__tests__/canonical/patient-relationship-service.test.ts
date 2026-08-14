@@ -26,6 +26,9 @@ const row = {
   subject_id: subjectId,
   organization_id: organizationId,
   professional_profile_id: null,
+  origin_kind: 'organization',
+  origin_organization_id: organizationId,
+  origin_professional_profile_id: null,
   first_name: 'Mario',
   last_name: 'Rossi',
   email: 'mario@example.com',
@@ -64,7 +67,14 @@ describe('patient relationship service', () => {
 
   it('keeps personal professional relationships separate from organization relationships', async () => {
     authorize(personalContext, ['patients.read', 'patients.link', 'patients.unlink']);
-    const personalRow = { ...row, organization_id: null, professional_profile_id: professionalProfileId };
+    const personalRow = {
+      ...row,
+      organization_id: null,
+      professional_profile_id: professionalProfileId,
+      origin_kind: 'professional' as const,
+      origin_organization_id: null,
+      origin_professional_profile_id: professionalProfileId,
+    };
     const db = makeDb((name, args) => {
       if (name === 'link_professional_patient') {
         expect(args).toMatchObject({ p_professional_profile_id: professionalProfileId, p_subject_id: subjectId });

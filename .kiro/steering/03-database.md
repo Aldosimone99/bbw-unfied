@@ -96,3 +96,12 @@ File in bucket privati, con metadata e ownership nel database. URL firmati a dur
 ## Checklist schema
 
 Prima di approvare una migration verificare tenant boundary, foreign key, nullabilità, cascades, indici su query reali, RLS, audit, retention, dati sensibili, compatibilità con seed e possibilità di restore. Non scrivere ancora lo schema SQL completo finché le decisioni `Da confermare` del modello di dominio non sono risolte.
+
+
+## DOMAIN DECISION STATUS — Domain Alignment Pass
+
+**APPROVED**: Subject/Patient globale con relationship scoped; migration additive; soft removal con audit; TreatmentDefinition/TreatmentOffering separati; price e duration operativi sull’offering/context; audit immutabile.
+
+**TBD**: periodo di retention e purge definitivo; lifecycle completo del Patient globale; tassonomia delle qualifiche; schema definitivo appointment/availability/booking policy.
+
+**TECHNICAL DECISION**: le migration `migrations-legacy` non sono baseline e non vengono corrette per questo pass. Le future tabelle appointment/availability saranno canoniche e dovranno includere tenant boundary, association tables, snapshot, exceptions e locking cross-context. Nessuna migration remota viene eseguita.

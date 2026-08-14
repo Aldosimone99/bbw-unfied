@@ -818,3 +818,16 @@ Documentazione di riferimento:
 - `.kiro/steering/04-auth-and-permissions.md`;
 - `.kiro/steering/05-security.md`;
 - `.kiro/steering/14-monorepo-integration.md`.
+
+
+## Domain alignment status — 14 agosto 2026
+
+Il repository ha una fondazione canonica per identity, organization, RBAC, OperationalContext, Patient globale, relationship scoped, patient invitation separata e catalogo con offering scoped. Il CSV importato deve essere interpretato come **BBW Treatment Library / Template Library**, non come catalogo centrale obbligatorio.
+
+Le route e migration legacy per booking, availability, rooms, consensi e documenti avanzati restano archiviate/disabilitate. Non rappresentano funzionalità canoniche pronte per dati reali.
+
+**APPROVED**: Patient globale, ProfessionalProfile globale, multi-organization, TreatmentDefinition/Offering, template/custom definition, soft removal e audit.
+
+**TBD / BLOCKED**: retention, qualification taxonomy, sharing storico globale, booking completo, agenda, availability canonica, consensi avanzati, pagamenti, documenti avanzati e payout.
+
+Vedere `docs/domain/decision-register.md`.

@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import {
   catalogFiltersSchema,
+  createCustomTreatmentRequestSchema,
   createTreatmentOfferingRequestSchema,
   operationalContextReferenceSchema,
   updateTreatmentOfferingRequestSchema,
@@ -10,6 +11,7 @@ import type { SupabaseLike } from '../db/supabase';
 import { resolveUser } from '../middleware/resolve-user-middleware';
 import {
   CatalogServiceError,
+  createCustomTreatment,
   createTreatmentOffering,
   listCatalogCategories,
   listCatalogTreatments,
@@ -76,6 +78,16 @@ export function createCatalogRoutes(db: SupabaseLike): Router {
     try {
       const items = await listTreatmentOfferings(db, req.user!, contextFromRequest(req));
       return res.json({ success: true, data: { items, total: items.length } });
+    } catch (error) {
+      return handleError(res, error);
+    }
+  });
+
+  router.post('/treatments/custom', resolveUser(db), async (req, res) => {
+    const parsed = createCustomTreatmentRequestSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(422).json({ success: false, code: 'VALIDATION_FAILED', issues: parsed.error.issues });
+    try {
+      return res.status(201).json({ success: true, data: await createCustomTreatment(db, req.user!, contextFromRequest(req), parsed.data) });
     } catch (error) {
       return handleError(res, error);
     }

@@ -93,3 +93,14 @@ La configurazione locale attuale abilita Auth, Storage, Realtime e il seed `apps
 ## Cosa non va nei componenti UI
 
 Niente query SQL, chiamate dirette con service role, lettura di cookie nei Client Components per prendere decisioni di sicurezza, regole `if (role === ...)`, calcolo di permessi, gestione di transazioni, firma/cifratura, logica di retention, webhook o accesso a file tramite ID non verificato. Il server può usare il cookie HttpOnly dell’organizzazione attiva solo come indizio e deve sempre verificare membership e stato. I componenti possono mostrare lo stato ricevuto dal server e raccogliere input, non attestare che l’utente abbia diritto a un’azione.
+
+
+## DOMAIN DECISION STATUS — Domain Alignment Pass
+
+**APPROVED**: l’architettura deve mantenere ProfessionalProfile globale, OperationalContext `personal_professional`/`organization`, relationship patient scoped, TreatmentDefinition distinta da TreatmentOffering e supporto futuro per N:N appointment-treatment/professional.
+
+**TBD / NON IMPLEMENTATO**: agenda, booking completo, availability canonica, cross-organization conflict visibility, consensi, pagamenti, documenti avanzati e retention.
+
+**TECHNICAL DECISION**: le migration legacy non vengono riattivate; i nuovi moduli usano migration additive, service layer, permission semantiche, RLS e audit. Il catalogo BBW è una template library tecnica; non è una fonte business obbligatoria.
+
+Consultare `docs/domain/decision-register.md` prima di introdurre nuove assunzioni.

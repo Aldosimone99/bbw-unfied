@@ -59,3 +59,12 @@ Dipendenze fissate nel lockfile, aggiornate con review, audit e changelog; evita
 ## Minimo privilegio
 
 Ruoli tecnici, database, bucket, CI e operatori ricevono soltanto gli scope necessari. Service role solo in processi server strettamente controllati. Le policy RLS e la procedura super-admin devono essere testate e riesaminate quando cambia il modello di dominio.
+
+
+## DOMAIN DECISION STATUS — Domain Alignment Pass
+
+**APPROVED**: audit delle modifiche importanti, soft delete/revoca, isolamento tra organization, nessuna lettura automatica dello storico patient di altri contesti e prevenzione futura del double booking cross-organization.
+
+**TBD**: retention audit, retention dati e legal hold; non introdurre numeri o purge scheduler.
+
+**TECHNICAL DECISION**: audit deve essere append-only anche a livello database; RLS e service authorization sono barriere complementari. Consent, payments e document workflow restano bloccati finché il dominio non è definito.

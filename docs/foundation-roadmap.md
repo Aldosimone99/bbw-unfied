@@ -264,3 +264,15 @@ La fondazione è completa quando:
 - almeno un modulo di dominio è completo end-to-end;
 - typecheck, lint, test e build passano;
 - documentazione e steering descrivono lo stesso comportamento.
+
+
+## Domain alignment gate
+
+Prima di portare catalogo, availability o booking, distinguere sempre:
+
+- **APPROVED**: Patient globale, relationship scoped, ProfessionalProfile globale, RBAC scoped, TreatmentDefinition/Offering e template BBW non obbligatori.
+- **TBD**: retention, qualifiche, storico globale, cancellation policy, payout.
+- **BLOCKED**: consensi, pagamenti, documenti avanzati e mega state machine.
+- **TECHNICAL DECISION**: le migration legacy restano archiviate; ogni nuovo modulo avrà migration canoniche additive, RLS, permission, audit e test.
+
+Il registro è `docs/domain/decision-register.md`.
